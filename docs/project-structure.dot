@@ -1,0 +1,38 @@
+digraph fmon {
+  graph [rankdir=LR, bgcolor="white", pad="0.3", nodesep="0.35", ranksep="0.55", fontname="Helvetica"];
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10, color="#5a6b7b", fillcolor="#f4f7fa", penwidth=1.2];
+  edge [color="#4a6b8a", penwidth=1.2, fontname="Helvetica", fontsize=9];
+
+  subgraph cluster_gui {
+    label="fmon-gui  (unprivileged, GTK4)";
+    fontsize=12; color="#3b82f6"; style="rounded,dashed";
+    pages [label="pages/\nlayout, metric pages, refresh"];
+    views [label="views/\nprocess, service, storage,\nnetwork, log"];
+    charts [label="charts/\nCairo history, CPU,\nZFS, combo, gauge"];
+    support [label="support/\ndisk history (SQLite),\nalerts, ctl client, theme"];
+    pages -> views; pages -> charts; views -> support;
+  }
+
+  subgraph cluster_daemon {
+    label="fmon-daemon  (root)";
+    fontsize=12; color="#10b981"; style="rounded,dashed";
+    collectors [label="collectors/\nCPU, memory, disk, network,\nZFS, processes, battery"];
+    publisher [label="publisher\n1 Hz snapshot + history"];
+    control [label="control socket\n/var/run/fmon-ctl.sock"];
+    collectors -> publisher;
+  }
+
+  common [label="common/\nfmon_shm ABI 20\nseqlock snapshot + fmon_child", fillcolor="#fff7ed", color="#f59e0b"];
+  os [label="FreeBSD kernel interfaces\nsysctl / kvm / devstat / geom /\nlibprocstat / ifaddrs / cam / ZFS kstat", fillcolor="#eef2f7"];
+  sqlite [label="~/.cache/fmon/disk_history.db\n24h disk history", fillcolor="#f5f3ff", color="#8b5cf6"];
+  notify [label="notify-send\ndesktop alerts", fillcolor="#fdf2f8", color="#ec4899"];
+
+  publisher -> common [label="write snapshot"];
+  common -> pages [label="read-only mmap"];
+  support -> control [label="privileged ops"];
+  control -> collectors [label="service / signal / sysrc / cpuset / rctl", style=dashed];
+  collectors -> os [label="read"];
+  support -> sqlite;
+  support -> notify;
+  views -> control [label="start/stop service, signal", style=dotted];
+}

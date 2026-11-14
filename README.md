@@ -14,6 +14,28 @@ fmon-daemon (root)  --POSIX shared memory (seqlock)-->  fmon-gui (user)
 - **GUI**: maps shared memory read-only; a crash of the GUI never affects collection.
 - **Control channel**: privileged operations (signals, services, sysrc, cpuset, rctl) are validated and executed by the root daemon over a local Unix socket. No shell interpolation.
 
+![fmon architecture](docs/project-structure.png)
+
+## Screenshots
+
+| Overview | CPU | ZFS |
+|---|---|---|
+| ![Overview](docs/screenshots/overview.png) | ![CPU](docs/screenshots/cpu.png) | ![ZFS](docs/screenshots/zfs.png) |
+
+<details>
+<summary>More screenshots (storage, network, processes, services, logs, battery)</summary>
+
+| Storage | Network | Processes |
+|---|---|---|
+| ![Storage](docs/screenshots/storage.png) | ![Network](docs/screenshots/network.png) | ![Processes](docs/screenshots/processes.png) |
+
+| Services | Logs | Battery |
+|---|---|---|
+| ![Services](docs/screenshots/services.png) | ![Logs](docs/screenshots/logs.png) | ![Battery](docs/screenshots/battery.png) |
+
+See [project structure](docs/PROJECT_STRUCTURE.md) for the current data flow and directory layout.
+</details>
+
 ## Features
 
 - CPU: total/per-core utilization, load average, frequency, temperature, thermal history.
@@ -79,6 +101,28 @@ BSD-2-Clause. See [LICENSE](LICENSE).
 - **fmon-daemon（root）**：1 Hz 采集 CPU/内存/磁盘/网络/ZFS/进程，通过共享内存发布一致快照。
 - **fmon-gui（普通用户）**：只读映射共享内存，GTK4 + Cairo 渲染；界面崩溃不影响采集。
 - **控制通道**：结束进程、服务启停、sysrc、cpuset、rctl 等特权操作由 root daemon 校验后执行，不经过 shell。
+
+![fmon 架构图](docs/project-structure.png)
+
+## 界面截图
+
+| 概览 | CPU | ZFS |
+|---|---|---|
+| ![概览](docs/screenshots/overview.png) | ![CPU](docs/screenshots/cpu.png) | ![ZFS](docs/screenshots/zfs.png) |
+
+<details>
+<summary>更多截图（存储、网络、进程、服务、日志、电池）</summary>
+
+| 存储 | 网络 | 进程 |
+|---|---|---|
+| ![存储](docs/screenshots/storage.png) | ![网络](docs/screenshots/network.png) | ![进程](docs/screenshots/processes.png) |
+
+| 服务 | 日志 | 电池 |
+|---|---|---|
+| ![服务](docs/screenshots/services.png) | ![日志](docs/screenshots/logs.png) | ![电池](docs/screenshots/battery.png) |
+
+当前数据流与目录结构见 [项目结构](docs/PROJECT_STRUCTURE.md)。
+</details>
 
 ## 功能
 
