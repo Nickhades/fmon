@@ -1,0 +1,41 @@
+name: fmon
+version: "1.1.1"
+origin: "sysutils/fmon"
+comment: "FreeBSD system monitor GUI and daemon"
+www: "https://github.com/fmon-monitor/fmon"
+maintainer: "zxy@localhost"
+prefix: "/usr/local"
+categories: [ "sysutils" ]
+licenses: [ "BSD2CLAUSE" ]
+desc: <<EOD
+fmon 是一个原生 FreeBSD 图形化系统资源监视器。
+
+包含：
+  /usr/local/bin/fmon-gui        GTK4 图形界面
+  /usr/local/sbin/fmon-daemon    采集与 root 控制守护进程
+  /usr/local/etc/rc.d/fmon_daemon
+
+安装后启用服务：
+  sysrc fmon_daemon_enable=YES
+  service fmon_daemon start
+EOD
+deps: {
+  gtk4: { origin: "x11-toolkits/gtk40", version: "4.20.4_1" }
+  cairo: { origin: "graphics/cairo", version: "1.18.2,3" }
+  sqlite3: { origin: "databases/sqlite3", version: "3.54.1,1" }
+  libdrm: { origin: "graphics/libdrm", version: "2.4.134,1" }
+}
+messages: [
+  {
+    message: <<EOD
+fmon 已安装。
+
+启用守护进程：
+  sudo sysrc fmon_daemon_enable=YES
+  sudo service fmon_daemon start
+
+启动图形界面：
+  fmon-gui
+EOD
+  }
+]

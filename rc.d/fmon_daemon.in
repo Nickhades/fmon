@@ -1,0 +1,54 @@
+#!/bin/sh
+#
+# PROVIDE: fmon_daemon
+# REQUIRE: NETWORKING
+# BEFORE: LOGIN
+# KEYWORD: shutdown
+#
+# 在 /etc/rc.conf 中启用：
+#   fmon_daemon_enable="YES"
+#
+# 可选：
+#   fmon_daemon_logfile="/var/log/fmon-daemon.log"
+#
+# fmon-daemon 需要 root 权限（kvm、部分 sysctl、/var/run 下的共享内存）。
+
+. /etc/rc.subr
+
+name="fmon_daemon"
+rcvar="${name}_enable"
+
+load_rc_config "${name}"
+
+: ${fmon_daemon_enable:="NO"}
+: ${fmon_daemon_logfile:="/var/log/fmon-daemon.log"}
+
+procname="@PREFIX@/sbin/fmon-daemon"
+pidfile="/var/run/${name}.pid"
+required_files="${procname}"
+
+# 用 daemon(8) 托管：自己 fork 到后台并写 pid 文件。
+# 注意：不能加 -f（前台模式），否则 rc.subr 的 start 会一直阻塞。
+command="/usr/sbin/daemon"
+command_args="-p ${pidfile} -o ${fmon_daemon_logfile} ${procname}"
+start_precmd="fmon_daemon_prestart"
+start_postcmd="fmon_daemon_poststart"
+
+fmon_daemon_prestart()
+{
+    if [ ! -d /var/run ]; then
+        mkdir -p /var/run
+    fi
+    return 0
+}
+
+# daemon(8) 建的 pid 文件是 0600，普通用户执行 `service ... status` 会
+# 因为读不到 pid 文件而误报“not running”。这里放宽为 0644（pid 不敏感）。
+fmon_daemon_poststart()
+{
+    if [ -f "${pidfile}" ]; then
+        chmod 0644 "${pidfile}" 2>/dev/null || true
+    fi
+}
+
+run_rc_command "$1"

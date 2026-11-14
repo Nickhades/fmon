@@ -1,0 +1,5 @@
+/usr/local/bin/fmon-gui
+/usr/local/sbin/fmon-daemon
+/usr/local/etc/rc.d/fmon_daemon
+/usr/local/share/licenses/fmon/LICENSE
+/usr/local/share/licenses/fmon/THIRD-PARTY-LICENSES.md

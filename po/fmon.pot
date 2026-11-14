@@ -1,0 +1,556 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the fmon package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: fmon\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-09 15:31+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/gui/main.c:162
+#, c-format
+msgid "未连接到 fmon-daemon：%s"
+msgstr ""
+
+#: src/gui/main.c:165
+msgid "fmon-daemon 已停止运行，下面显示的是最后一次采集的数据。"
+msgstr ""
+
+#: src/gui/main.c:176
+msgid "正在等待守护进程发布第一份数据…"
+msgstr ""
+
+#: src/gui/main.c:196
+msgid "等待守护进程…请确认 fmon-daemon 已启动"
+msgstr ""
+
+#: src/gui/main.c:201
+#, c-format
+msgid "%s · %s · 运行 %s · %u 个进程"
+msgstr ""
+
+#: src/gui/main.c:347
+msgid "每个逻辑核心的实时占用率"
+msgstr ""
+
+#: src/gui/main.c:379
+msgid "存储池列表"
+msgstr ""
+
+#: src/gui/main.c:388
+msgid "池"
+msgstr ""
+
+#: src/gui/main.c:388
+msgid "健康"
+msgstr ""
+
+#: src/gui/main.c:388 src/gui/storage_view.c:292
+msgid "总容量"
+msgstr ""
+
+#: src/gui/main.c:388 src/gui/storage_view.c:292
+msgid "已用"
+msgstr ""
+
+#: src/gui/main.c:388 src/gui/storage_view.c:292
+msgid "使用率"
+msgstr ""
+
+#: src/gui/main.c:388
+msgid "读 / 写"
+msgstr ""
+
+#: src/gui/main.c:429 src/gui/main.c:1356
+msgid "⚠ 告警"
+msgstr ""
+
+#: src/gui/main.c:565
+msgid "没有发现任何显卡设备"
+msgstr ""
+
+#: src/gui/main.c:609
+#, c-format
+msgid "共检测到 %d 张显卡，可随时切换查看"
+msgstr ""
+
+#: src/gui/main.c:622
+msgid "未检测到可用的 GPU 设备"
+msgstr ""
+
+#: src/gui/main.c:624
+msgid ""
+"没有发现任何显卡设备。\n"
+"NVIDIA 需要 nvidia 驱动；AMD/Intel 需要 drm-kmod。"
+msgstr ""
+
+#: src/gui/main.c:646
+#, c-format
+msgid "%s · 显存 %.0f/%.0f MiB%s%s"
+msgstr ""
+
+#: src/gui/main.c:650
+#, c-format
+msgid "%s · 已检测到硬件，但驱动未加载"
+msgstr ""
+
+#: src/gui/main.c:655
+#, c-format
+msgid "%s · %s · 该显卡没有可用的负载传感器"
+msgstr ""
+
+#: src/gui/main.c:719
+#, c-format
+msgid "负载 %.2f / %.2f / %.2f · %u 个逻辑核"
+msgstr ""
+
+#: src/gui/main.c:729 src/gui/main.c:737
+#, c-format
+msgid "已用 %.2f GiB / 共 %.2f GiB"
+msgstr ""
+
+#: src/gui/main.c:742
+msgid "系统未配置 Swap"
+msgstr ""
+
+#: src/gui/main.c:751
+#, c-format
+msgid "↑ 上传 %s"
+msgstr ""
+
+#: src/gui/main.c:764
+#, c-format
+msgid "读取 · 写入 %s"
+msgstr ""
+
+#: src/gui/main.c:778
+#, c-format
+msgid "%s (%s) 已用 %s / 共 %s · 共 %u 个池"
+msgstr ""
+
+#: src/gui/main.c:782
+#, c-format
+msgid "%s (%s) 已用 %s / 共 %s"
+msgstr ""
+
+#: src/gui/main.c:788
+msgid "未检测到 zpool 或未安装 ZFS 工具"
+msgstr ""
+
+#: src/gui/main.c:800
+#, c-format
+msgid "ARC %s / 上限 %s"
+msgstr ""
+
+#: src/gui/main.c:855
+msgid "累计 ARC 回收次数"
+msgstr ""
+
+#: src/gui/main.c:860
+#, c-format
+msgid "CPU 负载 %.1f%%"
+msgstr ""
+
+#: src/gui/main.c:863
+msgid "没有可用的温度传感器"
+msgstr ""
+
+#: src/gui/main.c:870
+#, c-format
+msgid "充电中 · %s"
+msgstr ""
+
+#: src/gui/main.c:873
+#, c-format
+msgid "放电中 · %.1f W"
+msgstr ""
+
+#: src/gui/main.c:876
+#, c-format
+msgid "待机 · %s"
+msgstr ""
+
+#: src/gui/main.c:880
+msgid "无电池（台式机）"
+msgstr ""
+
+#: src/gui/main.c:955 src/gui/process_view.c:1214
+msgid "无法保存文件"
+msgstr ""
+
+#: src/gui/main.c:966 src/gui/main.c:974 src/gui/main.c:1018
+#: src/gui/process_view.c:1225 src/gui/process_view.c:1235
+msgid "导出失败"
+msgstr ""
+
+#: src/gui/main.c:966 src/gui/process_view.c:1225
+msgid "请选择本地文件系统上的位置。"
+msgstr ""
+
+#: src/gui/main.c:973 src/gui/process_view.c:1233
+#, c-format
+msgid "无法写入 %s：%s"
+msgstr ""
+
+#: src/gui/main.c:1017
+#, c-format
+msgid "写入 %s 时出错：%s"
+msgstr ""
+
+#: src/gui/main.c:1021
+#, c-format
+msgid ""
+"已导出 %u 个采样点到：\n"
+"%s"
+msgstr ""
+
+#: src/gui/main.c:1037
+msgid "无法导出"
+msgstr ""
+
+#: src/gui/main.c:1037
+msgid "尚未连接到 fmon-daemon，没有可导出的数据。"
+msgstr ""
+
+#: src/gui/main.c:1304
+msgid "FreeBSD 监控中心"
+msgstr ""
+
+#: src/gui/main.c:1344
+msgid "系统监控"
+msgstr ""
+
+#: src/gui/main.c:1365
+msgid "导出数据"
+msgstr ""
+
+#: src/gui/process_view.c:382
+#, c-format
+msgid ""
+"当前以普通用户运行：只显示你自己的进程（uid %u）。系统进程需要以 root 运行 "
+"fmon-gui 才能查看。"
+msgstr ""
+
+#: src/gui/process_view.c:389
+msgid "系统视图：root 与系统账户的进程"
+msgstr ""
+
+#: src/gui/process_view.c:392
+msgid "普通用户视图：所有非系统账户的进程"
+msgstr ""
+
+#: src/gui/process_view.c:628
+msgid "进程详细信息"
+msgstr ""
+
+#: src/gui/process_view.c:636
+msgid "进程详细信息（加载中…）"
+msgstr ""
+
+#: src/gui/process_view.c:641
+msgid "正在读取进程信息…"
+msgstr ""
+
+#: src/gui/process_view.c:757
+msgid "正在读取…"
+msgstr ""
+
+#: src/gui/process_view.c:796
+#, c-format
+msgid "无法向进程 %u (%s) 发送信号。"
+msgstr ""
+
+#: src/gui/process_view.c:803
+msgid "权限不足，或进程已经退出。"
+msgstr ""
+
+#: src/gui/process_view.c:1023
+#, c-format
+msgid "结束进程 %u（%s）？"
+msgstr ""
+
+#: src/gui/process_view.c:1043
+#, c-format
+msgid "强制杀死进程 %u（%s）？"
+msgstr ""
+
+#: src/gui/process_view.c:1278
+#, c-format
+msgid ""
+"已导出 %u 行到：\n"
+"%s"
+msgstr ""
+
+#: src/gui/process_view.c:1370 src/gui/service_view.c:915
+#: src/gui/storage_view.c:271 src/gui/log_view.c:374
+msgid "刷新"
+msgstr ""
+
+#: src/gui/process_view.c:1378
+msgid "普通用户"
+msgstr ""
+
+#: src/gui/process_view.c:1379
+msgid "系统 (root)"
+msgstr ""
+
+#: src/gui/process_view.c:1391
+msgid "系统进程（root / 系统账户）需要在以 root 运行 fmon-gui 时才能查看"
+msgstr ""
+
+#: src/gui/process_view.c:1396
+msgid "按进程名、PID、用户名过滤"
+msgstr ""
+
+#: src/gui/process_view.c:1399
+msgid "导出列表"
+msgstr ""
+
+#. 视图按钮已经区分了“普通用户/系统”，因此不再单列“类型”
+#: src/gui/process_view.c:1433 src/gui/network_view.c:522
+msgid "用户"
+msgstr ""
+
+#: src/gui/process_view.c:1433 src/gui/network_view.c:569
+msgid "状态"
+msgstr ""
+
+#: src/gui/process_view.c:1433
+msgid "内存"
+msgstr ""
+
+#: src/gui/process_view.c:1433 src/gui/network_view.c:522
+msgid "命令"
+msgstr ""
+
+#: src/gui/service_view.c:271
+#, c-format
+msgid "操作服务 “%s” 失败。"
+msgstr ""
+
+#: src/gui/service_view.c:277
+msgid ""
+"控制通道与 polkit 均不可用，请确认 fmon-daemon 正在运行且当前用户有管理员权"
+"限。"
+msgstr ""
+
+#: src/gui/service_view.c:400
+#, c-format
+msgid "停止服务 “%s”？"
+msgstr ""
+
+#: src/gui/service_view.c:424
+#, c-format
+msgid "禁用服务 “%s” 的开机自启？"
+msgstr ""
+
+#: src/gui/service_view.c:494
+msgid "（未找到服务脚本）"
+msgstr ""
+
+#: src/gui/service_view.c:553
+msgid "服务详细信息"
+msgstr ""
+
+#: src/gui/service_view.c:568
+msgid "服务详细信息（加载中…）"
+msgstr ""
+
+#: src/gui/service_view.c:572
+msgid "正在查询服务状态…"
+msgstr ""
+
+#: src/gui/service_view.c:688
+msgid "详情"
+msgstr ""
+
+#: src/gui/service_view.c:763 src/gui/service_view.c:850
+#, c-format
+msgid "正在运行 (%u 可见 / 共 %u)"
+msgstr ""
+
+#: src/gui/service_view.c:769 src/gui/service_view.c:856
+#, c-format
+msgid "已停止 (%u 可见 / 共 %u)"
+msgstr ""
+
+#: src/gui/service_view.c:921
+msgid "搜索服务名"
+msgstr ""
+
+#: src/gui/service_view.c:924
+msgid "隐藏系统内部脚本"
+msgstr ""
+
+#: src/gui/service_view.c:949
+msgid "已停止"
+msgstr ""
+
+#: src/gui/service_view.c:956
+msgid "正在运行"
+msgstr ""
+
+#: src/gui/network_view.c:495
+msgid "刷新连接"
+msgstr ""
+
+#: src/gui/network_view.c:501
+msgid "按进程、PID、地址或协议过滤"
+msgstr ""
+
+#: src/gui/network_view.c:522
+msgid "协议"
+msgstr ""
+
+#: src/gui/network_view.c:522
+msgid "本地地址"
+msgstr ""
+
+#: src/gui/network_view.c:522
+msgid "远端地址"
+msgstr ""
+
+#: src/gui/network_view.c:553
+msgid "接口数据来自 getifaddrs(2)，速率按真实采样间隔计算"
+msgstr ""
+
+#: src/gui/network_view.c:569
+msgid "接口"
+msgstr ""
+
+#: src/gui/network_view.c:569
+msgid "地址"
+msgstr ""
+
+#: src/gui/network_view.c:569
+msgid "接收"
+msgstr ""
+
+#: src/gui/network_view.c:569
+msgid "发送"
+msgstr ""
+
+#: src/gui/network_view.c:569
+msgid "错误"
+msgstr ""
+
+#: src/gui/network_view.c:605
+msgid "网络连接"
+msgstr ""
+
+#: src/gui/network_view.c:607
+msgid "网络接口"
+msgstr ""
+
+#: src/gui/storage_view.c:275
+msgid "容量统计来自 statvfs(2)，与 df 的 Use% 口径一致"
+msgstr ""
+
+#: src/gui/storage_view.c:292
+msgid "挂载点"
+msgstr ""
+
+#: src/gui/storage_view.c:292
+msgid "设备"
+msgstr ""
+
+#: src/gui/storage_view.c:292
+msgid "类型"
+msgstr ""
+
+#: src/gui/storage_view.c:292
+msgid "可用"
+msgstr ""
+
+#: src/gui/log_view.c:212
+#, c-format
+msgid "日志文件：%s"
+msgstr ""
+
+#: src/gui/log_view.c:378
+msgid "打开文件…"
+msgstr ""
+
+#: src/gui/log_view.c:404
+msgid "在日志中搜索"
+msgstr ""
+
+#: src/gui/log_view.c:407
+msgid "暂停"
+msgstr ""
+
+#: src/gui/log_view.c:413
+msgid "日志文件：/var/log/messages"
+msgstr ""
+
+#: src/gui/alerts.c:145
+msgid "无法发送桌面通知"
+msgstr ""
+
+#: src/gui/alerts.c:145
+msgid "未找到 notify-send 命令，请安装 libnotify（pkg install libnotify）。"
+msgstr ""
+
+#: src/gui/alerts.c:177
+#, c-format
+msgid "CPU 使用率 %.1f%%（阈值 %.0f%%）"
+msgstr ""
+
+#: src/gui/alerts.c:183
+#, c-format
+msgid "内存使用率 %.1f%%（阈值 %.0f%%）"
+msgstr ""
+
+#: src/gui/alerts.c:189
+#, c-format
+msgid "Swap 使用率 %.1f%%（阈值 %.0f%%）"
+msgstr ""
+
+#: src/gui/alerts.c:196
+#, c-format
+msgid "ZFS 池 %s 使用率 %.1f%%（阈值 %.0f%%）"
+msgstr ""
+
+#: src/gui/alerts.c:205
+#, c-format
+msgid "CPU 温度 %.1f℃（阈值 %.0f℃）"
+msgstr ""
+
+#: src/gui/alerts.c:213
+#, c-format
+msgid "电池电量仅 %.0f%%（阈值 %.0f%%）"
+msgstr ""
+
+#: src/gui/alerts.c:322 src/gui/alerts.c:409
+msgid "告警设置"
+msgstr ""
+
+#: src/gui/alerts.c:333
+msgid "启用阈值告警（桌面通知）"
+msgstr ""
+
+#: src/gui/alerts.c:360
+msgid "同一指标 10 分钟内只通知一次；超过阈值的项目会显示在窗口右上角。"
+msgstr ""
+
+#: src/gui/alerts.c:369
+msgid "测试通知"
+msgstr ""
+
+#: src/gui/alerts.c:370
+msgid "取消"
+msgstr ""
+
+#: src/gui/alerts.c:371
+msgid "保存"
+msgstr ""

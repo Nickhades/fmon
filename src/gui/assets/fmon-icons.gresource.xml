@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/org/fmon/icons">
+    <file>scalable/actions/fmon-overview-symbolic.svg</file>
+    <file>scalable/actions/fmon-storage-symbolic.svg</file>
+    <file>scalable/actions/fmon-system-symbolic.svg</file>
+    <file>scalable/actions/fmon-network-symbolic.svg</file>
+    <file>scalable/actions/fmon-alerts-symbolic.svg</file>
+    <file>scalable/actions/fmon-cpu-symbolic.svg</file>
+    <file>scalable/actions/fmon-memory-symbolic.svg</file>
+    <file>scalable/actions/fmon-swap-symbolic.svg</file>
+    <file>scalable/actions/fmon-disk-symbolic.svg</file>
+    <file>scalable/actions/fmon-gpu-symbolic.svg</file>
+    <file>scalable/actions/fmon-history-symbolic.svg</file>
+    <file>scalable/actions/fmon-battery-symbolic.svg</file>
+    <file>scalable/actions/fmon-process-symbolic.svg</file>
+    <file>scalable/actions/fmon-service-symbolic.svg</file>
+    <file>scalable/actions/fmon-log-symbolic.svg</file>
+    <file>scalable/actions/fmon-connection-symbolic.svg</file>
+    <file>scalable/actions/fmon-zfs-symbolic.svg</file>
+    <file>scalable/actions/fmon-limits-symbolic.svg</file>
+    <file>scalable/actions/fmon-interface-symbolic.svg</file>
+    <file>scalable/actions/fmon-temperature-symbolic.svg</file>
+  </gresource>
+</gresources>

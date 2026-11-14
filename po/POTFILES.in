@@ -1,0 +1,7 @@
+src/gui/main.c
+src/gui/process_view.c
+src/gui/service_view.c
+src/gui/network_view.c
+src/gui/storage_view.c
+src/gui/log_view.c
+src/gui/alerts.c
