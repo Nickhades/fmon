@@ -2,13 +2,13 @@
  * storage_view.c - 存储空间（挂载点 / 文件系统）页面
  *
  * 这是本次新增的功能：资源管理器里应该能一眼看到“哪个分区快满了”。
- * 数据来自守护进程的 getmntinfo() + statvfs() 采样，界面只读快照，
+ * 数据来自守护进程的 getmntinfo()/statfs(2) 采样，界面只读快照，
  * 不执行任何 df/mount 子进程。
  */
 
 #include <glib/gi18n.h>
 
-#include <sys/statvfs.h>
+#include <sys/mount.h>
 
 #include "disk_history.h"
 #include "disk_perf.h"
@@ -293,16 +293,16 @@ static void rebuild_store(GListStore *store)
         item->inode_pct  = -1.0;
         item->ro         = FALSE;
 
-        /* inode 与只读标志由 statvfs 直接读取，不经过 daemon */
-        struct statvfs vfs;
+        /* inode 与只读标志由 statfs(2) 直接读取，不经过 daemon */
+        struct statfs sfs;
 
-        if (statvfs(mi->mountpoint, &vfs) == 0) {
-            if (vfs.f_files > 0)
+        if (statfs(mi->mountpoint, &sfs) == 0) {
+            if (sfs.f_files > 0)
                 item->inode_pct =
-                    100.0 * (double)(vfs.f_files - vfs.f_ffree) /
-                    (double)vfs.f_files;
+                    100.0 * (double)(sfs.f_files - sfs.f_ffree) /
+                    (double)sfs.f_files;
 
-            item->ro = ((vfs.f_flag & ST_RDONLY) != 0);
+            item->ro = ((sfs.f_flags & MNT_RDONLY) != 0);
         }
 
         g_list_store_append(store, item);
@@ -578,7 +578,7 @@ GtkWidget *gui_storage_view_new(void)
     gtk_widget_add_css_class(btn, "suggested-action");
     gtk_box_append(GTK_BOX(toolbar), btn);
 
-    GtkWidget *hint = gtk_label_new(_("容量统计来自 statvfs(2)，与 df 的 Use% 口径一致"));
+    GtkWidget *hint = gtk_label_new(_("容量统计来自 getmntinfo()/statfs(2)，与 df 的 Use% 口径一致"));
     gtk_widget_add_css_class(hint, "small-text");
     gtk_widget_set_hexpand(hint, TRUE);
     gtk_widget_set_halign(hint, GTK_ALIGN_END);

@@ -2,7 +2,7 @@
  * collector_storage.c - 文件系统挂载点与 Swap
  *
  * 旧版本完全没有“存储空间”信息，资源管理器里看不到哪个分区快满了。
- * 这里通过 getmntinfo() + statvfs() 采集每个真实文件系统的容量，
+ * 这里通过 getmntinfo() 直接读取每个文件系统的 statfs(2) 数据，
  * 通过 swapinfo(8) 采集交换区使用情况（子进程执行，但每 5 秒一次、
  * 不经过 shell、带 2 秒超时）。
  */
@@ -15,7 +15,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mount.h>
-#include <sys/statvfs.h>
 #include <unistd.h>
 
 /* 这些是内核伪文件系统，没有“容量”概念，列出来只会干扰用户 */
@@ -63,15 +62,14 @@ static void sample_mounts(FmonShmData *s)
         if (mnt[i].f_mntonname[0] == '\0')
             continue;
 
-        struct statvfs vfs;
-        if (statvfs(mnt[i].f_mntonname, &vfs) != 0)
-            continue;
-        if (vfs.f_blocks == 0)
+        if (mnt[i].f_blocks == 0)
             continue;
 
-        uint64_t total = (uint64_t)vfs.f_blocks * vfs.f_frsize;
-        uint64_t avail = (uint64_t)vfs.f_bavail * vfs.f_frsize;
-        uint64_t freeb = (uint64_t)vfs.f_bfree * vfs.f_frsize;
+        /* getmntinfo() 返回的就是内核 statfs(2) 数据，无需再逐个 statvfs() */
+        uint64_t bsize = (uint64_t)mnt[i].f_bsize;
+        uint64_t total = (uint64_t)mnt[i].f_blocks * bsize;
+        uint64_t avail = (uint64_t)mnt[i].f_bavail * bsize;
+        uint64_t freeb = (uint64_t)mnt[i].f_bfree * bsize;
         uint64_t used  = (total > freeb) ? total - freeb : 0;
 
         FmonMountInfo *m = &tmp[cnt++];
