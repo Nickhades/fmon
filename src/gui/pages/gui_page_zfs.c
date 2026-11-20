@@ -37,8 +37,10 @@ static GtkWidget *s_vdev_box = NULL;
 
 /* 错误趋势：环形缓冲，每秒记录“新增错误数” */
 static double    s_err_hist[FMON_HISTORY_POINTS];
+static uint64_t  s_err_time[FMON_HISTORY_POINTS];
 static CurveData s_err_cd = {
     .history = s_err_hist,
+    .time_us = s_err_time,
     .unit    = "",
     .r = 0.90, .g = 0.25, .b = 0.20,
 };
@@ -297,15 +299,21 @@ void gui_zpool_detail_update(void)
                          FMON_HISTORY_POINTS;
             guint old  = (last + FMON_HISTORY_POINTS - 60) %
                          FMON_HISTORY_POINTS;
-            double d   = ss->zpool_util_history[last] -
-                         ss->zpool_util_history[old];
-            double mb  = d / 100.0 * (double)z->total_bytes /
-                         (1024.0 * 1024.0);
+            double v_last = ss->zpool_util_history[last];
+            double v_old  = ss->zpool_util_history[old];
 
-            gchar *dt = g_strdup_printf(_("%+.2f MB（%+.4f%%）"), mb, d);
+            if (!isfinite(v_last) || !isfinite(v_old)) {
+                gtk_label_set_text(GTK_LABEL(s_delta), "—");
+            } else {
+                double d  = v_last - v_old;
+                double mb = d / 100.0 * (double)z->total_bytes /
+                            (1024.0 * 1024.0);
 
-            gtk_label_set_text(GTK_LABEL(s_delta), dt);
-            g_free(dt);
+                gchar *dt = g_strdup_printf(_("%+.2f MB（%+.4f%%）"), mb, d);
+
+                gtk_label_set_text(GTK_LABEL(s_delta), dt);
+                g_free(dt);
+            }
         } else {
             gtk_label_set_text(GTK_LABEL(s_delta), _("采样中…"));
         }
@@ -418,6 +426,7 @@ void gui_zpool_detail_update(void)
     s_have_prev_err = TRUE;
 
     s_err_hist[s_err_cd.index] = delta;
+    s_err_time[s_err_cd.index] = g_get_monotonic_time();
     s_err_cd.index = (s_err_cd.index + 1) % FMON_HISTORY_POINTS;
 
     if (s_err_cd.count < FMON_HISTORY_POINTS)
@@ -481,13 +490,17 @@ GtkWidget *gui_arc_detail_box(void)
  * ========================================================================= */
 static double     s_arc_data_hist[FMON_HISTORY_POINTS];
 static double     s_arc_meta_hist[FMON_HISTORY_POINTS];
+static uint64_t   s_arc_data_time[FMON_HISTORY_POINTS];
+static uint64_t   s_arc_meta_time[FMON_HISTORY_POINTS];
 static CurveData  s_arc_data_cd = {
     .history = s_arc_data_hist,
+    .time_us = s_arc_data_time,
     .unit    = "MB",
     .r = 0.25, .g = 0.65, .b = 0.95,
 };
 static CurveData  s_arc_meta_cd = {
     .history = s_arc_meta_hist,
+    .time_us = s_arc_meta_time,
     .unit    = "MB",
     .r = 0.95, .g = 0.60, .b = 0.20,
 };
@@ -496,13 +509,18 @@ static GtkWidget *s_arc_area = NULL;
 
 static void arc_push(CurveData *cd, double v)
 {
+    gint64 now = g_get_monotonic_time();
+
     ((double *)cd->history)[cd->index] = v;
+    if (cd->time_us != NULL)
+        ((uint64_t *)cd->time_us)[cd->index] = (uint64_t)now;
+
     cd->index = (cd->index + 1) % FMON_HISTORY_POINTS;
 
     if (cd->count < FMON_HISTORY_POINTS)
         cd->count++;
 
-    cd->end_time_us = g_get_monotonic_time();
+    cd->end_time_us = (uint64_t)now;
     cd->interval_us = (uint64_t)FMON_SAMPLE_INTERVAL_MS * 1000ULL;
 }
 
@@ -595,8 +613,10 @@ void gui_arc_detail_update(void)
 static guint64    s_roll_dh[60], s_roll_dm[60];
 static int        s_roll_pos, s_roll_cnt;
 static double     s_roll_hist[FMON_HISTORY_POINTS];
+static uint64_t   s_roll_time[FMON_HISTORY_POINTS];
 static CurveData  s_roll_cd = {
     .history = s_roll_hist,
+    .time_us = s_roll_time,
     .unit    = "%",
     .max_val = 100.0,
     .r = 0.20, .g = 0.70, .b = 0.90,
@@ -736,6 +756,7 @@ void gui_zhit_detail_update(void)
                                 : 0.0;
 
     s_roll_hist[s_roll_cd.index] = roll;
+    s_roll_time[s_roll_cd.index] = now;
     s_roll_cd.index = (s_roll_cd.index + 1) % FMON_HISTORY_POINTS;
 
     if (s_roll_cd.count < FMON_HISTORY_POINTS)
@@ -1055,13 +1076,17 @@ GtkWidget *gui_prune_detail_box(void)
  * ========================================================================= */
 static double     s_ghost_mru_hist[FMON_HISTORY_POINTS];
 static double     s_ghost_mfu_hist[FMON_HISTORY_POINTS];
+static uint64_t   s_ghost_mru_time[FMON_HISTORY_POINTS];
+static uint64_t   s_ghost_mfu_time[FMON_HISTORY_POINTS];
 static CurveData  s_ghost_mru_cd = {
     .history = s_ghost_mru_hist,
+    .time_us = s_ghost_mru_time,
     .unit    = "MB",
     .r = 0.55, .g = 0.35, .b = 0.95,
 };
 static CurveData  s_ghost_mfu_cd = {
     .history = s_ghost_mfu_hist,
+    .time_us = s_ghost_mfu_time,
     .unit    = "MB",
     .r = 0.95, .g = 0.55, .b = 0.25,
 };
@@ -1089,13 +1114,18 @@ GtkWidget *gui_prune_ghost_chart(void)
 
 static void ghost_push(CurveData *cd, double v)
 {
+    gint64 now = g_get_monotonic_time();
+
     ((double *)cd->history)[cd->index] = v;
+    if (cd->time_us != NULL)
+        ((uint64_t *)cd->time_us)[cd->index] = (uint64_t)now;
+
     cd->index = (cd->index + 1) % FMON_HISTORY_POINTS;
 
     if (cd->count < FMON_HISTORY_POINTS)
         cd->count++;
 
-    cd->end_time_us = g_get_monotonic_time();
+    cd->end_time_us = (uint64_t)now;
     cd->interval_us = (uint64_t)FMON_SAMPLE_INTERVAL_MS * 1000ULL;
 }
 

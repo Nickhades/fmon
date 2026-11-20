@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="FreeBSD Monitor">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0a1420"/>
+      <stop offset="0.52" stop-color="#102b3a"/>
+      <stop offset="1" stop-color="#061018"/>
+    </linearGradient>
+    <linearGradient id="frame" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3e6b80"/>
+      <stop offset="1" stop-color="#1d3a4a"/>
+    </linearGradient>
+    <linearGradient id="pulse" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="0.58" stop-color="#7dd3fc"/>
+      <stop offset="1" stop-color="#fb7185"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#22d3ee" stop-opacity="0.38"/>
+      <stop offset="1" stop-color="#22d3ee" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="stand" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#326074"/>
+      <stop offset="1" stop-color="#1b3543"/>
+    </linearGradient>
+  </defs>
+
+  <!-- application tile -->
+  <rect x="6" y="6" width="244" height="244" rx="56" fill="url(#bg)"/>
+  <rect x="7" y="7" width="242" height="242" rx="55" fill="none"
+        stroke="#2b5265" stroke-width="2"/>
+
+  <!-- faint monitor grid -->
+  <g opacity="0.16" stroke="#38bdf8" stroke-width="1">
+    <path d="M30 88H226M30 128H226M30 168H226"/>
+    <path d="M88 30V226M128 30V226M168 30V226"/>
+  </g>
+
+  <!-- FreeBSD red identity bar -->
+  <path d="M28 78c0-8 6-14 14-14h3v34h-3c-8 0-14-6-14-14z"
+        fill="#d7263d"/>
+  <path d="M28 78c0-8 6-14 14-14h3v34h-3c-8 0-14-6-14-14z"
+        fill="none" stroke="#ff8a95" stroke-opacity="0.45" stroke-width="1.5"/>
+
+  <!-- monitor body -->
+  <rect x="40" y="54" width="176" height="122" rx="19" fill="#06111a"
+        stroke="url(#frame)" stroke-width="3"/>
+  <rect x="52" y="66" width="152" height="98" rx="10" fill="#041018"/>
+
+  <!-- status lamps -->
+  <circle cx="64" cy="80" r="4.2" fill="#34d399"/>
+  <circle cx="78" cy="80" r="4.2" fill="#fbbf24"/>
+  <circle cx="92" cy="80" r="4.2" fill="#fb7185"/>
+
+  <!-- pulse glow + line -->
+  <ellipse cx="128" cy="120" rx="76" ry="25" fill="url(#glow)"/>
+  <path d="M62 120H88L101 91L118 148L136 104L150 120H194"
+        fill="none" stroke="url(#pulse)" stroke-width="8"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="194" cy="120" r="7.5" fill="#fb7185"/>
+
+  <!-- stand -->
+  <path d="M106 176h44l8 18h-60z" fill="url(#stand)"
+        stroke="#356178" stroke-width="2"/>
+  <rect x="88" y="194" width="80" height="9" rx="4.5" fill="#356178"/>
+</svg>

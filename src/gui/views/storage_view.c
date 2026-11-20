@@ -416,9 +416,9 @@ static void update_disk_table(void)
             g_strlcpy(tmp, "—", sizeof(tmp));
         gtk_label_set_text(GTK_LABEL(g_disk_cells[r][8]), tmp);
 
-        if (ok && p->has_smart) {
-            g_snprintf(tmp, sizeof(tmp), "%.1f°C", p->temp_c);
-            set_level_css(g_disk_cells[r][9], p->temp_c, 60.0, 70.0);
+        if (d->smart_valid != 0 && d->temp_c > 0.0) {
+            g_snprintf(tmp, sizeof(tmp), "%.1f°C", d->temp_c);
+            set_level_css(g_disk_cells[r][9], d->temp_c, 60.0, 70.0);
         } else {
             g_strlcpy(tmp, "—", sizeof(tmp));
             gtk_widget_remove_css_class(g_disk_cells[r][9], "health-ok");
@@ -427,8 +427,8 @@ static void update_disk_table(void)
         }
         gtk_label_set_text(GTK_LABEL(g_disk_cells[r][9]), tmp);
 
-        if (ok && p->has_smart)
-            g_snprintf(tmp, sizeof(tmp), "%d%%", p->wear_pct);
+        if (d->smart_valid != 0 && d->wear_pct >= 0)
+            g_snprintf(tmp, sizeof(tmp), "%d%%", d->wear_pct);
         else
             g_strlcpy(tmp, "—", sizeof(tmp));
         gtk_label_set_text(GTK_LABEL(g_disk_cells[r][10]), tmp);
@@ -530,7 +530,7 @@ static GtkWidget *build_disk_tab(void)
 
     GtkWidget *hint = gtk_label_new(
         "速率/延迟/队列来自 devstat(3)；块大小为累计字节/次数；"
-        "温度与寿命来自 nvmecontrol SMART（无 NVMe 时显示 —）。");
+        "温度与寿命来自内核 SMART（NVMe ioctl / ATA / SCSI CAM，无传感器时显示 —）。");
     gtk_widget_add_css_class(hint, "small-text");
     gtk_widget_set_halign(hint, GTK_ALIGN_START);
     gtk_widget_set_margin_top(hint, 8);
@@ -578,7 +578,7 @@ GtkWidget *gui_storage_view_new(void)
     gtk_widget_add_css_class(btn, "suggested-action");
     gtk_box_append(GTK_BOX(toolbar), btn);
 
-    GtkWidget *hint = gtk_label_new(_("容量统计来自 getmntinfo()/statfs(2)，与 df 的 Use% 口径一致"));
+    GtkWidget *hint = gtk_label_new(_("容量统计来自 statfs(2)，与 df 的 Use% 口径一致"));
     gtk_widget_add_css_class(hint, "small-text");
     gtk_widget_set_hexpand(hint, TRUE);
     gtk_widget_set_halign(hint, GTK_ALIGN_END);

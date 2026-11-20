@@ -10,11 +10,11 @@
 | 项 | 值 |
 |---|---|
 | 路径 | `FreeBSD图形化系统资源管理器/fmon4` |
-| 版本 | 1.1.1 |
+| 版本 | 1.2.0 |
 | 语言/标准 | C11（`c_std=c11`），clang 19 |
 | GUI | GTK 4.20（C，无 C++） |
-| 共享内存 ABI | **20**，`/fmon_daemon_shm_v20` |
-| 采样 | 1 Hz（`FMON_SAMPLE_INTERVAL_MS 1000`），历史 1200 点 |
+| 共享内存 ABI | **23**，`/fmon_daemon_shm_v23` |
+| 采样 | 1 Hz（`FMON_SAMPLE_INTERVAL_MS 1000`），历史 1200 点，逐点 `history_time_us` |
 | 数据源 | daemon 采集 → seqlock 共享内存 → GUI 一致快照 |
 | 已验证平台 | FreeBSD 15.1-RELEASE-p6 amd64（AMD 核显 + NVIDIA 独显 + ZFS） |
 
@@ -32,9 +32,9 @@ cd FreeBSD图形化系统资源管理器/fmon4
 # 构建（当前构建目录已存在）
 meson setup --reconfigure build
 ninja -C build            # 必须 0 warning
-meson test -C build       # 9/9：shm、child、process_ps、service_rc、mem_summary、vm_stats、zfs_stats、cpu_stats、kmem_stats
+meson test -C build       # 15/15：shm、child、图表几何/时间轴/离屏渲染、ps、rc.conf、内存、ZFS、CPU、网络等
 
-# 本地调试（用构建产物，daemon 以当前用户运行、ABI 20）
+# 本地调试（用构建产物，daemon 以当前用户运行、ABI 23）
 ./build/src/daemon/fmon-daemon &
 ./build/src/gui/fmon-gui --page cpu --theme light
 
@@ -46,7 +46,7 @@ sudo service fmon_daemon restart
 **ABI 铁律**：只要改动 `src/common/fmon_shm.h` 中任何结构体/字段/顺序/大小：
 
 1. `FMON_ABI_VERSION` +1；
-2. `FMON_SHM_NAME` 同步改（`v19` → `v20`）；
+2. `FMON_SHM_NAME` 同步改（`v22` → `v23`）；
 3. 重装后 **GUI 与 daemon 必须同时更新**，否则 GUI 会以“ABI 不匹配”拒绝连接（这是预期保护）。
 
 本地调试时，若系统服务也在运行，两者可能争用同一 shm：
@@ -56,7 +56,7 @@ sudo service fmon_daemon restart
 
 | 用途 | 路径/变量 |
 |---|---|
-| 共享内存 | `/fmon_daemon_shm_v20` |
+| 共享内存 | `/fmon_daemon_shm_v23` |
 | 控制 socket | `/var/run/fmon-ctl.sock`（GUI 也探测 `/tmp/fmon-ctl.sock`） |
 | 历史数据（root） | `/var/db/fmon/history.tsv`（普通用户调试：`~/.local/state/fmon/history.tsv`） |
 | 告警阈值 | `~/.config/fmon/alerts.ini` |
@@ -125,7 +125,7 @@ daemon/ core/{fmon_daemon,fmon_ctl,history_store,collectors.h}
 
 ## 5. 当前验证状态
 
-- 构建 **0 warning**，`meson test` **7/7**（ps 解析、rc.conf 解析、内存说明文案、内存队列占比、ZFS 命中率/速率）；
+- 构建 **0 warning**，`meson test` **15/15**（含图表时间轴/包络、ps、rc.conf、内存、ZFS、CPU、网络等）；
 - 内存条信息、磁盘设备详情（型号/容量/类型/SN）都从底部卡片移到曲线卡片
   标题行右侧（`ComboPage.header_right`），页面不再需要滚到底部查看设备信息；
 - ZFS 带宽页的累计/操作数直接画在各自曲线带内（`ComboSeries.extra`，
@@ -136,7 +136,7 @@ daemon/ core/{fmon_daemon,fmon_ctl,history_store,collectors.h}
   ARC 页显示 MFU/MRU/元数据/占上限，命中率页显示数据/元数据/预取命中构成与 L2，
   Prune 页显示每秒回收、跳过、空间不足、内存节流，读写带宽页显示 L2 速率，
   池空间页补“空闲”；新增“存储 → L2ARC”页：两条历史曲线（L2 大小 GB、
-  命中率 %，**由 daemon 写入 shm 历史数组，ABI 20**，1 Hz）+ 设备数/缓存/实际分配/头部
+  命中率 %，**由 daemon 写入 shm 历史数组，ABI 23**，1 Hz）+ 设备数/缓存/实际分配/头部
   开销/命中/读写速率/写入完成率/错误/驱逐/重建/MFU-MRU-预取构成；
   `zfs_l2_size > 0` 时自动绘曲线（下游配了 L2ARC 的机器直接可用），
   未配置时明确提示而不是显示 0；
@@ -236,7 +236,7 @@ daemon/ core/{fmon_daemon,fmon_ctl,history_store,collectors.h}
   48→74px 避免长刻度被裁；内存/网络/磁盘/ZFS 组合页统一生效；
 - 磁盘页新增第三条带“温度”：界面内 1200 点环形缓冲、每秒采样 SMART 温度，
   固定 0–100 °C 量程（避免窄范围锯齿）；无 SMART 时不画；
-- 磁盘 SMART 与累计量：每 30 秒异步跑 `nvmecontrol logpage -p 2 nvmeN`
+- 磁盘 SMART 与累计量：每 30 秒由 daemon 直接通过 NVMe ioctl / CAM ATAIO / SCSI LOG SENSE 读取
   （普通用户可读，/dev/nvme0 属于 operator 组），显示温度、寿命已用 %、
   可用备用空间 %；累计读写字节直接取 `devstat.bytes[DEVSTAT_READ/WRITE]`
   （compute_statistics 传 NULL 取不到累计值）；解析函数有单测；
@@ -245,8 +245,8 @@ daemon/ core/{fmon_daemon,fmon_ctl,history_store,collectors.h}
 - 磁盘页新增实时性能行（devstat，标题行右上）：读/写 IOPS、平均延迟 ms、
   繁忙 %、队列长度；注意 devstat_getdevs 需要调用方先 `calloc` 一个
   struct devinfo 并赋给 sti.dinfo，否则返回 -1；
-  （SMART 温度/寿命：本机没有 smartctl，内核也没暴露 nvme 温度 sysctl，
-  需要 root + smartmontools 才能接；IOPS/延迟曲线暂未做，先给数值）
+  （SMART 温度/寿命：由 root daemon 直接读内核页，不依赖 smartctl/nvmecontrol；
+  IOPS/延迟曲线暂未做，先给数值）
 - 导航重排：磁盘移到“存储”组第一位；电池移到“系统”组末尾
   （系统组：进程管理/服务管理/系统日志/电池）；概览组只剩
   CPU/内存/GPU/历史记录；
@@ -458,7 +458,7 @@ FreeBSD 共享内存/同步审计（2026-11）：
 并发规范（GTK 单线程模型，必须遵守）：
 - UI 只在主线程改；工作线程只做数据读取/解析，结果通过 GTask 回调
   （主上下文）或 g_idle_add/g_main_context_invoke 派发；
-- 大命令（zpool iostat/status、vmstat -z、iostat -x、ifconfig、nvmecontrol）
+- 大命令（zpool iostat/status、vmstat -z、iostat -x、ifconfig）；磁盘温度已改为 NVMe ioctl/CAM，不再调用 nvmecontrol
   一律 g_subprocess_*_async，回调里只解析小文本，不阻塞主循环；
 - 共享内存读写走 seqlock：seq 为 _Atomic uint32_t（<stdatomic.h>），
   写者 relaxed 置奇数 + release fence → 写数据 → release fence + relaxed

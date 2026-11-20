@@ -1,55 +1,27 @@
-# BSD make 快捷构建（正式构建请用 meson，见 README.md）
-CC      ?= cc
-# -Wno-unused-parameter 必须放在 -Wextra 之后，否则会被重新打开
-CFLAGS  ?= -O2 -std=c11 -pthread \
-           -Wall -Wextra -Wformat=2 -Wshadow -Wstrict-prototypes \
-           -Wmissing-prototypes -Wpointer-arith -Wwrite-strings -Wvla \
-           -fstack-protector-strong -Wno-unused-parameter
-LDFLAGS ?= -pthread -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack
+# BSD make 快捷入口（正式构建仍以 meson 为准，见 README.md）
+#
+# 旧版 Makefile 复制了一份手工维护的源文件列表，和 meson 早已不一致，
+# 照它编译会缺符号。这里不再重复列表，只做 meson/ninja 的薄封装，
+# 保证两种入口永远编译同一套源码。
 
-# bmake 特有的 != 语法：从 pkg-config 取 GTK4 参数
-GTK_CFLAGS != pkg-config --cflags gtk4 cairo
-GTK_LIBS   != pkg-config --libs gtk4 cairo
+BUILD_DIR ?= build
+PREFIX    ?= /usr/local
+MESON     ?= meson
+NINJA     ?= ninja
 
-# FreeBSD 系统库
-SYS_LIBS = -lkvm -ldevstat -lm
+all:
+	@if [ ! -f "$(BUILD_DIR)/build.ninja" ]; then \
+		$(MESON) setup "$(BUILD_DIR)" --buildtype=release --prefix="$(PREFIX)"; \
+	fi
+	$(NINJA) -C "$(BUILD_DIR)"
 
-# 可选：libdrm_amdgpu（AMD 显卡负载）。装了 libdrm 就自动启用。
-.if exists(/usr/local/include/libdrm/amdgpu.h)
-CFLAGS   += -DFMON_HAVE_AMDGPU=1 -I/usr/local/include
-SYS_LIBS += -L/usr/local/lib -ldrm_amdgpu
-.endif
+test: all
+	$(MESON) test -C "$(BUILD_DIR)" --print-errorlogs
 
-COMMON_SRC = src/common/fmon_shm.c src/common/fmon_child.c
-
-DAEMON_SRC = src/daemon/fmon_daemon.c \
-             src/daemon/collector_cpu.c \
-             src/daemon/collector_io.c \
-             src/daemon/collector_net.c \
-             src/daemon/collector_storage.c \
-             src/daemon/collector_proc.c \
-             src/daemon/collector_zfs.c
-
-GUI_SRC = src/gui/main.c \
-          src/gui/gui_util.c \
-          src/gui/gui_chart.c \
-          src/gui/process_view.c \
-          src/gui/service_view.c \
-          src/gui/storage_view.c \
-          src/gui/network_view.c \
-          src/gui/log_view.c
-
-all: fmon-daemon fmon-gui
-
-fmon-daemon: $(DAEMON_SRC) $(COMMON_SRC)
-	$(CC) $(CFLAGS) -Isrc/common -Isrc/daemon -o $@ \
-	    $(DAEMON_SRC) $(COMMON_SRC) $(LDFLAGS) $(SYS_LIBS)
-
-fmon-gui: $(GUI_SRC) $(COMMON_SRC)
-	$(CC) $(CFLAGS) $(GTK_CFLAGS) -Isrc/common -Isrc/gui -o $@ \
-	    $(GUI_SRC) $(COMMON_SRC) $(LDFLAGS) $(GTK_LIBS) $(SYS_LIBS)
+install: all
+	$(NINJA) -C "$(BUILD_DIR)" install
 
 clean:
-	rm -f fmon-daemon fmon-gui
+	rm -rf "$(BUILD_DIR)"
 
-.PHONY: all clean
+.PHONY: all test install clean

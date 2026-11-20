@@ -115,7 +115,12 @@ static void upd_zsum(void)
     int        i = 0;
     char       b[96];
 
-    const FmonPoolInfo *z = (gui_state_snapshot()->pool_count > 0) ? &gui_state_snapshot()->pools[0] : NULL;
+    const FmonShmData *snap = gui_state_snapshot();
+    const FmonPoolInfo *z =
+        ((snap->probe_valid & FMON_PROBE_POOLS) != 0 && snap->pool_count > 0 &&
+         snap->pools[0].available)
+            ? &snap->pools[0]
+            : NULL;
 
     cset(p, i++, z ? z->name : "无可用池");
     cset(p, i++, z ? z->health : "—");
@@ -168,7 +173,10 @@ static void upd_net_combo(void)
 
     g_zpool_cd.count = gui_state_snapshot()->history_count;
     g_zpool_cd.index = gui_state_snapshot()->history_index;
+    g_zpool_cd.time_us = gui_state_snapshot()->history_time_us;
 
+    g_net_rx_cd.time_us = gui_state_snapshot()->history_time_us;
+    g_net_tx_cd.time_us = gui_state_snapshot()->history_time_us;
     g_net_rx_cd.count = gui_state_snapshot()->history_count;
     g_net_rx_cd.index = gui_state_snapshot()->history_index;
     g_net_tx_cd.count = gui_state_snapshot()->history_count;
@@ -201,6 +209,8 @@ static void upd_disk_combo(void)
     if (g_disk_page.area == NULL)
         return;
 
+    g_disk_rd_cd.time_us = gui_state_snapshot()->history_time_us;
+    g_disk_wr_cd.time_us = gui_state_snapshot()->history_time_us;
     g_disk_rd_cd.count = gui_state_snapshot()->history_count;
     g_disk_rd_cd.index = gui_state_snapshot()->history_index;
     g_disk_wr_cd.count = gui_state_snapshot()->history_count;
@@ -256,13 +266,20 @@ static void upd_mem_combo(void)
         g_free(note);
     }
 
-    double stotal = (double)gui_state_snapshot()->swap_total_kb / (1024.0 * 1024.0);
-    double sused  = (double)gui_state_snapshot()->swap_used_kb / (1024.0 * 1024.0);
+    const FmonShmData *snap = gui_state_snapshot();
 
-    g_snprintf(b, sizeof(b), "%.2f GB", stotal);
-    cset(p, i++, b);
-    g_snprintf(b, sizeof(b), "%.2f GB", sused);
-    cset(p, i++, b);
+    if ((snap->probe_valid & FMON_PROBE_SWAP) == 0) {
+        cset(p, i++, "不可用");
+        cset(p, i++, "不可用");
+    } else {
+        double stotal = (double)snap->swap_total_kb / (1024.0 * 1024.0);
+        double sused  = (double)snap->swap_used_kb / (1024.0 * 1024.0);
+
+        g_snprintf(b, sizeof(b), "%.2f GB", stotal);
+        cset(p, i++, b);
+        g_snprintf(b, sizeof(b), "%.2f GB", sused);
+        cset(p, i++, b);
+    }
 }
 
 static void upd_zbw(void)

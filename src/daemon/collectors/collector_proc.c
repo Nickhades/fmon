@@ -154,11 +154,14 @@ static void sample_procs(FmonShmData *s, kvm_t *kd)
 
     if (procs == NULL || count <= 0) {
         s->proc_count = 0;
+        s->probe_valid &= ~FMON_PROBE_PROCS;
         return;
     }
 
-    if (!ensure_capacity((size_t)count))
+    if (!ensure_capacity((size_t)count)) {
+        s->probe_valid &= ~FMON_PROBE_PROCS;
         return;
+    }
 
     /* 第一遍：展开为一条线程一条记录 */
     size_t n = 0;
@@ -240,6 +243,7 @@ static void sample_procs(FmonShmData *s, kvm_t *kd)
     }
 
     s->proc_count = out;
+    s->probe_valid |= FMON_PROBE_PROCS;
 }
 
 void *thread_procs(void *arg)

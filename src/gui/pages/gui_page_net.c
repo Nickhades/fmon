@@ -310,10 +310,10 @@ void gui_net_details_update(void)
     for (uint32_t i = 0; i < snap->iface_count && i < FMON_MAX_IFACES; i++) {
         const FmonIfaceInfo *f = &snap->ifaces[i];
 
-        g_string_append_printf(sig, "%s|%u|%u|%u|%d|%s|%s|%s|%u;", f->name,
+        g_string_append_printf(sig, "%s|%u|%u|%u|%u|%d|%s|%s|%s|%u;", f->name,
                                f->link_type, f->connected, f->speed_mbps,
-                               f->signal_dbm, f->ssid, f->ipv4, f->ipv6,
-                               f->channel);
+                               f->detail_valid, f->signal_dbm, f->ssid, f->ipv4,
+                               f->ipv6, f->channel);
     }
 
     gboolean changed = gui_grid_signature_changed(s_grid, sig->str);
@@ -355,7 +355,7 @@ void gui_net_details_update(void)
         if (f->channel > 0)
             g_string_append_printf(line, " · 信道 %u", f->channel);
 
-        if (f->signal_dbm != 0)
+        if (f->detail_valid != 0 && f->signal_dbm != 0)
             g_string_append_printf(line, " · 信号 %d dBm", f->signal_dbm);
 
         gtk_grid_attach(GTK_GRID(s_grid),

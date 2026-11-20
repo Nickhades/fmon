@@ -1,7 +1,7 @@
 /*
  * fmon_shm.h - fmon 守护进程 / 图形界面之间的共享内存契约
  *
- * 设计要点（v14）：
+ * 设计要点（v23）：
  *   1. 头部带 magic / abi_version / struct_size，任何一端结构体不一致时
  *      可以立即拒绝，而不是越界读到垃圾数据（旧版会直接 SIGBUS/SIGSEGV）。
  *   2. 使用 seqlock：写者把 seq 加一（奇数）后写数据，写完再加一（偶数）。
@@ -29,7 +29,7 @@ extern "C" {
 #endif
 
 /* 共享内存对象名。结构体布局变更时必须改名，避免新旧进程混用。 */
-#define FMON_SHM_NAME        "/fmon_daemon_shm_v20"
+#define FMON_SHM_NAME        "/fmon_daemon_shm_v23"
 
 /* 安装前缀：meson 会以 -DFMON_LOCALBASE="..." 传入；
  * 单独编译时回退到 FreeBSD 默认的 /usr/local。
@@ -42,16 +42,16 @@ extern "C" {
 
 /* 头部校验值："FMON" 的大端 ASCII。 */
 /* 版本号：安装脚本与 --version 使用 */
-#define FMON_VERSION_STRING  "1.1.1"
+#define FMON_VERSION_STRING  "1.2.0"
 
 #define FMON_SHM_MAGIC       0x464D4F4DU
-#define FMON_ABI_VERSION     20U
+#define FMON_ABI_VERSION     23U  /* 23: 探测有效位 + 磁盘元数据来源 */
 
 #define FMON_MAX_PROCS       32   /* 上报给界面的进程条数（按 CPU 排序） */
 #define FMON_MAX_NAME_LEN    32   /* 进程名长度 */
 #define FMON_MAX_USER_LEN    16   /* 用户名长度 */
 #define FMON_MAX_PROCS_TOTAL 0    /* 保留：进程总数在 proc_total 字段 */
-#define FMON_HISTORY_POINTS  1200 /* 历史曲线点数（4Hz 采样 = 5 分钟） */
+#define FMON_HISTORY_POINTS  1200 /* 历史曲线点数（1Hz 采样 = 20 分钟） */
 #define FMON_MAX_GPUS        4
 #define FMON_MAX_IFACES      8
 #define FMON_MAX_DISKS       8
@@ -169,6 +169,7 @@ typedef struct {
     uint64_t tx_errors;
     double   rx_kbps;               /* 本次采样区间内的速率 */
     double   tx_kbps;
+    uint32_t detail_valid;          /* 1 = ssid/channel/signal/speed 探测成功 */
 } FmonIfaceInfo;
 
 /* 接口类型 */
@@ -193,6 +194,12 @@ typedef struct {
     double   read_kbps;             /* 区间速率 */
     double   write_kbps;
     double   busy_pct;              /* 区间内设备繁忙百分比 */
+    double   temp_c;                /* SMART 温度（°C）；<0 表示不可用 */
+    int32_t  spare_pct;             /* Available spare；-1 不可用 */
+    int32_t  wear_pct;              /* Percentage used；-1 不可用 */
+    uint32_t smart_valid;           /* 1 = 上面的 SMART 字段有效 */
+    uint32_t smart_source;          /* FMON_SMART_SRC_*，0 = 无 provider */
+    uint32_t meta_valid;            /* 1 = model/serial/size/kind 至少部分由内核探测到 */
 } FmonDiskInfo;
 
 /* 磁盘类型 */
@@ -285,6 +292,17 @@ typedef struct {
     uint16_t cpu_core_count;        /* 实际采集到的核心数（<= FMON_MAX_CPUS） */
     uint32_t proc_total;            /* 系统进程总数 */
 
+    /* 探测有效位：1 = 对应采集成功；0 = 不可用。
+     * 0 不能同时表示“真实为 0”和“探测失败”，所以单独用位图。 */
+    uint64_t probe_valid;
+#define FMON_PROBE_SWAP        (1ull << 0)
+#define FMON_PROBE_POOLS       (1ull << 1)
+#define FMON_PROBE_MEM_MODULES (1ull << 2)
+#define FMON_PROBE_MOUNTS      (1ull << 3)
+#define FMON_PROBE_PROCS       (1ull << 4)
+#define FMON_PROBE_ZFS_ARC     (1ull << 5)
+#define FMON_PROBE_BATTERY     (1ull << 6)
+
     /* ------------------------------------------------------------------
      * CPU / 内存 / 交换区
      * ------------------------------------------------------------------ */
@@ -372,6 +390,10 @@ typedef struct {
 
     /* ------------------------------------------------------------------
      * 历史曲线（环形缓冲，1Hz）
+     *
+     * 约定：NaN = 该采样点没有有效数据（传感器不存在/读取失败）。
+     * 绘图端遇到 NaN 必须断开折线，不能补 0；CSV 导出留空。
+     * 这样 “0%” 和 “没有传感器” 不会被混为一谈。
      * ------------------------------------------------------------------ */
     double   cpu_history[FMON_HISTORY_POINTS];
     double   mem_history[FMON_HISTORY_POINTS];
@@ -392,10 +414,15 @@ typedef struct {
     double   zfs_l2_hit_history[FMON_HISTORY_POINTS];   /* L2ARC 命中率（%） */
     double   gpu_history[FMON_MAX_GPUS][FMON_HISTORY_POINTS];
 
+    /* 每个历史采样点的 CLOCK_MONOTONIC 时间戳（微秒），与上面的
+     * history_* 数组使用同一个环形成员索引。0 表示该槽位没有时间戳
+     * （旧 ABI 或尚未写入），绘图端退回按 history_interval_us 等间距。 */
+    uint64_t history_time_us[FMON_HISTORY_POINTS];
+
     uint32_t history_index;         /* 下一个写入位置 */
     uint32_t history_count;
     uint32_t _pad_hist;             /* 对齐保留 */
-    uint64_t history_interval_us;   /* 相邻采样点的间隔（微秒） */         /* 已采集的有效点数（<= FMON_HISTORY_POINTS） */
+    uint64_t history_interval_us;   /* 标称/相邻采样间隔（微秒），无时间戳时回退 */
 
     /* ------------------------------------------------------------------
      * 进程快照（按 CPU 降序，最多 FMON_MAX_PROCS 条）
@@ -414,6 +441,8 @@ _Static_assert(sizeof(((FmonShmData *)0)->seq) == sizeof(uint32_t),
                "seq 必须是 32 位，seqlock 依赖这一点");
 _Static_assert(offsetof(FmonShmData, seq) % 4 == 0,
                "seq 需 4 字节对齐，跨进程原子访问才安全");
+_Static_assert(offsetof(FmonShmData, history_time_us) % 8 == 0,
+               "history_time_us 需 8 字节对齐");
 
 /* ---------------------------------------------------------------------------
  * 读写 API

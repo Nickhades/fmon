@@ -9,6 +9,7 @@
 
 #include "service_internal.h"
 
+#include "fmon_child.h"
 #include "gui_state.h"
 #include "gui_util.h"
 #include "gui_window.h"
@@ -1202,27 +1203,26 @@ static void on_detail_done(gpointer user_data, const FmonChildResult *res,
         add_detail_row(grid, &row, "主 PID", ps);
         g_free(ps);
 
-        char cmd[64];
+        char pidbuf[32];
 
-        g_snprintf(cmd, sizeof(cmd), "ps -o jail= -p %d 2>/dev/null",
-                   main_pid);
+        g_snprintf(pidbuf, sizeof(pidbuf), "%d", main_pid);
 
-        FILE *fp = popen(cmd, "r");
+        const char *const argv[] = { "/bin/ps", "-o", "jail=", "-p", pidbuf, NULL };
+        FmonChildResult jail_res;
 
-        if (fp != NULL) {
-            char jb[32] = { 0 };
+        if (fmon_child_run(argv, 16 * 1024, 1500, &jail_res) == 0 &&
+            fmon_child_ok(&jail_res) && jail_res.out != NULL) {
+            char *jb = jail_res.out;
 
-            if (fgets(jb, sizeof(jb), fp) != NULL) {
-                g_strstrip(jb);
+            g_strstrip(jb);
 
-                if (jb[0] == '-' || jb[0] == '\0' || strcmp(jb, "0") == 0)
-                    add_detail_row(grid, &row, "Jail", _("宿主机（非 Jail）"));
-                else
-                    add_detail_row(grid, &row, "Jail", jb);
-            }
-
-            pclose(fp);
+            if (jb[0] == '-' || jb[0] == '\0' || strcmp(jb, "0") == 0)
+                add_detail_row(grid, &row, "Jail", _("宿主机（非 Jail）"));
+            else
+                add_detail_row(grid, &row, "Jail", jb);
         }
+
+        fmon_child_result_free(&jail_res);
 
         const FmonShmData *snap = gui_state_snapshot();
 

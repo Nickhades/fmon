@@ -2,6 +2,17 @@
 glib_dep = dependency('glib-2.0')
 gio_dep  = dependency('gio-2.0')
 
+# 折线图几何/量程/缺口/抽取/离屏渲染（纯 C + Cairo，不需要 GTK/X11）
+test_chart = executable('test_chart', 'test_chart.c',
+  files('../src/gui/charts/chart_geom.c',
+        '../src/gui/charts/gui_chart_util.c'),
+  include_directories : [common_inc,
+                         include_directories('../src/gui/charts')],
+  dependencies : [glib_dep, cairo_dep, m_dep],
+  install : false
+)
+test('fmon_chart', test_chart, timeout : 30)
+
 test_child = executable('test_child', 'test_child.c',
   common_srcs,
   include_directories : common_inc,
@@ -114,7 +125,7 @@ test('fmon_net_stats', test_net_stats, timeout : 30)
 # NVMe SMART 文本解析
 devstat_lib = meson.get_compiler('c').find_library('devstat', required : true)
 test_disk_perf = executable('test_disk_perf', 'test_disk_perf.c',
-  files('../src/gui/pages/disk_perf.c'),
+  files('../src/common/fmon_smart.c'),
   include_directories : [common_inc,
                          include_directories('../src/gui/pages')],
   dependencies : [glib_dep, gio_dep, devstat_lib],

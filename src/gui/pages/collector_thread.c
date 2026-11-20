@@ -16,7 +16,6 @@ typedef struct {
     CpuStats cpu;
     NetStats net;
     DiskPerf disk;
-    char     smart_dev[16];
 } Frame;
 
 static GThread *g_thread;
@@ -38,7 +37,7 @@ static gboolean publish_frame(gpointer data)
     zfs_stats_publish(&f->zfs);
     cpu_stats_publish(&f->cpu);
     net_stats_publish(&f->net);
-    disk_perf_publish(&f->disk, f->smart_dev);
+    disk_perf_publish(&f->disk);
 
     g_atomic_int_dec_and_test(&g_pending);
     g_free(f);
@@ -66,7 +65,7 @@ static gpointer collector_main(gpointer data)
         zfs_stats_collect(&f->zfs);
         cpu_stats_collect(&f->cpu);
         net_stats_collect_raw(&f->net);
-        disk_perf_collect(&f->disk, f->smart_dev);
+        disk_perf_collect(&f->disk);
 
         /* 主循环繁忙时丢旧帧，最多保留 2 帧待发布 */
         if (g_atomic_int_get(&g_pending) < 2) {

@@ -149,17 +149,28 @@ void *thread_meminfo(void *arg)
 
         const char *const argv[] = { "dmidecode", "-t", "17", NULL };
         FmonChildResult res;
+        bool ok = false;
 
         if (fmon_child_run(argv, 256 * 1024, 5000, &res) == 0 &&
-            fmon_child_ok(&res) && res.out != NULL)
+            fmon_child_ok(&res) && res.out != NULL) {
             parse_dmidecode(res.out, mods, &count, &slots);
+            ok = true;
+        }
 
         fmon_child_result_free(&res);
 
         fmon_shm_wr_begin();
-        g_shm->mem_slot_total   = slots;
-        g_shm->mem_module_count = (uint32_t)count;
-        memcpy(g_shm->mem_modules, mods, sizeof(mods));
+        if (ok) {
+            g_shm->probe_valid |= FMON_PROBE_MEM_MODULES;
+            g_shm->mem_slot_total   = slots;
+            g_shm->mem_module_count = (uint32_t)count;
+            memcpy(g_shm->mem_modules, mods, sizeof(mods));
+        } else {
+            g_shm->probe_valid &= ~FMON_PROBE_MEM_MODULES;
+            g_shm->mem_slot_total   = 0;
+            g_shm->mem_module_count = 0;
+            memset(g_shm->mem_modules, 0, sizeof(g_shm->mem_modules));
+        }
         fmon_shm_wr_end();
 
         if (!fmon_sleep_ms(60000) && !g_running)

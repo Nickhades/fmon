@@ -1,5 +1,5 @@
 project('fmon', 'c',
-  version : '1.1.1',
+  version : '1.2.0',
   license : 'BSD-2-Clause',
   meson_version : '>= 0.60',
   default_options : [
@@ -21,6 +21,7 @@ i18n        = import('i18n')
 kvm_dep     = cc.find_library('kvm')
 m_dep       = cc.find_library('m')
 devstat_dep = cc.find_library('devstat')
+cam_dep     = cc.find_library('cam')
 
 # 可选：AMD 显卡负载（libdrm_amdgpu）。有则启用真实核显/独显监控。
 drm_amdgpu_dep = dependency('libdrm_amdgpu', required : false)
@@ -51,7 +52,8 @@ add_project_link_arguments(
 common_inc  = include_directories('src/common')
 common_srcs = files(
   'src/common/fmon_shm.c',
-  'src/common/fmon_child.c'
+  'src/common/fmon_child.c',
+  'src/common/fmon_smart.c'
 )
 
 # 把安装前缀传给程序：所有“可能变化”的路径都由前缀派生，

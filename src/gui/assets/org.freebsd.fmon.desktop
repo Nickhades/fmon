@@ -1,0 +1,17 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=FreeBSD Monitor
+Name[zh_CN]=FreeBSD 监控中心
+GenericName=System Monitor
+GenericName[zh_CN]=系统监控
+Comment=FreeBSD system resource monitor
+Comment[zh_CN]=FreeBSD 图形化系统资源监控
+Exec=fmon-gui
+TryExec=fmon-gui
+Icon=org.freebsd.fmon
+Terminal=false
+Categories=System;Monitor;
+Keywords=FreeBSD;monitor;system;CPU;memory;disk;network;ZFS;
+StartupNotify=true
+StartupWMClass=org.freebsd.fmon

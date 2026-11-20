@@ -11,10 +11,14 @@
 #include "fmon_sysctl.h"
 #include "fmon_child.h"
 
+#include <fcntl.h>
+#include <kvm.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mount.h>
+#include <sys/param.h>
 #include <unistd.h>
 
 /* 这些是内核伪文件系统，没有“容量”概念，列出来只会干扰用户 */
@@ -46,8 +50,11 @@ static void sample_mounts(FmonShmData *s)
 
     if (n <= 0) {
         s->mount_count = 0;
+        s->probe_valid &= ~FMON_PROBE_MOUNTS;
         return;
     }
+
+    s->probe_valid |= FMON_PROBE_MOUNTS;
 
     FmonMountInfo tmp[FMON_MAX_MOUNTS * 4];
     int           cnt = 0;
@@ -65,11 +72,9 @@ static void sample_mounts(FmonShmData *s)
         if (mnt[i].f_blocks == 0)
             continue;
 
-        /* getmntinfo() 返回的就是内核 statfs(2) 数据，无需再逐个 statvfs() */
-        uint64_t bsize = (uint64_t)mnt[i].f_bsize;
-        uint64_t total = (uint64_t)mnt[i].f_blocks * bsize;
-        uint64_t avail = (uint64_t)mnt[i].f_bavail * bsize;
-        uint64_t freeb = (uint64_t)mnt[i].f_bfree * bsize;
+        uint64_t total = (uint64_t)mnt[i].f_blocks * mnt[i].f_bsize;
+        uint64_t avail = (uint64_t)mnt[i].f_bavail * mnt[i].f_bsize;
+        uint64_t freeb = (uint64_t)mnt[i].f_bfree * mnt[i].f_bsize;
         uint64_t used  = (total > freeb) ? total - freeb : 0;
 
         FmonMountInfo *m = &tmp[cnt++];
@@ -95,14 +100,53 @@ static void sample_mounts(FmonShmData *s)
     memcpy(s->mounts, tmp, sizeof(tmp[0]) * (size_t)cnt);
 }
 
+/* 首选内核接口：kvm_getswapinfo() 直接读交换区统计。
+ * 返回值中的 ksw_total/ksw_used 以页为单位，不经过外部工具。 */
+static bool sample_swap_kvm(FmonShmData *s)
+{
+    char errbuf[_POSIX2_LINE_MAX];
+    kvm_t *kd = kvm_openfiles(NULL, "/dev/null", NULL, O_RDONLY, errbuf);
+
+    if (kd == NULL)
+        return false;
+
+    struct kvm_swap swap;
+    int n = kvm_getswapinfo(kd, &swap, 1, 0);
+
+    kvm_close(kd);
+
+    if (n < 0)
+        return false;
+
+    uint64_t page_kb = (uint64_t)getpagesize() / 1024;
+
+    s->swap_total_kb = (uint64_t)swap.ksw_total * page_kb;
+    s->swap_used_kb  = (uint64_t)swap.ksw_used * page_kb;
+    s->swap_used_pct = (s->swap_total_kb > 0)
+                           ? 100.0 * (double)s->swap_used_kb /
+                                 (double)s->swap_total_kb
+                           : 0.0;
+    s->probe_valid |= FMON_PROBE_SWAP;
+    return true;
+}
+
+/* 回退：kvm 不可用时才调用 base swapinfo；失败时数据不可用，
+ * 不把上一次的值继续当成当前值。 */
 static void sample_swap(FmonShmData *s)
 {
+    if (sample_swap_kvm(s))
+        return;
+
     const char *const argv[] = { "swapinfo", "-k", NULL };
 
     FmonChildResult res;
     if (fmon_child_run(argv, 256 * 1024, 2000, &res) != 0 ||
         !fmon_child_ok(&res) || res.out == NULL) {
         fmon_child_result_free(&res);
+        s->swap_total_kb = 0;
+        s->swap_used_kb  = 0;
+        s->swap_used_pct = 0.0;
+        s->probe_valid &= ~FMON_PROBE_SWAP;
         return;
     }
 
@@ -130,6 +174,7 @@ static void sample_swap(FmonShmData *s)
     s->swap_used_pct = (total_kb > 0)
                            ? 100.0 * (double)used_kb / (double)total_kb
                            : 0.0;
+    s->probe_valid |= FMON_PROBE_SWAP;
 
     fmon_child_result_free(&res);
 }

@@ -3,3 +3,5 @@
 /usr/local/etc/rc.d/fmon_daemon
 /usr/local/share/licenses/fmon/LICENSE
 /usr/local/share/licenses/fmon/THIRD-PARTY-LICENSES.md
+/usr/local/share/icons/hicolor/scalable/apps/org.freebsd.fmon.svg
+/usr/local/share/applications/org.freebsd.fmon.desktop

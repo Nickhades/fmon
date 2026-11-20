@@ -2,8 +2,13 @@
 
 > 审核对象：`fmon4/`（原始版本 v1.0.0，约 1900 行 C / GTK4）
 > 审核环境：FreeBSD 15.1-RELEASE-p6 amd64，clang 19.1.7，GTK 4.20.4，Cairo 1.18.2
-> 改造版本：v1.1.1（共享内存 ABI v15）
+> 改造版本：v1.2.0
 > 结论：**累计发现 47 项问题（严重 14 / 中等 20 / 轻微 13），已全部修复并逐项验证。**
+>
+> **2026-11-20 折线图专项复审**：当前绘图实现是**线性折线**（不是本文历史
+> 版本记录中的单调三次插值），并增加了 NaN 缺口、保峰值抽取、轴不裁峰等约束。
+> 详见 [docs/CHARTS.md](docs/CHARTS.md) 与 [docs/CODE_AUDIT.md](docs/CODE_AUDIT.md)。
+> 共享内存 ABI 以 `src/common/fmon_shm.h` 为准（当前 22：逐点 `history_time_us` + 磁盘 SMART 温度/寿命）。
 
 ---
 

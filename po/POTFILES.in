@@ -1,7 +1,32 @@
-src/gui/main.c
-src/gui/process_view.c
-src/gui/service_view.c
-src/gui/network_view.c
-src/gui/storage_view.c
-src/gui/log_view.c
-src/gui/alerts.c
+# 实际参与构建的 GUI 源文件（与 src/gui/meson.build 保持一致）。
+# 旧列表里的 src/gui/main.c、src/gui/alerts.c 等路径早已迁移，
+# 导致 `ninja fmon-pot` 直接失败，翻译模板无法更新。
+src/gui/app/gui_export.c
+src/gui/app/gui_runtime.c
+src/gui/app/gui_theme_ui.c
+src/gui/app/gui_window.c
+src/gui/pages/gui_coreview.c
+src/gui/pages/gui_page_batt.c
+src/gui/pages/gui_page_cpu.c
+src/gui/pages/gui_page_disk.c
+src/gui/pages/gui_page_gpu.c
+src/gui/pages/gui_page_l2arc.c
+src/gui/pages/gui_page_mem.c
+src/gui/pages/gui_page_net.c
+src/gui/pages/gui_page_zfs.c
+src/gui/pages/gui_pages_layout.c
+src/gui/pages/mem_summary.c
+src/gui/support/about.c
+src/gui/support/alerts.c
+src/gui/support/cpuset_dialog.c
+src/gui/support/disk_history.c
+src/gui/views/log_view.c
+src/gui/views/network_view.c
+src/gui/views/process_actions.c
+src/gui/views/process_list.c
+src/gui/views/process_view.c
+src/gui/views/process_windows.c
+src/gui/views/service_actions.c
+src/gui/views/service_list.c
+src/gui/views/service_view.c
+src/gui/views/storage_view.c

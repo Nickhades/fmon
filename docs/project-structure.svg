@@ -156,7 +156,7 @@
 <title>common</title>
 <path fill="#fff7ed" stroke="#f59e0b" stroke-width="1.2" d="M1384.75,-44C1384.75,-44 1257,-44 1257,-44 1251,-44 1245,-38 1245,-32 1245,-32 1245,-12 1245,-12 1245,-6 1251,0 1257,0 1257,0 1384.75,0 1384.75,0 1390.75,0 1396.75,-6 1396.75,-12 1396.75,-12 1396.75,-32 1396.75,-32 1396.75,-38 1390.75,-44 1384.75,-44"/>
 <text xml:space="preserve" text-anchor="middle" x="1320.88" y="-30.5" font-family="Helvetica,sans-Serif" font-size="10.00">common/</text>
-<text xml:space="preserve" text-anchor="middle" x="1320.88" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">fmon_shm ABI 20</text>
+<text xml:space="preserve" text-anchor="middle" x="1320.88" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">fmon_shm ABI 23</text>
 <text xml:space="preserve" text-anchor="middle" x="1320.88" y="-6.5" font-family="Helvetica,sans-Serif" font-size="10.00">seqlock snapshot + fmon_child</text>
 </g>
 <!-- publisher&#45;&gt;common -->

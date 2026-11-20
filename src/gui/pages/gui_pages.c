@@ -32,6 +32,13 @@ void gui_upd_zpool(MetricPage *p)
 {
     char b[96];
 
+    if ((snap()->probe_valid & FMON_PROBE_POOLS) == 0) {
+        set_val(p, 0, "zpool 不可用");
+        for (int i = 1; i < 5; i++)
+            set_val(p, i, "—");
+        return;
+    }
+
     if (snap()->pool_count == 0 || !snap()->pools[0].available) {
         set_val(p, 0, "无可用池");
         for (int i = 1; i < 5; i++)
@@ -298,6 +305,13 @@ void gui_upd_batt(MetricPage *p)
 {
     char b[96];
 
+    if ((snap()->probe_valid & FMON_PROBE_BATTERY) == 0) {
+        set_val(p, 0, "无电池或探测不可用");
+        for (int i = 1; i < 4; i++)
+            set_val(p, i, "—");
+        return;
+    }
+
     if (!snap()->battery_present) {
         set_val(p, 0, "无电池（台式机）");
         for (int i = 1; i < 4; i++)
@@ -333,6 +347,7 @@ void gui_metric_curves_sync(const FmonShmData *snap)
         s_curves[i].count        = snap->history_count;
         s_curves[i].index        = snap->history_index;
         s_curves[i].end_time_us  = snap->last_update_us;
+        s_curves[i].time_us      = snap->history_time_us;
         s_curves[i].interval_us  =
             (snap->history_interval_us > 0)
                 ? snap->history_interval_us
@@ -392,6 +407,7 @@ void gui_metric_curves_bind(const FmonShmData *snap)
         s_curves[i].b           = defs[i].b;
         s_curves[i].max_val     = defs[i].max;
         s_curves[i].unit        = defs[i].unit;
+        s_curves[i].time_us     = snap->history_time_us;
         s_curves[i].interval_us = (uint64_t)FMON_SAMPLE_INTERVAL_MS * 1000ULL;
     }
 }

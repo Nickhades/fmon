@@ -12,6 +12,7 @@
 #include <glib/gi18n.h>
 #include <gtk/gtk.h>
 
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -20,6 +21,11 @@ extern GtkWindow *g_main_window;
 static void csv_write_value(FILE *fp, double v, const char *fmt)
 {
     char buf[G_ASCII_DTOSTR_BUF_SIZE];
+
+    /* NaN/Inf 表示这个采样点没有有效数据：CSV 留空列，
+     * 不要导出 "nan" 让 Excel/脚本把它当成数值。 */
+    if (!isfinite(v))
+        return;
 
     /* g_ascii_formatd 保证小数点永远是 '.'，不受用户 locale 影响
      * （旧版本在 de_DE / fr_FR 等 locale 下会导出 "1,23" 破坏 CSV） */

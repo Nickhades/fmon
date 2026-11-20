@@ -23,7 +23,7 @@ GtkWidget *gui_cpu_gauge_body(void);
 GtkWidget *gui_cpu_status_box(void);
 void       gui_cpu_gauge_update(void);
 
-/* 负载与温度卡片：左阶梯负载图 / 右阶梯温度图 + 体温表 */
+/* 负载与温度卡片：左折线平均负载图 / 右温度折线图 + 温度计 */
 GtkWidget *gui_cpu_thermal_card(void);
 void       gui_cpu_thermal_update(void);
 

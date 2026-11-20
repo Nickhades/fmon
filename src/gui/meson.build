@@ -15,6 +15,7 @@ gui_srcs = files(
   'app/gui_css_win11.c',
   'app/gui_css_tables.c',
   'app/gui_css_main.c',
+  'charts/chart_geom.c',
   'charts/gui_chart.c',
   'charts/gui_chart_util.c',
   'charts/combo_chart.c',
@@ -84,6 +85,17 @@ fmon_icons = gnome.compile_resources(
 )
 
 gui_srcs = gui_srcs + fmon_icons
+
+# 应用图标与桌面入口：图标为项目自绘 SVG，不依赖系统图标主题。
+install_data(
+  'assets/scalable/apps/org.freebsd.fmon.svg',
+  install_dir : join_paths(get_option('datadir'), 'icons', 'hicolor',
+                           'scalable', 'apps')
+)
+install_data(
+  'assets/org.freebsd.fmon.desktop',
+  install_dir : join_paths(get_option('datadir'), 'applications')
+)
 
 # 语言包目录随安装前缀；localedir 若是绝对路径则 join_paths 会直接采用
 locale_dir = join_paths(get_option('prefix'), get_option('localedir'))

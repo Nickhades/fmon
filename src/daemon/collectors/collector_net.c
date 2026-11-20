@@ -40,6 +40,7 @@ typedef struct {
     uint32_t channel;
     int32_t  signal_dbm;
     uint32_t speed_mbps;
+    uint32_t valid;
     int64_t  updated_ms;
 } IfaceDetail;
 
@@ -172,14 +173,17 @@ static void refresh_iface_detail(IfaceDetail *d, const char *name, int64_t now)
     d->channel    = 0;
     d->signal_dbm = 0;
     d->speed_mbps = 0;
+    d->valid      = 0;
     d->ssid[0]    = '\0';
 
     const char *const argv[] = { "ifconfig", name, NULL };
     FmonChildResult res;
 
     if (fmon_child_run(argv, 32 * 1024, 1500, &res) == 0 &&
-        fmon_child_ok(&res) && res.out != NULL)
+        fmon_child_ok(&res) && res.out != NULL) {
         parse_ifconfig(res.out, name, d);
+        d->valid = 1;
+    }
 
     fmon_child_result_free(&res);
 
@@ -401,9 +405,10 @@ static void sample_interfaces(FmonIfaceInfo *out, int *out_n, double *out_rx,
 
         if (d != NULL) {
             strlcpy(tmp[i].ssid, d->ssid, sizeof(tmp[i].ssid));
-            tmp[i].channel    = d->channel;
-            tmp[i].signal_dbm = d->signal_dbm;
-            tmp[i].speed_mbps = d->speed_mbps;
+            tmp[i].channel      = d->channel;
+            tmp[i].signal_dbm   = d->signal_dbm;
+            tmp[i].speed_mbps   = d->speed_mbps;
+            tmp[i].detail_valid = d->valid;
         }
 
         tmp[i].connected = ((tmp[i].flags & IFF_UP) != 0 &&

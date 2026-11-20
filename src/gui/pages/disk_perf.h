@@ -24,22 +24,14 @@ typedef struct {
     guint64  total_read_bytes;
     guint64  total_write_bytes;
 
-    /* NVMe SMART（nvmecontrol，30 秒刷新；不可用时 has_smart = FALSE） */
-    gboolean has_smart;
-    double   temp_c;
-    int      spare_pct;    /* Available spare */
-    int      wear_pct;     /* Percentage used */
+    /* NVMe SMART 已移到 root daemon 采集，通过 FmonDiskInfo 发布。 */
 } DiskPerf;
 
 void disk_perf_update(void);
 const DiskPerf *disk_perf_get(void);
 
-/* 采集线程用：collect 只读 devstat，publish 在主线程发布并触发 SMART。 */
-void disk_perf_collect(DiskPerf *out, char smart_dev[16]);
-void disk_perf_publish(const DiskPerf *in, const char *smart_dev);
-
-/* 纯函数：解析 nvmecontrol logpage -p 2 的 SMART 文本 */
-gboolean disk_perf_parse_smart(const char *text, double *temp_c,
-                               int *spare_pct, int *wear_pct);
+/* 采集线程用：collect 只读 devstat，publish 在主线程发布。 */
+void disk_perf_collect(DiskPerf *out);
+void disk_perf_publish(const DiskPerf *in);
 
 #endif /* DISK_PERF_H */

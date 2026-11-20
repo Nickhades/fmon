@@ -813,8 +813,8 @@ static void on_colview_right_click(GtkGestureClick *gesture, int n_press,
 
         if (nsel > 1) {
             gboolean owned = selection_all_owned(page);
-            gchar *t = g_strdup_printf(_("结束选中的 %" G_GUINT64_FORMAT " 个进程"),
-                                       nsel);
+            gchar *t = g_strdup_printf(_("结束选中的 %llu 个进程"),
+                                       (unsigned long long)nsel);
             GtkWidget *b = create_menu_item(t, TRUE);
             g_free(t);
             g_signal_connect(b, "clicked",
@@ -826,8 +826,8 @@ static void on_colview_right_click(GtkGestureClick *gesture, int n_press,
             }
             gtk_box_append(GTK_BOX(vbox), b);
 
-            t = g_strdup_printf(_("强制结束选中的 %" G_GUINT64_FORMAT " 个进程"),
-                                nsel);
+            t = g_strdup_printf(_("强制结束选中的 %llu 个进程"),
+                                (unsigned long long)nsel);
             b = create_menu_item(t, TRUE);
             g_free(t);
             g_signal_connect(b, "clicked",

@@ -7,6 +7,8 @@
 #include "gui_page_disk.h"
 
 #include "disk_perf.h"
+#include "fmon_child.h"
+#include "fmon_smart.h"
 #include "gui_state.h"
 #include "gui_util.h"
 #include "gui_widgets.h"
@@ -45,8 +47,10 @@ GtkWidget *gui_disk_details_header(void)
 }
 
 static double    s_temp_hist[FMON_HISTORY_POINTS];
+static uint64_t  s_temp_time[FMON_HISTORY_POINTS];
 static CurveData s_temp_cd = {
     .history = s_temp_hist,
+    .time_us = s_temp_time,
     .unit    = "°C",
     .r = 0.95, .g = 0.35, .b = 0.25,
 };
@@ -59,18 +63,31 @@ CurveData *gui_disk_temp_curve(void)
 
 void gui_disk_temp_sample(void)
 {
-    const DiskPerf *p = disk_perf_get();
+    const FmonShmData *s = gui_state_snapshot();
+    const FmonDiskInfo *src = NULL;
 
-    if (p == NULL || !p->has_smart)
+    if (s != NULL) {
+        for (uint32_t i = 0; i < s->disk_count && i < FMON_MAX_DISKS; i++) {
+            if (s->disks[i].smart_valid != 0 && s->disks[i].temp_c > 0.0) {
+                src = &s->disks[i];
+                break;
+            }
+        }
+    }
+
+    if (src == NULL)
         return;   /* 没有 SMART 就不画，避免一条 0 线误导 */
 
-    s_temp_hist[s_temp_cd.index] = p->temp_c;
+    gint64 now = g_get_monotonic_time();
+
+    s_temp_hist[s_temp_cd.index] = src->temp_c;
+    s_temp_time[s_temp_cd.index] = (uint64_t)now;
     s_temp_cd.index = (s_temp_cd.index + 1) % FMON_HISTORY_POINTS;
 
     if (s_temp_cd.count < FMON_HISTORY_POINTS)
         s_temp_cd.count++;
 
-    s_temp_cd.end_time_us = g_get_monotonic_time();
+    s_temp_cd.end_time_us = (uint64_t)now;
 }
 
 static GtkWidget *s_perf_line = NULL;
@@ -124,10 +141,21 @@ void gui_disk_smart_update(void)
         return;
 
     const DiskPerf *p = disk_perf_get();
+    const FmonShmData *s = gui_state_snapshot();
+    const FmonDiskInfo *smart = NULL;
 
     if (p == NULL || !p->valid) {
         gtk_label_set_text(GTK_LABEL(s_smart_line), "");
         return;
+    }
+
+    if (s != NULL) {
+        for (uint32_t i = 0; i < s->disk_count && i < FMON_MAX_DISKS; i++) {
+            if (s->disks[i].smart_valid != 0) {
+                smart = &s->disks[i];
+                break;
+            }
+        }
     }
 
     char *rd = fmon_gui_format_bytes(p->total_read_bytes);
@@ -136,9 +164,9 @@ void gui_disk_smart_update(void)
     gchar *txt;
 
     /* 温度只在上方“温度”曲线带显示，这里不再重复 */
-    if (p->has_smart) {
+    if (smart != NULL && smart->wear_pct >= 0 && smart->spare_pct >= 0) {
         txt = g_strdup_printf(_("寿命已用 %d%% · 备用空间 %d%% · 累计 读 %s / 写 %s"),
-                              p->wear_pct, p->spare_pct, rd, wr);
+                              smart->wear_pct, smart->spare_pct, rd, wr);
     } else {
         txt = g_strdup_printf(_("累计 读 %s / 写 %s"), rd, wr);
     }
@@ -157,16 +185,15 @@ static void geom_extras(const char *name, char *iface, size_t ilen,
     link[0]  = '\0';
     *sector  = 0;
 
-    char cmd[128];
+    const char *const argv[] = { "/sbin/geom", "disk", "list", name, NULL };
+    FmonChildResult res;
 
-    snprintf(cmd, sizeof(cmd), "geom disk list %s 2>/dev/null", name);
+    if (fmon_child_run(argv, 64 * 1024, 2000, &res) == 0 &&
+        fmon_child_ok(&res) && res.out != NULL) {
+        char *save = NULL;
 
-    FILE *fp = popen(cmd, "r");
-
-    if (fp != NULL) {
-        char line[256];
-
-        while (fgets(line, sizeof(line), fp) != NULL) {
+        for (char *line = strtok_r(res.out, "\n", &save); line != NULL;
+             line = strtok_r(NULL, "\n", &save)) {
             char *p = line;
 
             while (*p == ' ' || *p == '\t')
@@ -189,9 +216,9 @@ static void geom_extras(const char *name, char *iface, size_t ilen,
                 g_strlcpy(link, v, llen);
             }
         }
-
-        pclose(fp);
     }
+
+    fmon_child_result_free(&res);
 
     if (strncmp(name, "nda", 3) == 0)
         g_strlcpy(iface, _("NVMe"), ilen);
@@ -206,7 +233,7 @@ static void geom_extras(const char *name, char *iface, size_t ilen,
 }
 
 /* 每块磁盘的明细表：速率 / 累计 / 繁忙，图表是合计，这里看单盘 */
-#define DISK_TAB_COLS 6
+#define DISK_TAB_COLS 7
 
 static GtkWidget *s_tab_val[FMON_MAX_DISKS][DISK_TAB_COLS];
 
@@ -240,7 +267,7 @@ GtkWidget *gui_disk_table_box(void)
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
     static const char *const H[] = { "设备", "读取", "写入", "累计读",
-                                     "累计写", "繁忙" };
+                                     "累计写", "温度", "繁忙" };
 
     for (int c = 0; c < DISK_TAB_COLS; c++)
         tab_cell(grid, 0, c, H[c], TRUE);
@@ -261,6 +288,24 @@ GtkWidget *gui_disk_table_box(void)
 
     gtk_box_append(GTK_BOX(box), grid);
     return box;
+}
+
+static const char *smart_source_label(uint32_t src)
+{
+    switch (src) {
+    case FMON_SMART_SRC_NVME_IOCTL:
+        return "NVMe ioctl";
+    case FMON_SMART_SRC_ATA_CAM:
+        return "ATA CAM";
+    case FMON_SMART_SRC_SCSI_CAM:
+        return "SCSI CAM";
+    case FMON_SMART_SRC_NVMECONTROL:
+        return "nvmecontrol 回退";
+    case FMON_SMART_SRC_SMARTCTL:
+        return "smartctl 回退";
+    default:
+        return "不可用";
+    }
 }
 
 static void fmt_rate(char *b, size_t n, double kbps)
@@ -307,8 +352,20 @@ void gui_disk_table_update(void)
         g_free(r);
         g_free(w);
 
-        g_snprintf(b, sizeof(b), "%.0f%%", d->busy_pct);
+        if (d->smart_valid != 0 && d->temp_c > 0.0)
+            g_snprintf(b, sizeof(b), "%.1f°C", d->temp_c);
+        else
+            g_snprintf(b, sizeof(b), "—");
         gtk_label_set_text(GTK_LABEL(s_tab_val[i][5]), b);
+
+        char tip[96];
+
+        g_snprintf(tip, sizeof(tip), "SMART 来源：%s",
+                   smart_source_label(d->smart_source));
+        gtk_widget_set_tooltip_text(s_tab_val[i][5], tip);
+
+        g_snprintf(b, sizeof(b), "%.0f%%", d->busy_pct);
+        gtk_label_set_text(GTK_LABEL(s_tab_val[i][6]), b);
     }
 }
 
@@ -324,9 +381,9 @@ void gui_disk_details_update(void)
     for (uint32_t i = 0; i < snap->disk_count && i < FMON_MAX_DISKS; i++) {
         const FmonDiskInfo *d = &snap->disks[i];
 
-        g_string_append_printf(sig, "%s|%s|%llu|%u|%s;", d->name, d->model,
+        g_string_append_printf(sig, "%s|%s|%llu|%u|%s|%u;", d->name, d->model,
                                (unsigned long long)d->size_bytes, d->kind,
-                               d->serial);
+                               d->serial, d->meta_valid);
     }
 
     /* 这里只展示设备固有信息；读写速率/繁忙度在曲线上，不必进签名 */
@@ -355,7 +412,9 @@ void gui_disk_details_update(void)
 
         g_string_append_printf(line, "%s  ·  ", d->name);
 
-        if (d->model[0] != '\0')
+        if (d->meta_valid == 0)
+            g_string_append(line, _("元数据不可用"));
+        else if (d->model[0] != '\0')
             g_string_append(line, d->model);
         else
             g_string_append(line, _("未知型号"));
@@ -381,7 +440,7 @@ void gui_disk_details_update(void)
         gtk_box_append(GTK_BOX(s_box), disk_line(line->str, "hw-model", FALSE));
         g_string_free(line, TRUE);
 
-        if (d->serial[0] != '\0') {
+        if (d->meta_valid != 0 && d->serial[0] != '\0') {
             gchar *sn = g_strdup_printf(_("SN %s"), d->serial);
 
             gtk_box_append(GTK_BOX(s_box), disk_line(sn, "hw-model", TRUE));

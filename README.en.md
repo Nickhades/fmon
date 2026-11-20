@@ -2,6 +2,16 @@
 
 A native FreeBSD system monitor and resource manager written in C11 with GTK4.
 
+## What's new in 1.2.0
+
+- Kernel-first provider contract; unsupported values show `—`, never fake 0.
+- Native NVMe/ATA/SCSI SMART and kernel disk metadata.
+- ABI 23 validity bits for swap/zpool/modules/mounts/processes/ZFS/battery.
+- Installer auto-installs missing dmidecode/smartmontools/libdrm.
+- Self-drawn SVG application icon and desktop entry.
+
+Full details: [1.2.0 release notes](docs/RELEASE_NOTES_1.2.0.md).
+
 ## Architecture
 
 ```
@@ -18,23 +28,7 @@ fmon-daemon (root)  --POSIX shared memory (seqlock)-->  fmon-gui (user)
 
 ## Screenshots
 
-| Overview | CPU | ZFS |
-|---|---|---|
-| ![Overview](docs/screenshots/overview.png) | ![CPU](docs/screenshots/cpu.png) | ![ZFS](docs/screenshots/zfs.png) |
-
-<details>
-<summary>More screenshots (storage, network, processes, services, logs, battery)</summary>
-
-| Storage | Network | Processes |
-|---|---|---|
-| ![Storage](docs/screenshots/storage.png) | ![Network](docs/screenshots/network.png) | ![Processes](docs/screenshots/processes.png) |
-
-| Services | Logs | Battery |
-|---|---|---|
-| ![Services](docs/screenshots/services.png) | ![Logs](docs/screenshots/logs.png) | ![Battery](docs/screenshots/battery.png) |
-
-See [project structure](docs/PROJECT_STRUCTURE.md) for the current data flow and directory layout.
-</details>
+![fmon overview](docs/screenshot.png)
 
 ## Features
 
@@ -52,7 +46,7 @@ See [project structure](docs/PROJECT_STRUCTURE.md) for the current data flow and
 ## Install from the package
 
 ```sh
-sudo pkg install ./fmon-1.1.1.pkg
+sudo pkg install ./fmon-1.2.0.pkg
 sudo sysrc fmon_daemon_enable=YES
 sudo service fmon_daemon start
 fmon-gui
@@ -76,6 +70,7 @@ sudo ./install.sh
 ```
 
 Requirements: FreeBSD 15+, C11 compiler, Meson/Ninja, GTK4, Cairo, SQLite3, libdrm (optional AMD GPU sensors).
+The installer auto-detects and installs `dmidecode`, `smartmontools`, and `libdrm` when missing; `--skip-deps` disables this.
 
 ## Repository layout
 
@@ -85,6 +80,7 @@ Requirements: FreeBSD 15+, C11 compiler, Meson/Ninja, GTK4, Cairo, SQLite3, libd
 - `tests` — unit tests (14 test suites).
 - `dist/` — prebuilt FreeBSD package and source archive.
 - `docs/` — additional documentation.
+- [`docs/CHARTS.md`](docs/CHARTS.md) — why the charts are linear, gap-aware and peak-preserving.
 
 ## License
 

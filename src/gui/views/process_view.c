@@ -561,8 +561,8 @@ static void update_hint(ProcPage *page)
 
             if (nsel > 1)
                 with_sel = g_strdup_printf(
-                    _("%s（已选中 %" G_GUINT64_FORMAT " 个进程，自动刷新已暂停）"),
-                    text, nsel);
+                    _("%s（已选中 %llu 个进程，自动刷新已暂停）"), text,
+                    (unsigned long long)nsel);
             else
                 with_sel = g_strdup_printf(
                     _("%s（已选中 PID %u，自动刷新时视口保持不动）"),
@@ -972,7 +972,7 @@ GtkWidget *gui_process_view_new(void)
     /* 导出收进“⋮”菜单，窄窗口时工具栏不会挤 */
     GtkWidget *btn_menu = gtk_menu_button_new();
     gtk_menu_button_set_icon_name(GTK_MENU_BUTTON(btn_menu),
-                                  "open-menu-symbolic");
+                                  "fmon-menu-symbolic");
     gtk_widget_set_tooltip_text(btn_menu, _("更多操作"));
 
     GtkWidget *menu_pop = gtk_popover_new();

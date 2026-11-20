@@ -95,8 +95,8 @@ static gboolean on_sample(gpointer data)
             a->q += p->queue_len;
             a->nlat++;
 
-            if (p->has_smart) {
-                a->temp += p->temp_c;
+            if (d->smart_valid != 0 && d->temp_c > 0.0) {
+                a->temp += d->temp_c;
                 a->ntemp++;
             }
         }

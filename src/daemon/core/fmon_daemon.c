@@ -26,6 +26,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <math.h>
 #include <pthread.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -172,53 +173,94 @@ void *thread_publisher(void *arg)
 
         FmonShmData *s = g_shm;
         uint32_t idx = s->history_index % FMON_HISTORY_POINTS;
+        uint64_t sample_time_us = fmon_now_us();
 
         s->history_interval_us = (uint64_t)FMON_SAMPLE_INTERVAL_MS * 1000ULL;
+        s->history_time_us[idx] = sample_time_us;
 
-        s->cpu_history[idx]        = s->cpu_usage_pct;
-        s->mem_history[idx]        = s->mem_used_pct;
-        s->swap_history[idx]       = s->swap_used_pct;
-        s->net_rx_history[idx]     = s->net_rx_kbps;
-        s->net_tx_history[idx]     = s->net_tx_kbps;
-        s->disk_read_history[idx]  = s->disk_read_kbps;
-        s->disk_write_history[idx] = s->disk_write_kbps;
-        s->temp_history[idx]       = s->cpu_temp_c;
-        s->battery_history[idx]    = (s->battery_present != 0 && s->battery_pct >= 0.0)
-                                         ? s->battery_pct
-                                         : 0.0;
+        /* 历史数组的语义：NaN = 该秒没有有效采样。
+         * 不能用 0 代替：0% 和“没有传感器”在监控里是完全不同的结论。
+         * 绘图端遇到 NaN 会断开折线，导出 CSV 时留空。 */
+        s->cpu_history[idx] =
+            isfinite(s->cpu_usage_pct) ? s->cpu_usage_pct : NAN;
+        s->mem_history[idx] =
+            isfinite(s->mem_used_pct) ? s->mem_used_pct : NAN;
+        s->swap_history[idx] =
+            ((s->probe_valid & FMON_PROBE_SWAP) != 0 &&
+             isfinite(s->swap_used_pct))
+                ? s->swap_used_pct
+                : NAN;
+        s->net_rx_history[idx] =
+            isfinite(s->net_rx_kbps) ? s->net_rx_kbps : NAN;
+        s->net_tx_history[idx] =
+            isfinite(s->net_tx_kbps) ? s->net_tx_kbps : NAN;
+        s->disk_read_history[idx] =
+            isfinite(s->disk_read_kbps) ? s->disk_read_kbps : NAN;
+        s->disk_write_history[idx] =
+            isfinite(s->disk_write_kbps) ? s->disk_write_kbps : NAN;
+        s->temp_history[idx] =
+            isfinite(s->cpu_temp_c) ? s->cpu_temp_c : NAN;
+        s->battery_history[idx] =
+            ((s->probe_valid & FMON_PROBE_BATTERY) != 0 &&
+             s->battery_present != 0 && isfinite(s->battery_pct) &&
+             s->battery_pct >= 0.0)
+                ? s->battery_pct
+                : NAN;
         s->zpool_util_history[idx] =
-            (s->pool_count > 0) ? s->pools[0].util_pct : 0.0;
+            ((s->probe_valid & FMON_PROBE_POOLS) != 0 &&
+             s->pool_count > 0 && s->pools[0].available != 0 &&
+             isfinite(s->pools[0].util_pct))
+                ? s->pools[0].util_pct
+                : NAN;
         /* 曲线语义：ARC 大小占 ARC 上限的百分比，和界面“占上限”一致 */
-        s->zfs_arc_history[idx]    = (s->zfs_arc_c_max > 0)
-                                         ? 100.0 * (double)s->zfs_arc_size /
-                                               (double)s->zfs_arc_c_max
-                                         : 0.0;
-        s->zfs_hit_history[idx]      = s->zfs_arc_pct;
-        /* 多池时历史曲线取所有池的合计带宽 */
+        s->zfs_arc_history[idx] =
+            ((s->probe_valid & FMON_PROBE_ZFS_ARC) != 0 &&
+             s->zfs_arc_c_max > 0)
+                ? 100.0 * (double)s->zfs_arc_size / (double)s->zfs_arc_c_max
+                : NAN;
+        s->zfs_hit_history[idx] =
+            isfinite(s->zfs_arc_pct) ? s->zfs_arc_pct : NAN;
+
+        /* 多池时历史曲线取所有池的合计带宽；没有池就是“无数据”。 */
         double pool_rd = 0.0, pool_wr = 0.0;
 
         for (uint32_t i = 0; i < s->pool_count && i < FMON_MAX_POOLS; i++) {
-            pool_rd += s->pools[i].read_kbps;
-            pool_wr += s->pools[i].write_kbps;
+            if (isfinite(s->pools[i].read_kbps))
+                pool_rd += s->pools[i].read_kbps;
+            if (isfinite(s->pools[i].write_kbps))
+                pool_wr += s->pools[i].write_kbps;
         }
-        s->zfs_io_read_history[idx]  = pool_rd;
-        s->zfs_io_write_history[idx] = pool_wr;
+        s->zfs_io_read_history[idx] =
+            ((s->probe_valid & FMON_PROBE_POOLS) != 0 && s->pool_count > 0)
+                ? pool_rd
+                : NAN;
+        s->zfs_io_write_history[idx] =
+            ((s->probe_valid & FMON_PROBE_POOLS) != 0 && s->pool_count > 0)
+                ? pool_wr
+                : NAN;
         s->zfs_arc_prune_history[idx] = (double)s->zfs_arc_prune;
 
-        /* L2ARC：未配置（size==0）时不写曲线，界面自行判断空态 */
+        /* L2ARC：未配置（size==0）时没有采样，写 NaN 让曲线保持空白。 */
         s->zfs_l2_size_history[idx] =
-            (double)s->zfs_l2_size / (1024.0 * 1024.0 * 1024.0);
+            (s->zfs_l2_size > 0)
+                ? (double)s->zfs_l2_size / (1024.0 * 1024.0 * 1024.0)
+                : NAN;
 
         uint64_t l2h = s->zfs_l2_hits;
         uint64_t l2m = s->zfs_l2_misses;
 
         s->zfs_l2_hit_history[idx] =
-            (l2h + l2m > 0) ? 100.0 * (double)l2h / (double)(l2h + l2m) : 0.0;
+            (s->zfs_l2_size > 0 && l2h + l2m > 0)
+                ? 100.0 * (double)l2h / (double)(l2h + l2m)
+                : NAN;
 
         for (int g = 0; g < s->gpu_count && g < FMON_MAX_GPUS; g++) {
-            /* 没有负载传感器的显卡不写历史（写 0 会被误读成“一直空闲”） */
+            /* 没有负载传感器的显卡写 NaN，不能写 0（会被误读成“一直空闲”）。 */
             s->gpu_history[g][idx] =
-                (s->gpus[g].load_available != 0) ? s->gpus[g].usage_pct : 0.0;
+                (s->gpus[g].load_available != 0 &&
+                 isfinite(s->gpus[g].usage_pct))
+                    ? s->gpus[g].usage_pct
+                    : NAN;
         }
 
         s->history_index = (idx + 1u) % FMON_HISTORY_POINTS;

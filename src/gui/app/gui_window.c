@@ -76,6 +76,14 @@ static gboolean g_presented;
 static gboolean tick_once_cb(gpointer data);
 static void     present_once(void);
 
+static void on_auto_range_toggled(GtkToggleButton *btn, gpointer data)
+{
+    (void)data;
+
+    gui_chart_set_auto_range(gtk_toggle_button_get_active(btn));
+    gui_pages_redraw_all();
+}
+
 static gboolean scroll_top_cb(gpointer data)
 {
     (void)data;
@@ -264,7 +272,12 @@ void gui_window_activate(GtkApplication *app, gpointer user_data)
         gtk_icon_theme_add_resource_path(
             gtk_icon_theme_get_for_display(display), "/org/fmon/icons");
 
+    /* 自绘应用图标：先走资源，安装后同名的 hicolor SVG 也可被任务栏/
+     * 桌面环境读取。不依赖任何系统图标主题。 */
+    gtk_window_set_default_icon_name("org.freebsd.fmon");
+
     gui_theme_ui_init(g_theme_start);
+    gui_chart_settings_init();
 
     (void)user_data;
 
@@ -276,6 +289,7 @@ void gui_window_activate(GtkApplication *app, gpointer user_data)
     gui_css_load();
 
     g_main_window = GTK_WINDOW(gtk_application_window_new(app));
+    gtk_window_set_icon_name(g_main_window, "org.freebsd.fmon");
 
     /* 指标页曲线绑定到快照中的历史数组 */
     gui_metric_curves_bind(&g_snap);
@@ -365,7 +379,7 @@ void gui_window_activate(GtkApplication *app, gpointer user_data)
 
     /* 更多：关于 / 告警设置收进 “...” 菜单 */
     GtkWidget *more = gtk_menu_button_new();
-    gtk_menu_button_set_icon_name(GTK_MENU_BUTTON(more), "view-more-symbolic");
+    gtk_menu_button_set_icon_name(GTK_MENU_BUTTON(more), "fmon-menu-symbolic");
     gtk_widget_set_tooltip_text(more, _("更多"));
     gtk_widget_set_valign(more, GTK_ALIGN_CENTER);
 
@@ -388,6 +402,17 @@ void gui_window_activate(GtkApplication *app, gpointer user_data)
 
     gtk_widget_add_css_class(mi_alerts, "flat");
     gtk_box_append(GTK_BOX(pbox), mi_alerts);
+
+    GtkWidget *mi_auto = gtk_check_button_new_with_label(
+        _("百分比图表自动量程"));
+    gtk_check_button_set_active(GTK_CHECK_BUTTON(mi_auto),
+                                gui_chart_auto_range());
+    gtk_widget_add_css_class(mi_auto, "flat");
+    gtk_widget_set_tooltip_text(
+        mi_auto, _("默认 0–100%；打开后按当前窗口数据缩放，轴标签仍显示真实范围"));
+    g_signal_connect(mi_auto, "toggled", G_CALLBACK(on_auto_range_toggled),
+                     NULL);
+    gtk_box_append(GTK_BOX(pbox), mi_auto);
 
     gtk_popover_set_child(GTK_POPOVER(pop), pbox);
     gtk_menu_button_set_popover(GTK_MENU_BUTTON(more), pop);

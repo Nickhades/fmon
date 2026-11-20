@@ -9,6 +9,7 @@
 
 #include <glib/gi18n.h>
 
+#include "fmon_child.h"
 #include "gui_state.h"
 #include "theme.h"
 
@@ -59,6 +60,9 @@ static int    s_hist_count;
 
 static void batt_hist_push(double pct, double pwr)
 {
+    if (!isfinite(pct) || !isfinite(pwr))
+        return;
+
     s_hist_pct[s_hist_idx] = pct;
     s_hist_pwr[s_hist_idx] = pwr;
     s_hist_idx = (s_hist_idx + 1) % BATT_HIST_PTS;
@@ -167,7 +171,7 @@ static void draw_batt_chart(GtkDrawingArea *area, cairo_t *cr, int w, int h,
 
         batt_hist_get(i, &pct, &pwr);
 
-        double x = ml + pw * (double)i / s_hist_count;
+        double x = ml + pw * (double)i / (double)(s_hist_count - 1);
         double y = mt + ph - (pct / 100.0) * ph;
 
         if (i == 0)
@@ -218,17 +222,22 @@ static void trim(char *s)
 
 static void read_acpiconf(void)
 {
-    FILE *fp = popen("acpiconf -i 0 2>/dev/null", "r");
+    const char *const argv[] = { "/usr/sbin/acpiconf", "-i", "0", NULL };
+    FmonChildResult res;
 
-    if (fp == NULL)
+    if (fmon_child_run(argv, 64 * 1024, 2000, &res) != 0 ||
+        !fmon_child_ok(&res) || res.out == NULL) {
+        fmon_child_result_free(&res);
         return;
+    }
 
     BattInfo bi;
     memset(&bi, 0, sizeof(bi));
 
-    char line[256];
+    char *save = NULL;
 
-    while (fgets(line, sizeof(line), fp) != NULL) {
+    for (char *line = strtok_r(res.out, "\n", &save); line != NULL;
+         line = strtok_r(NULL, "\n", &save)) {
         char *colon = strchr(line, ':');
 
         if (colon == NULL)
@@ -265,7 +274,7 @@ static void read_acpiconf(void)
             g_strlcpy(bi.oem, val, sizeof(bi.oem));
     }
 
-    pclose(fp);
+    fmon_child_result_free(&res);
 
     bi.valid = (bi.design_mwh > 0 && bi.full_mwh > 0);
     bi.last_read = (gint64)time(NULL);

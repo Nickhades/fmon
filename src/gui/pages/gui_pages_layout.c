@@ -61,7 +61,7 @@ GtkStack *gui_pages_layout_build(GtkWidget *content)
         "CPU 温度", "温度趋势（使用率见上方仪表）", &g_cpu_chart, NULL, 0,
         &g_cpu_page);
 
-    /* 曲线卡片不再上屏：保留 combo 数据更新，界面用仪表 + 双阶梯卡片 */
+    /* 曲线卡片不再上屏：保留 combo 数据更新，界面用仪表 + 折线图卡片 */
     (void)page_cpu;
 
     /* 三张独立卡片：半圆仪表 / 负载与温度 / 线程与详情 */
@@ -149,12 +149,14 @@ GtkStack *gui_pages_layout_build(GtkWidget *content)
     gtk_widget_set_size_request(g_mem_page.area, -1, 380);
     /* 网络：接收 / 发送 两条独立颜色曲线，数值显示在上方 */
     g_net_rx_cd.history     = snap->net_rx_history;
+    g_net_rx_cd.time_us     = snap->history_time_us;
     g_net_rx_cd.unit        = "KB/s";
     g_net_rx_cd.max_val     = 0.0;
     g_net_rx_cd.interval_us = (uint64_t)FMON_SAMPLE_INTERVAL_MS * 1000ULL;
     g_net_rx_cd.r = 0.25; g_net_rx_cd.g = 0.70; g_net_rx_cd.b = 1.00;
 
     g_net_tx_cd.history     = snap->net_tx_history;
+    g_net_tx_cd.time_us     = snap->history_time_us;
     g_net_tx_cd.unit        = "KB/s";
     g_net_tx_cd.max_val     = 0.0;
     g_net_tx_cd.interval_us = (uint64_t)FMON_SAMPLE_INTERVAL_MS * 1000ULL;
@@ -196,12 +198,14 @@ GtkStack *gui_pages_layout_build(GtkWidget *content)
 
     /* 磁盘：读取 / 写入 两条曲线 + 繁忙/累计在标题下方 */
     g_disk_rd_cd.history     = snap->disk_read_history;
+    g_disk_rd_cd.time_us     = snap->history_time_us;
     g_disk_rd_cd.unit        = "KB/s";
     g_disk_rd_cd.max_val     = 0.0;
     g_disk_rd_cd.interval_us = (uint64_t)FMON_SAMPLE_INTERVAL_MS * 1000ULL;
     g_disk_rd_cd.r = 0.95; g_disk_rd_cd.g = 0.55; g_disk_rd_cd.b = 0.20;
 
     g_disk_wr_cd.history     = snap->disk_write_history;
+    g_disk_wr_cd.time_us     = snap->history_time_us;
     g_disk_wr_cd.unit        = "KB/s";
     g_disk_wr_cd.max_val     = 0.0;
     g_disk_wr_cd.interval_us = (uint64_t)FMON_SAMPLE_INTERVAL_MS * 1000ULL;
@@ -262,6 +266,7 @@ GtkStack *gui_pages_layout_build(GtkWidget *content)
     static ComboChart g_zpool_chart;
 
     g_zpool_cd.history     = snap->zpool_util_history;
+    g_zpool_cd.time_us     = snap->history_time_us;
     g_zpool_cd.unit        = "%";
     g_zpool_cd.max_val     = 100.0;
     g_zpool_cd.interval_us = (uint64_t)FMON_SAMPLE_INTERVAL_MS * 1000ULL;

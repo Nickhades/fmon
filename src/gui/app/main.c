@@ -78,6 +78,10 @@ int main(int argc, char **argv)
     /* 部分输入法在 GTK4 下需要简单上下文 */
     g_setenv("GTK_IM_MODULE", "gtk-im-context-simple", TRUE);
 
+    /* 桌面入口/任务栏的 WM_CLASS 与 application id 保持一致。 */
+    g_set_prgname("org.freebsd.fmon");
+    g_set_application_name(_("FreeBSD 监控中心"));
+
     GtkApplication *app = gtk_application_new("org.freebsd.fmon",
                                               G_APPLICATION_DEFAULT_FLAGS);
 

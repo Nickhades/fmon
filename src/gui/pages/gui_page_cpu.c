@@ -7,6 +7,7 @@
 
 #include "gui_page_cpu.h"
 
+#include "chart_geom.h"
 #include "combo_chart.h"
 #include "cpu_health.h"
 #include "cpu_stats.h"
@@ -513,17 +514,20 @@ void gui_cpu_gauge_update(void)
 }
 
 /* ===========================================================================
- * 负载 / 温度双阶梯图 + CPU 温度计
+ * 负载 / 温度双折线图 + CPU 温度计
  * ========================================================================= */
 
 static GtkWidget *s_thermal_area;
 
 static double hist_at(const CurveData *cd, uint32_t i)
 {
-    uint32_t start = (cd->index + FMON_HISTORY_POINTS - cd->count) %
-                     FMON_HISTORY_POINTS;
+    double v;
 
-    return cd->history[(start + i) % FMON_HISTORY_POINTS];
+    if (!fmon_chart_history_value(cd->history, FMON_HISTORY_POINTS,
+                                  cd->count, cd->index, i, &v))
+        return NAN;
+
+    return v;
 }
 
 static void draw_axis(cairo_t *cr, const GdkRGBA *fg, double x, double y,
@@ -554,110 +558,83 @@ static void draw_axis(cairo_t *cr, const GdkRGBA *fg, double x, double y,
     }
 }
 
-static void draw_step_series(cairo_t *cr, const CurveData *cd, double x,
-                             double y, double w, double h, double maxv,
-                             double r, double g, double b, uint32_t smooth)
+static void draw_thermal_series(cairo_t *cr, const CurveData *cd, double x,
+                               double y, double w, double h, double maxv,
+                               double r, double g, double b)
 {
-    if (cd == NULL || cd->count < 2)
+    if (cd == NULL || cd->count < 2 || !(maxv > 0.0))
         return;
 
-    /* 渐变面积：温度曲线下方铺一层从深到浅的红色 */
+    size_t cap = (size_t)((cd->count > FMON_HISTORY_POINTS)
+                              ? FMON_HISTORY_POINTS
+                              : cd->count) +
+                 4;
+    FmonChartPoint *pts = g_new0(FmonChartPoint, cap);
+
+    uint64_t t0 = 0, t1 = 0;
+    fmon_chart_time_range(cd->time_us, FMON_HISTORY_POINTS, cd->count,
+                          cd->index, &t0, &t1);
+    uint64_t gap_us = cd->interval_us * 5u / 2u;
+
+    size_t n = fmon_chart_polyline_at(
+        cd->history, cd->time_us, FMON_HISTORY_POINTS, cd->count, cd->index,
+        t0, t1, x, w, y, h, 0.0, maxv, (uint32_t)w, gap_us, pts, cap);
+
+    if (n == 0) {
+        g_free(pts);
+        return;
+    }
+
+    cairo_save(cr);
+    cairo_rectangle(cr, x, y, w, h);
+    cairo_clip(cr);
+
+    /* 渐变面积 */
     cairo_pattern_t *pat = cairo_pattern_create_linear(0.0, y, 0.0, y + h);
 
     cairo_pattern_add_color_stop_rgba(pat, 0.0, r, g, b, 0.28);
     cairo_pattern_add_color_stop_rgba(pat, 1.0, r, g, b, 0.02);
 
-    double pv = hist_at(cd, 0);
-
-    if (pv < 0.0)
-        pv = 0.0;
-    if (pv > maxv)
-        pv = maxv;
-
-    cairo_move_to(cr, x, y + h);
-    cairo_line_to(cr, x, y + h - (pv / maxv) * h);
-
-    for (uint32_t i = 1; i < cd->count; i++) {
-        double v  = hist_at(cd, i);
-        double xx = x + w * (double)i / (double)(cd->count - 1);
-
-        if (v < 0.0)
-            v = 0.0;
-        if (v > maxv)
-            v = maxv;
-
-        cairo_line_to(cr, xx, y + h - (pv / maxv) * h);
-        cairo_line_to(cr, xx, y + h - (v / maxv) * h);
-        pv = v;
-    }
-
-    cairo_line_to(cr, x + w, y + h);
-    cairo_close_path(cr);
+    fmon_chart_cairo_fill(cr, pts, n, y + h);
     cairo_set_source(cr, pat);
     cairo_fill(cr);
     cairo_pattern_destroy(pat);
 
-    cairo_set_line_width(cr, 1.2);
+    /* 线性折线：真实温度点之间直线连接 */
+    cairo_set_line_width(cr, 1.35);
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT);
     cairo_set_line_join(cr, CAIRO_LINE_JOIN_MITER);
     cairo_set_source_rgba(cr, r, g, b, 0.95);
-
-    double prev = hist_at(cd, 0);
-
-    if (prev < 0.0)
-        prev = 0.0;
-    if (prev > maxv)
-        prev = maxv;
-
-    cairo_move_to(cr, x, y + h - (prev / maxv) * h);
-
-    for (uint32_t i = 1; i < cd->count; i++) {
-        double v = hist_at(cd, i);
-
-        /* 平滑窗口：让「平均负载」名实相符；温度用 1（不平滑） */
-        if (smooth > 1) {
-            uint32_t n = 0;
-            double   acc = 0.0;
-
-            for (uint32_t k = (i + 1 > smooth) ? i + 1 - smooth : 0; k <= i;
-                 k++) {
-                acc += hist_at(cd, k);
-                n++;
-            }
-
-            v = acc / (double)n;
-        }
-
-        double xx = x + w * (double)i / (double)(cd->count - 1);
-
-        if (v < 0.0)
-            v = 0.0;
-        if (v > maxv)
-            v = maxv;
-
-        cairo_line_to(cr, xx, y + h - (prev / maxv) * h);
-        cairo_line_to(cr, xx, y + h - (v / maxv) * h);
-        prev = v;
-    }
-
+    fmon_chart_cairo_path(cr, pts, n);
     cairo_stroke(cr);
+
+    cairo_restore(cr);
+    g_free(pts);
 }
 
-/* 1/5/10 分钟滑动平均，三条阶梯曲线；用前缀和保证 O(n) */
+/* 1/5/10 分钟滑动平均，三条线性曲线；用前缀和保证 O(n)。
+ * 平均窗口内没有有效采样时断开折线，不把缺口当成 0。 */
 static void draw_avg_curves(cairo_t *cr, const CurveData *cd, double x,
                             double y, double w, double h, double maxv,
                             int active)
 {
-    if (cd == NULL || cd->count < 2)
+    if (cd == NULL || cd->count < 2 || !(maxv > 0.0))
         return;
 
-    static double prefix[FMON_HISTORY_POINTS + 1];
-    static double px[FMON_HISTORY_POINTS];
-    static double py[FMON_HISTORY_POINTS];
+    uint32_t count = (cd->count > FMON_HISTORY_POINTS) ? FMON_HISTORY_POINTS
+                                                       : cd->count;
+    static double   prefix[FMON_HISTORY_POINTS + 1];
+    static uint32_t counts[FMON_HISTORY_POINTS + 1];
 
     prefix[0] = 0.0;
+    counts[0] = 0;
 
-    for (uint32_t i = 0; i < cd->count; i++)
-        prefix[i + 1] = prefix[i] + hist_at(cd, i);
+    for (uint32_t i = 0; i < count; i++) {
+        double v = hist_at(cd, i);
+
+        prefix[i + 1] = prefix[i] + (isfinite(v) ? v : 0.0);
+        counts[i + 1] = counts[i] + (isfinite(v) ? 1u : 0u);
+    }
 
     static const struct {
         uint32_t win;
@@ -668,67 +645,82 @@ static void draw_avg_curves(cairo_t *cr, const CurveData *cd, double x,
         { 600, 0.95, 0.60, 0.20 },  /* 10 分钟：橙 */
     };
 
+    uint32_t i0 = (count > 20) ? 15 : 0;
+
+    cairo_save(cr);
+    cairo_rectangle(cr, x, y, w, h);
+    cairo_clip(cr);
+
     for (int s = 0; s < 3; s++) {
         uint32_t win = k_bands[s].win;
         int      on  = (s == active);
 
-        uint32_t i0 = (cd->count > 20) ? 15 : 0;
+        size_t cap = (size_t)count + 4;
+        FmonChartPoint *pts = g_new0(FmonChartPoint, cap);
+        size_t n = 0;
+        bool gap = true;
 
-        for (uint32_t i = 0; i < cd->count; i++) {
+        for (uint32_t i = i0; i < count; i++) {
             uint32_t from = (i + 1 > win) ? i + 1 - win : 0;
 
             if (from < i0)
                 from = i0;
 
-            double v = (prefix[i + 1] - prefix[from]) /
-                       (double)(i + 1 - from);
+            uint32_t cnt = counts[i + 1] - counts[from];
 
-            if (v < 0.0)
-                v = 0.0;
-            if (v > maxv)
-                v = maxv;
+            if (cnt == 0) {
+                gap = true;
+                continue;
+            }
 
-            px[i] = x + w * (double)i / (double)(cd->count - 1);
-            py[i] = y + h - (v / maxv) * h;
+            double v = (prefix[i + 1] - prefix[from]) / (double)cnt;
+            double xx = (count > 1)
+                            ? x + w * (double)i / (double)(count - 1)
+                            : x;
+
+            pts[n].x = xx;
+            pts[n].y = y + h - (v / maxv) * h;
+            pts[n].gap = gap;
+            pts[n].src = i;
+            n++;
+            gap = false;
         }
 
+        if (n > 0 && cd->time_us != NULL) {
+            uint64_t t0 = 0, t1 = 0;
 
+            if (fmon_chart_time_range(cd->time_us, FMON_HISTORY_POINTS,
+                                      count, cd->index, &t0, &t1))
+                fmon_chart_retime(pts, n, cd->time_us, FMON_HISTORY_POINTS,
+                                  count, cd->index, x, w, t0, t1,
+                                  cd->interval_us * 5u / 2u);
+        }
+
+        if (n == 0) {
+            g_free(pts);
+            continue;
+        }
 
         /* 高亮曲线：先铺一层浅色面积，突出“当前轮换”的那条 */
         if (on) {
-            cairo_move_to(cr, px[i0], y + h);
-
-            for (uint32_t i = i0; i < cd->count; i++) {
-                if (i > i0)
-                    cairo_line_to(cr, px[i], py[i - 1]);
-
-                cairo_line_to(cr, px[i], py[i]);
-            }
-
-            cairo_line_to(cr, px[cd->count - 1], y + h);
-            cairo_close_path(cr);
+            fmon_chart_cairo_fill(cr, pts, n, y + h);
             cairo_set_source_rgba(cr, k_bands[s].r, k_bands[s].g,
                                   k_bands[s].b, 0.12);
             cairo_fill(cr);
         }
 
         cairo_set_line_width(cr, on ? 2.4 : 1.2);
+        cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT);
         cairo_set_line_join(cr, CAIRO_LINE_JOIN_MITER);
         cairo_set_source_rgba(cr, k_bands[s].r, k_bands[s].g, k_bands[s].b,
                               on ? 0.98 : 0.55);
 
-        cairo_move_to(cr, px[i0], py[i0]);
-
-        for (uint32_t i = i0 + 1; i < cd->count; i++) {
-            cairo_line_to(cr, px[i], py[i - 1]);
-            cairo_line_to(cr, px[i], py[i]);
-        }
-
+        fmon_chart_cairo_path(cr, pts, n);
         cairo_stroke(cr);
 
         /* 末端点 + 数值：把计算后的平均负载直接标在曲线上 */
-        double ex = px[cd->count - 1];
-        double ey = py[cd->count - 1];
+        double ex = pts[n - 1].x;
+        double ey = pts[n - 1].y;
 
         cairo_set_source_rgba(cr, k_bands[s].r, k_bands[s].g, k_bands[s].b,
                               on ? 1.0 : 0.60);
@@ -736,47 +728,55 @@ static void draw_avg_curves(cairo_t *cr, const CurveData *cd, double x,
         cairo_fill(cr);
 
         if (on) {
-            char vb[32];
+            double win_val = avg_window_value(cd, win);
 
-            g_snprintf(vb, sizeof(vb), "%.1f%%", maxv * (y + h - ey) / h);
-            gauge_font(cr, 12.0);
+            if (isfinite(win_val)) {
+                char vb[32];
 
-            cairo_text_extents_t ext;
+                g_snprintf(vb, sizeof(vb), "%.1f%%", win_val);
+                gauge_font(cr, 12.0);
 
-            cairo_text_extents(cr, vb, &ext);
-            cairo_move_to(cr, ex - ext.width - 10.0, ey - 10.0);
-            cairo_show_text(cr, vb);
+                cairo_text_extents_t ext;
+
+                cairo_text_extents(cr, vb, &ext);
+                cairo_move_to(cr, ex - ext.width - 10.0, ey - 10.0);
+                cairo_show_text(cr, vb);
+            }
         }
+
+        g_free(pts);
     }
-}
 
-
-static int cmp_d(const void *a, const void *b)
-{
-    double x = *(const double *)a;
-    double y = *(const double *)b;
-
-    return (x < y) ? -1 : (x > y) ? 1 : 0;
+    cairo_restore(cr);
 }
 
 static double avg_window_value(const CurveData *cd, uint32_t win)
 {
     if (cd == NULL || cd->count == 0)
-        return 0.0;
+        return NAN;
 
-    uint32_t i    = cd->count - 1;
+    uint32_t count = (cd->count > FMON_HISTORY_POINTS) ? FMON_HISTORY_POINTS
+                                                       : cd->count;
+    uint32_t i    = count - 1;
     uint32_t from = (i + 1 > win) ? i + 1 - win : 0;
-    uint32_t warm = (cd->count > 20) ? 15 : 0;
+    uint32_t warm = (count > 20) ? 15 : 0;
 
     if (from < warm)
         from = warm;
 
-    double acc = 0.0;
+    double   acc = 0.0;
+    uint32_t n   = 0;
 
-    for (uint32_t k = from; k <= i; k++)
-        acc += hist_at(cd, k);
+    for (uint32_t k = from; k <= i; k++) {
+        double v = hist_at(cd, k);
 
-    return acc / (double)(i + 1 - from);
+        if (isfinite(v)) {
+            acc += v;
+            n++;
+        }
+    }
+
+    return (n > 0) ? acc / (double)n : NAN;
 }
 
 static double avg_window_max(const CurveData *cd, uint32_t win)
@@ -784,40 +784,48 @@ static double avg_window_max(const CurveData *cd, uint32_t win)
     if (cd == NULL || cd->count == 0)
         return 0.0;
 
-    static double prefix[FMON_HISTORY_POINTS + 1];
+    uint32_t count = (cd->count > FMON_HISTORY_POINTS) ? FMON_HISTORY_POINTS
+                                                       : cd->count;
+    static double   prefix[FMON_HISTORY_POINTS + 1];
+    static uint32_t counts[FMON_HISTORY_POINTS + 1];
 
     prefix[0] = 0.0;
+    counts[0] = 0;
 
-    for (uint32_t i = 0; i < cd->count; i++)
-        prefix[i + 1] = prefix[i] + hist_at(cd, i);
+    for (uint32_t i = 0; i < count; i++) {
+        double v = hist_at(cd, i);
 
-    uint32_t i0 = (cd->count > 20) ? 15 : 0;
-    static double tmp[FMON_HISTORY_POINTS];
-    uint32_t n = 0;
+        prefix[i + 1] = prefix[i] + (isfinite(v) ? v : 0.0);
+        counts[i + 1] = counts[i] + (isfinite(v) ? 1u : 0u);
+    }
 
-    for (uint32_t i = i0; i < cd->count; i++) {
+    uint32_t i0 = (count > 20) ? 15 : 0;
+    double   mx = 0.0;
+
+    for (uint32_t i = i0; i < count; i++) {
         uint32_t from = (i + 1 > win) ? i + 1 - win : 0;
 
         if (from < i0)
             from = i0;
 
-        double v = (prefix[i + 1] - prefix[from]) /
-                   (double)(i + 1 - from);
+        uint32_t cnt = counts[i + 1] - counts[from];
 
-        tmp[n++] = v;
+        if (cnt == 0)
+            continue;
+
+        double v = (prefix[i + 1] - prefix[from]) / (double)cnt;
+
+        if (v > mx)
+            mx = v;
     }
 
-    if (n == 0)
-        return 0.0;
-
-    qsort(tmp, n, sizeof(double), cmp_d);
-
-    return tmp[(size_t)((double)n * 0.995)];
+    /* 轴上限使用真实最大值，不再用 99.5% 分位裁掉尖峰。 */
+    return mx;
 }
 
 static double nice_max(double v)
 {
-    if (v <= 0.0)
+    if (!isfinite(v) || v <= 0.0)
         return 10.0;
 
     double m = ceil(v / 5.0) * 5.0;
@@ -828,7 +836,11 @@ static double nice_max(double v)
 static void draw_thermometer(cairo_t *cr, const GdkRGBA *fg, double x,
                              double top, double h, double temp)
 {
-    double bw   = 14.0;
+    double bw = 14.0;
+
+    if (!isfinite(temp))
+        temp = 0.0;
+
     double frac = temp / 100.0;
 
     if (frac < 0.0)
@@ -935,8 +947,13 @@ static void thermal_draw(GtkDrawingArea *area, cairo_t *cr, int w, int h,
 
         char lb[48];
 
-        g_snprintf(lb, sizeof(lb), "%s %.1f%%", leg_txt[i],
-                   avg_window_value(use, leg_win[i]));
+        double leg_val = avg_window_value(use, leg_win[i]);
+
+        if (isfinite(leg_val))
+            g_snprintf(lb, sizeof(lb), "%s %.1f%%", leg_txt[i], leg_val);
+        else
+            g_snprintf(lb, sizeof(lb), "%s —", leg_txt[i]);
+
         cairo_move_to(cr, lgd_x + 18.0, 38.0);
         cairo_show_text(cr, lb);
         lgd_x += 88.0;
@@ -949,9 +966,10 @@ static void thermal_draw(GtkDrawingArea *area, cairo_t *cr, int w, int h,
     cairo_move_to(cr, rx0 + 4.0, 18.0);
     cairo_show_text(cr, "CPU 温度");
 
-    double cur_temp = (temp != NULL && temp->count > 0)
-                          ? hist_at(temp, temp->count - 1)
-                          : 0.0;
+    uint32_t temp_n = (temp != NULL && temp->count > FMON_HISTORY_POINTS)
+                          ? FMON_HISTORY_POINTS
+                          : (temp != NULL ? temp->count : 0);
+    double cur_temp = (temp_n > 0) ? hist_at(temp, temp_n - 1) : NAN;
 
     draw_thermometer(cr, &fg, rx0 + 8.0, ly + 6.0, lh - 22.0, cur_temp);
 
@@ -959,26 +977,42 @@ static void thermal_draw(GtkDrawingArea *area, cairo_t *cr, int w, int h,
     double tx = rx0 + 84.0;
     double twd = half - 84.0 - 16.0;
 
-    draw_axis(cr, &fg, tx, ly, twd, lh, 100.0, 4, 0, "°C");
-    draw_step_series(cr, temp, tx, ly, twd, lh, 100.0, 0.92, 0.30, 0.25, 1);
+    /* 固定 0-100°C 基准；真实温度更高时轴自动扩展，不裁掉尖峰。 */
+    double tmax = 100.0;
+    double tlo = 0.0, thi = 0.0;
+
+    if (temp != NULL &&
+        fmon_chart_history_range(temp->history, FMON_HISTORY_POINTS,
+                                 temp->count, temp->index, &tlo, &thi) &&
+        thi > tmax)
+        tmax = ceil(thi / 20.0) * 20.0;
+
+    draw_axis(cr, &fg, tx, ly, twd, lh, tmax, 4, 0, "°C");
+    draw_thermal_series(cr, temp, tx, ly, twd, lh, tmax, 0.92, 0.30, 0.25);
 
     /* 大号当前温度：放在温度图右上角空白处 */
     {
         char b[32];
 
-        g_snprintf(b, sizeof(b), "%.1f°C", cur_temp);
         gauge_font(cr, 26.0);
+
+        if (isfinite(cur_temp))
+            g_snprintf(b, sizeof(b), "%.1f°C", cur_temp);
+        else
+            g_snprintf(b, sizeof(b), "—");
 
         cairo_text_extents_t ext;
 
         cairo_text_extents(cr, b, &ext);
 
-        if (cur_temp >= 85.0)
+        if (isfinite(cur_temp) && cur_temp >= 85.0)
             cairo_set_source_rgba(cr, 0.88, 0.16, 0.14, 0.95);
-        else if (cur_temp >= 70.0)
+        else if (isfinite(cur_temp) && cur_temp >= 70.0)
             cairo_set_source_rgba(cr, 0.92, 0.65, 0.06, 0.95);
-        else
+        else if (isfinite(cur_temp))
             cairo_set_source_rgba(cr, 0.92, 0.30, 0.25, 0.95);
+        else
+            cairo_set_source_rgba(cr, fg.red, fg.green, fg.blue, 0.55);
 
         cairo_move_to(cr, tx + twd - ext.width - 8.0, ly + 26.0);
         cairo_show_text(cr, b);
@@ -999,7 +1033,7 @@ GtkWidget *gui_cpu_thermal_card(void)
 
     GtkWidget *s =
         gtk_label_new(
-            _("左：CPU 使用率的 1/5/10 分钟平均值（%）· 右：温度阶梯图 + CPU 温度计"));
+            _("左：CPU 使用率的 1/5/10 分钟平均值（%）· 右：温度曲线 + CPU 温度计"));
 
     gtk_widget_add_css_class(s, "group-desc");
     gtk_label_set_xalign(GTK_LABEL(s), 0.0f);

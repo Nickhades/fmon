@@ -49,11 +49,12 @@
 | `gui_page_build.c` | 页面骨架构建器（指标页/组合页/滚动包装） |
 | `gui_pages_layout.c` | 所有页面创建与 GtkStack 装配 |
 | `gui_refresh.c` | 每秒页面刷新与主题重绘（所有 updater 集中于此） |
-| `gui_chart.c` | 单曲线绘图（网格、坐标、悬停、峰值） |
-| `gui_chart_util.c` | 时间标签、量程取整、坐标轴文本 |
+| `chart_geom.c` | 纯 C 图表几何：量程不裁峰、真实时间轴、NaN 缺口、保峰值抽取、Cairo 路径/极值带 |
+| `gui_chart.c` | 单曲线绘图（线性折线、网格、坐标、悬停、峰值） |
+| `gui_chart_util.c` | 时间标签、坐标轴文本、速率/数值格式 |
 | `combo_chart.c` | 多曲线分带绘图入口（绘制/悬停事件） |
-| `combo_chart_geom.c` | 几何布局、量程、数值文本 |
-| `combo_chart_draw.c` | 网格/坐标/带框/曲线/悬停绘制 |
+| `combo_chart_geom.c` | 几何布局、每条带量程、数值文本 |
+| `combo_chart_draw.c` | 网格/坐标/带框/线性曲线/悬停绘制 |
 | `gui_util.c` | 面板绘制、字节/速率格式化 |
 | `theme.c` | 明暗主题、调色板、持久化 |
 | `gui_state.h` | 界面共享快照访问接口 |
@@ -84,6 +85,8 @@
 | `collectors.h` | 各采集线程入口声明 |
 | `collector_cpu.c` | CPU/每核/温度/内存/负载/电池 |
 | `collector_io.c` | devstat 磁盘 I/O + 磁盘元数据 |
+| `disk_smart.c` | 磁盘温度 provider 链：NVMe ioctl / CAM ATAIO / SCSI LOG SENSE，失败回退 base/可选工具 |
+| `disk_meta.c` | 磁盘元数据内核 provider：DIOCG* / NVMe controller / CAM ATA/SCSI；失败回退 geom/diskinfo |
 | `collector_net.c` | 接口统计/地址/硬件信息 |
 | `collector_gpu.c` | AMD(amdgpu ioctl) / NVIDIA(nvidia-smi) 探测与采集 |
 | `collector_zfs.c` | zpool/ARC/命中率/带宽/Prune |
@@ -100,3 +103,4 @@
 |---|---|
 | `fmon_shm.c/h` | 共享内存布局、seqlock、ABI 校验 |
 | `fmon_child.c/h` | 子进程执行与超时保护 |
+| `fmon_smart.c/h` | NVMe SMART 文本解析（daemon 采集、GUI 共用） |

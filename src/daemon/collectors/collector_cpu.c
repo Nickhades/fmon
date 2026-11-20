@@ -8,12 +8,13 @@
  *      导致充电时仍显示放电功率；现在按位判断，并增加了交流电状态。
  *   3. 增加了 kern.cp_times 每核采样（新功能），在界面里以柱状图显示。
  *   4. CPU 占用用“本次 / 上次”的差值计算，并对计数器回绕做了保护。
- *   5. 删除“温度默认 45℃”这类伪造值：没有传感器时明确上报 0，由界面显示 N/A。
+ *   5. 删除“温度默认 45℃”这类伪造值：没有传感器时上报 NaN，由界面显示 N/A。
  */
 
 #include "fmon_daemon.h"
 #include "fmon_sysctl.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/resource.h>
@@ -69,25 +70,9 @@ static double read_cpu_temp(unsigned cpu_count)
     return best;
 }
 
-/* 传感器本身有 ±1℃ 抖动，这里做轻度指数平滑（对真实数据降噪，
- * 与旧版“用随机数伪造曲线”是两件事）。 */
-static double smooth_temp(double sample)
-{
-    static double ema    = 0.0;
-    static bool   primed = false;
-
-    if (sample < 0.0)
-        return primed ? ema : 0.0;
-
-    if (!primed) {
-        ema    = sample;
-        primed = true;
-    } else {
-        ema = ema * 0.7 + sample * 0.3;
-    }
-
-    return ema;
-}
+/* 温度不做 EMA/滑动平均：传感器读数是监控对象本身，采集层和渲染层
+ * 都不应该替用户“降噪”。读不到传感器时写 NaN，界面显示“不可用”；
+ * 绘图端遇到 NaN 会断开折线，不会把缺失值画成 0°C。 */
 
 /* ===========================================================================
  * CPU 总占用
@@ -270,11 +255,13 @@ static void sample_battery(FmonShmData *s)
         s->battery_discharge_w = 0.0;
         s->battery_flags       = 0;
         s->acline              = 0;
+        s->probe_valid &= ~FMON_PROBE_BATTERY;
         return;
     }
 
     s->battery_present = 1;
     s->battery_pct     = (double)life;
+    s->probe_valid |= FMON_PROBE_BATTERY;
 
     if (fmon_sysctl_int("hw.acpi.battery.state", &state) != 0)
         state = 0;
@@ -297,7 +284,7 @@ static void sample_battery(FmonShmData *s)
     if (fmon_sysctl_int("hw.acpi.acline", &acline) == 0)
         s->acline = (acline > 0) ? 1u : 0u;
     else
-        s->acline = (flags & FMON_BATT_DISCHARGING) ? 0u : 1u;
+        s->acline = 0;   /* 未知，不按放电标志猜测 */
 
     /* 只有放电时才有意义。hw.acpi.battery.rate 单位是 mW。 */
     if ((flags & FMON_BATT_DISCHARGING) != 0 &&
@@ -325,7 +312,8 @@ void *thread_cpu_mem(void *arg)
         sample_memory(g_shm);
         sample_loadavg(g_shm);
         sample_battery(g_shm);
-        g_shm->cpu_temp_c = smooth_temp(temp);
+        g_shm->cpu_temp_c =
+            (isfinite(temp) && temp >= 0.0) ? temp : NAN;
         fmon_shm_wr_end();
 
         if (!fmon_sleep_ms(FMON_SAMPLE_INTERVAL_MS) && !g_running)

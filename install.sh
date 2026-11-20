@@ -19,7 +19,7 @@ set -eu
 # ---------------------------------------------------------------------------
 # 常量
 # ---------------------------------------------------------------------------
-VERSION="1.1.1"
+VERSION="1.2.0"
 
 SELF=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)/$(basename -- "$0")
 SRC_DIR=$(dirname -- "$SELF")
@@ -34,15 +34,14 @@ BIN_GUI="$PREFIX/bin/fmon-gui"
 RC_SCRIPT="$PREFIX/etc/rc.d/fmon_daemon"
 LEGACY_BIN="$PREFIX/bin/fmon_daemon"
 LICENSE_DIR="$PREFIX/share/licenses/fmon"
+ICON_FILE="$PREFIX/share/icons/hicolor/scalable/apps/org.freebsd.fmon.svg"
+DESKTOP_FILE="$PREFIX/share/applications/org.freebsd.fmon.desktop"
 LOCK_FILE="/var/run/fmon-daemon.lock"
 
 LOG_FILE="/var/log/fmon-install.log"
 
 RC_SERVICE="fmon_daemon"
 RC_VAR="${RC_SERVICE}_enable"
-
-PKG_DEPS="meson ninja pkgconf gtk4 cairo dmidecode"
-PKG_OPTIONAL="libdrm"
 
 # ---------------------------------------------------------------------------
 # 参数
@@ -113,12 +112,13 @@ fmon ${VERSION} 一键安装脚本
   --dry-run          只打印将要执行的步骤，不修改系统
   --build-only       只编译，不安装（普通用户可用）
   --clean            安装前删除 build/ 目录重新配置
-  --skip-deps        跳过依赖安装（缺依赖时直接报错）
+  --skip-deps        跳过依赖安装（构建依赖缺失直接报错；运行时工具缺失仅警告）
   --no-start         安装后不启动服务
   --launch           安装后尝试以当前桌面用户启动图形界面
   --uninstall        卸载（停服务 + 取消自启 + 删除文件）
   --keep-legacy      保留旧版 /usr/local/bin/fmon_daemon 不备份
   --keep-data        卸载时保留共享内存与锁文件
+  --prefix=DIR       安装前缀（默认 /usr/local）
   -h, --help         显示本帮助
 
 示例：
@@ -199,26 +199,59 @@ confirm() {
 
 # ---------------------------------------------------------------------------
 # 参数解析
+#
+# 注意：解析放在函数里。POSIX sh 的函数拥有自己的位置参数，函数内 shift
+# 不会消耗调用者的 "$@"；这样后面 sudo 重新执行时还能带上原始参数。
+# 旧版在顶层 while/shift，参数被吃光，非 root 执行 --uninstall 会变成安装。
 # ---------------------------------------------------------------------------
-while [ $# -gt 0 ]; do
-    case "$1" in
-        -y|--yes)        ASSUME_YES=1 ;;
-        --dry-run)       DRY_RUN=1; ASSUME_YES=1 ;;
-        --build-only)    BUILD_ONLY=1 ;;
-        --clean)         DO_CLEAN=1 ;;
-        --skip-deps)     SKIP_DEPS=1 ;;
-        --no-start)      NO_START=1 ;;
-        --launch)        LAUNCH_GUI=1 ;;
-        --uninstall)     UNINSTALL=1 ;;
-        --keep-legacy)   KEEP_LEGACY=1 ;;
-        --keep-data)     KEEP_DATA=1 ;;
-        --prefix=*)      PREFIX="${1#--prefix=}" ;;
-        --prefix)        shift; PREFIX="${1:?--prefix 需要参数}" ;;
-        -h|--help)       usage; exit 0 ;;
-        *)               printf '未知参数：%s\n\n' "$1" >&2; usage; exit 2 ;;
-    esac
-    shift
-done
+parse_args()
+{
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            -y|--yes)        ASSUME_YES=1 ;;
+            --dry-run)       DRY_RUN=1; ASSUME_YES=1 ;;
+            --build-only)    BUILD_ONLY=1 ;;
+            --clean)         DO_CLEAN=1 ;;
+            --skip-deps)     SKIP_DEPS=1 ;;
+            --no-start)      NO_START=1 ;;
+            --launch)        LAUNCH_GUI=1 ;;
+            --uninstall)     UNINSTALL=1 ;;
+            --keep-legacy)   KEEP_LEGACY=1 ;;
+            --keep-data)     KEEP_DATA=1 ;;
+            --prefix=*)      PREFIX="${1#--prefix=}" ;;
+            --prefix)
+                shift
+                [ $# -gt 0 ] || die "--prefix 需要参数"
+                PREFIX="$1"
+                ;;
+            -h|--help)       usage; exit 0 ;;
+            *)
+                printf '未知参数：%s\n\n' "$1" >&2
+                usage
+                exit 2
+                ;;
+        esac
+        shift
+    done
+}
+
+parse_args "$@"
+
+# --prefix 必须是绝对路径，且不能是 / 或包含 ..，避免卸载时误删系统目录。
+case "$PREFIX" in
+    /*) ;;
+    *)  die "--prefix 必须是绝对路径：$PREFIX" ;;
+esac
+case "$PREFIX" in
+    /|*/..|*/../*|*..) die "拒绝不安全的安装前缀：$PREFIX" ;;
+esac
+PREFIX=${PREFIX%/}
+[ -n "$PREFIX" ] || die "安装前缀不能为空"
+
+# sudo 可能重置 PATH，而 meson/ninja/pkgconf 通常装在 /usr/local/bin。
+# 显式补上前缀与 FreeBSD 本地工具目录，避免 root 下“依赖明明装了却找不到”。
+PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PREFIX/sbin:$PREFIX/bin${PATH:+:$PATH}"
+export PATH
 
 PKG_CMD=$(find_pkg)
 
@@ -228,6 +261,9 @@ BIN_GUI="$PREFIX/bin/fmon-gui"
 RC_SCRIPT="$PREFIX/etc/rc.d/fmon_daemon"
 LEGACY_BIN="$PREFIX/bin/fmon_daemon"
 LICENSE_DIR="$PREFIX/share/licenses/fmon"
+ICON_FILE="$PREFIX/share/icons/hicolor/scalable/apps/org.freebsd.fmon.svg"
+DESKTOP_FILE="$PREFIX/share/applications/org.freebsd.fmon.desktop"
+LOCALEDIR="$PREFIX/share/locale"
 
 # ---------------------------------------------------------------------------
 # 权限
@@ -302,11 +338,13 @@ check_deps() {
     done
 
     if have pkg-config; then
-        pkg-config --exists gtk4  || missing_pkgs="$missing_pkgs gtk4"
-        pkg-config --exists cairo || missing_pkgs="$missing_pkgs cairo"
+        pkg-config --exists gtk4       || missing_pkgs="$missing_pkgs gtk4"
+        pkg-config --exists cairo      || missing_pkgs="$missing_pkgs cairo"
+        pkg-config --exists fontconfig || missing_pkgs="$missing_pkgs fontconfig"
+        pkg-config --exists sqlite3    || missing_pkgs="$missing_pkgs sqlite3"
     else
         # 连 pkg-config 都没有：直接整包装
-        missing_pkgs="$missing_pkgs gtk4 cairo"
+        missing_pkgs="$missing_pkgs gtk4 cairo fontconfig sqlite3"
     fi
 
     if [ -n "$missing_pkgs" ]; then
@@ -317,36 +355,104 @@ check_deps() {
     $PKG_CMD install -y $missing_pkgs"
         fi
 
+        # --build-only 声明为“普通用户可用”，不能到这里偷偷 pkg install。
+        if [ "$BUILD_ONLY" -eq 1 ] && [ "$(id -u)" -ne 0 ]; then
+            die "缺少构建依赖：$missing_pkgs
+    --build-only 不会提权安装软件包。请先以 root 执行：
+    $PKG_CMD install -y $missing_pkgs"
+        fi
+
         info "正在安装：$missing_pkgs"
         # shellcheck disable=SC2086
         run "$PKG_CMD" install -y $missing_pkgs || \
             die "依赖安装失败，请检查 /etc/pkg/FreeBSD.conf 与网络"
 
         if [ "$DRY_RUN" -eq 0 ]; then
-            have pkg-config && pkg-config --exists gtk4 && pkg-config --exists cairo || \
-                warn "pkg install 完成，但 pkg-config 仍找不到 gtk4/cairo，请检查环境变量 PKG_CONFIG_PATH"
+            have pkg-config && pkg-config --exists gtk4 && \
+                pkg-config --exists cairo && pkg-config --exists fontconfig && \
+                pkg-config --exists sqlite3 || \
+                warn "pkg install 完成，但 pkg-config 仍找不到 gtk4/cairo/fontconfig/sqlite3，请检查 PKG_CONFIG_PATH"
         fi
         ok "依赖已安装"
     else
-        ok "必需依赖齐全（meson / ninja / pkgconf / gtk4 / cairo）"
+        ok "必需依赖齐全（meson / ninja / pkgconf / gtk4 / cairo / fontconfig / sqlite3）"
     fi
 
-    # 内存条信息（需要 dmidecode，读取 SMBIOS）
+    # ------------------------------------------------------------------
+    # 运行时工具：无原生接口时的回退工具；系统已有则跳过，缺失则自动装
+    # ------------------------------------------------------------------
+    runtime_pkgs=""
+
+    if ! have dmidecode; then
+        runtime_pkgs="$runtime_pkgs dmidecode"
+    fi
+
+    if ! have smartctl; then
+        runtime_pkgs="$runtime_pkgs smartmontools"
+    fi
+
+    if have pkg-config && ! pkg-config --exists libdrm_amdgpu; then
+        runtime_pkgs="$runtime_pkgs libdrm"
+    fi
+
+    if [ -n "$runtime_pkgs" ]; then
+        if [ "$SKIP_DEPS" -eq 1 ]; then
+            warn "缺少运行时工具：$runtime_pkgs（指定了 --skip-deps，跳过自动安装）"
+        elif [ "$BUILD_ONLY" -eq 1 ]; then
+            info "只编译模式：不自动安装运行时工具：$runtime_pkgs"
+        else
+            info "检测到缺少运行时工具，自动安装：$runtime_pkgs"
+            # shellcheck disable=SC2086
+            run "$PKG_CMD" install -y $runtime_pkgs || \
+                warn "运行时工具安装失败；对应功能会显示不可用，不影响已有功能"
+        fi
+    else
+        ok "运行时工具齐全（dmidecode / smartctl / libdrm_amdgpu）"
+    fi
+
+    # 安装后重新探测，避免“安装失败但仍打印可用”
     if have dmidecode; then
         ok "内存条信息：dmidecode 可用（可显示插槽/容量/频率）"
     else
-        warn "未找到 dmidecode：内存条详情不可用（$PKG_CMD install -y dmidecode）"
+        warn "dmidecode 不可用：内存条详情显示不可用"
     fi
 
-    # 可选依赖：AMD 显卡负载
-    if have pkg-config && pkg-config --exists libdrm_amdgpu; then
-        ok "可选依赖 libdrm_amdgpu：已安装（AMD 显卡可读真实负载/温度）"
+    if have smartctl; then
+        ok "磁盘温度回退：smartctl 可用（SATA/USB/RAID 额外覆盖）"
     else
-        warn "可选依赖 libdrm_amdgpu：未安装 → AMD 显卡只能显示设备信息，没有负载数据
-      需要的话执行：$PKG_CMD install -y libdrm"
+        warn "smartctl 不可用：无原生 SMART 接口的盘会显示—"
     fi
 
-    # 可选依赖：NVIDIA 遥测（PATH 优先，其次常见目录；不写死单一位置）
+    if have pkg-config && pkg-config --exists libdrm_amdgpu; then
+        ok "AMD GPU：libdrm_amdgpu 可用（真实负载/温度）"
+    else
+        warn "libdrm_amdgpu 不可用：AMD 显卡只能显示设备信息，负载/温度显示—"
+    fi
+
+    # ------------------------------------------------------------------
+    # FreeBSD base 工具探测：这些不应安装，缺失说明系统不完整
+    # ------------------------------------------------------------------
+    missing_base=""
+    for tool in sysctl ifconfig ps service sysrc tail geom camcontrol diskinfo \
+                usbconfig pciconf nvmecontrol acpiconf iostat vmstat netstat \
+                posixshmcontrol; do
+        have "$tool" || missing_base="$missing_base $tool"
+    done
+
+    if [ -n "$missing_base" ]; then
+        warn "FreeBSD base 工具缺失：$missing_base；对应功能会显示不可用"
+    else
+        ok "FreeBSD base 工具齐全（sysctl/ifconfig/ps/service/geom/camcontrol/...）"
+    fi
+
+    if have zpool; then
+        ok "ZFS zpool：可用"
+    else
+        info "未找到 zpool：无 ZFS 或未安装基础 ZFS 工具，相关页面显示不可用"
+    fi
+
+    # NVIDIA 遥测：nvidia-smi 属于驱动，不能安全地盲目 pkg install 驱动。
+    # 只做硬件探测与明确提示，避免装错驱动版本。
     NV_SMI=""
     if have nvidia-smi; then
         NV_SMI="$(command -v nvidia-smi)"
@@ -357,26 +463,15 @@ check_deps() {
             [ -x "$p" ] && NV_SMI="$p" && break
         done
     fi
+
     if [ -n "$NV_SMI" ]; then
         ok "NVIDIA 遥测：$NV_SMI 可用（独显负载/显存/温度可读）"
+    elif have pciconf && pciconf -lv 2>/dev/null | grep -qi 'NVIDIA'; then
+        warn "检测到 NVIDIA GPU，但 nvidia-smi 不可用：
+      请安装与显卡/内核匹配的 nvidia-driver（不要混装多个驱动版本），
+      或设置 FMON_NVIDIA_SMI=/你的路径/nvidia-smi。未安装时 GPU 页面显示不可用。"
     else
-        warn "未检测到 nvidia-smi：可安装驱动（$PKG_CMD install -y nvidia-driver），
-      或若使用自编译驱动，启动服务时设置 FMON_NVIDIA_SMI=/你的路径/nvidia-smi"
-    fi
-
-    # 可选：nvtop（仅作为对照工具，本程序不依赖它）
-    NVTOP=""
-    if have nvtop; then
-        NVTOP="$(command -v nvtop)"
-    else
-        for p in /usr/local/bin/nvtop /usr/bin/nvtop; do
-            [ -x "$p" ] && NVTOP="$p" && break
-        done
-    fi
-    if [ -n "$NVTOP" ]; then
-        ok "对照工具 nvtop：$NVTOP"
-    else
-        info "可选工具 nvtop 未安装；需要对照查看多 GPU 时可执行：$PKG_CMD install -y nvtop"
+        info "未检测到 NVIDIA GPU，无需 nvidia-smi"
     fi
 
     for tool in meson ninja cc; do
@@ -395,6 +490,14 @@ do_build() {
 
     if [ "$DO_CLEAN" -eq 1 ] && [ -d "$BUILD_DIR" ]; then
         info "删除旧构建目录 $BUILD_DIR"
+        run rm -rf "$BUILD_DIR"
+    fi
+
+    # 源码目录被移动/复制后，旧 build.ninja 仍指向旧绝对路径，
+    # 直接 ninja 会报“找不到目标”。检测到路径不一致就重建。
+    if [ -f "$BUILD_DIR/build.ninja" ] && \
+       ! grep -Fq "$SRC_DIR" "$BUILD_DIR/build.ninja"; then
+        warn "build/ 指向旧源码路径，删除后重新配置"
         run rm -rf "$BUILD_DIR"
     fi
 
@@ -464,11 +567,10 @@ stop_running() {
 # 安装
 # ---------------------------------------------------------------------------
 install_locales() {
-    local mo lang
-
     for mo in "$BUILD_DIR"/po/*.mo; do
         [ -f "$mo" ] || continue
-        lang=$(basename "$mo" .mo)
+        lang=${mo##*/}
+        lang=${lang%.mo}
         run install -d -m 0755 "$LOCALEDIR/$lang/LC_MESSAGES"
         run install -m 0644 "$mo" "$LOCALEDIR/$lang/LC_MESSAGES/fmon.mo"
     done
@@ -483,10 +585,22 @@ install_files() {
     [ "$DRY_RUN" -eq 1 ] || [ -x "$BIN_DAEMON" ] || die "安装后找不到 $BIN_DAEMON"
     [ "$DRY_RUN" -eq 1 ] || [ -x "$BIN_GUI" ]    || die "安装后找不到 $BIN_GUI"
     [ "$DRY_RUN" -eq 1 ] || [ -x "$RC_SCRIPT" ]  || die "安装后找不到 $RC_SCRIPT"
+    [ "$DRY_RUN" -eq 1 ] || [ -f "$ICON_FILE" ]   || die "安装后找不到应用图标 $ICON_FILE"
+    [ "$DRY_RUN" -eq 1 ] || [ -f "$DESKTOP_FILE" ] || die "安装后找不到桌面入口 $DESKTOP_FILE"
 
     ok "已安装：$BIN_DAEMON"
     ok "已安装：$BIN_GUI"
     ok "已安装：$RC_SCRIPT"
+    ok "已安装：$ICON_FILE"
+    ok "已安装：$DESKTOP_FILE"
+
+    # 刷新图标缓存；失败不影响安装，桌面环境会直接扫描 SVG。
+    if [ "$DRY_RUN" -eq 0 ] && have gtk-update-icon-cache; then
+        run gtk-update-icon-cache -f -t "$PREFIX/share/icons/hicolor"             >/dev/null 2>&1 || warn "gtk-update-icon-cache 失败，可忽略"
+    fi
+    if [ "$DRY_RUN" -eq 0 ] && have update-desktop-database; then
+        run update-desktop-database "$PREFIX/share/applications"             >/dev/null 2>&1 || true
+    fi
 
     # 旧版（下划线命名）的二进制：默认备份后移除，避免两个守护进程打架
     if [ -f "$LEGACY_BIN" ] && [ "$KEEP_LEGACY" -eq 0 ]; then
@@ -578,11 +692,15 @@ health_check() {
     printf '\n  已探测到的显卡：\n'
     found_gpu=0
     if have nvidia-smi; then
-        nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | \
-            while IFS= read -r line; do
+        # 不要用 pipeline 里的 while 设置 found_gpu：管道在子 shell 里执行，
+        # 变量改动不会带回父 shell（旧版会在只有 NVIDIA 卡时误报“未检测到显卡”）。
+        nv_names=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null || true)
+        if [ -n "$nv_names" ]; then
+            printf '%s\n' "$nv_names" | while IFS= read -r line; do
                 printf '    - NVIDIA: %s\n' "$line"
             done
-        found_gpu=1
+            found_gpu=1
+        fi
     fi
     i=0
     while [ "$i" -lt 8 ]; do
@@ -644,8 +762,8 @@ maybe_launch_gui() {
         return 0
     fi
 
-    if [ -z "${DISPLAY:-}" ]; then
-        warn "--launch 需要 DISPLAY 环境变量（请在桌面终端里执行 sudo -E ./install.sh --launch）"
+    if [ -z "${DISPLAY:-}" ] && [ -z "${WAYLAND_DISPLAY:-}" ]; then
+        warn "--launch 需要 DISPLAY 或 WAYLAND_DISPLAY（请在桌面终端里执行 sudo -E ./install.sh --launch）"
         return 0
     fi
 
@@ -660,14 +778,21 @@ maybe_launch_gui() {
 do_uninstall() {
     step "卸载 fmon"
 
+    # 必须在删除二进制之前解析共享内存名：旧版在 rm 之后才调用
+    # detect_shm_name，安装二进制已不存在，于是永远清不掉 /dev/shm 对象。
+    shm_name=$(detect_shm_name || true)
+
     printf '将执行：\n'
     printf '  - 停止并禁用服务 %s\n' "$RC_SERVICE"
     printf '  - 删除 %s\n' "$BIN_DAEMON"
     printf '  - 删除 %s\n' "$BIN_GUI"
     printf '  - 删除 %s\n' "$RC_SCRIPT"
+    printf '  - 删除 %s\n' "$ICON_FILE"
+    printf '  - 删除 %s\n' "$DESKTOP_FILE"
+    printf '  - 删除本地化文件与许可证目录\n'
     if [ "$KEEP_DATA" -eq 0 ]; then
         printf '  - 清理共享内存 %s 与锁文件 %s\n' \
-            "$(detect_shm_name || echo '/fmon_daemon_shm_*')" "$LOCK_FILE"
+            "${shm_name:-/fmon_daemon_shm_*}" "$LOCK_FILE"
     fi
     printf '\n'
 
@@ -680,12 +805,33 @@ do_uninstall() {
     ok "已移除 ${RC_VAR}"
 
     step "删除文件"
-    for f in "$BIN_DAEMON" "$BIN_GUI" "$RC_SCRIPT"; do
+    for f in "$BIN_DAEMON" "$BIN_GUI" "$RC_SCRIPT" "$ICON_FILE" \
+             "$DESKTOP_FILE"; do
         if [ -e "$f" ]; then
             run rm -f "$f"
             ok "已删除 $f"
         fi
     done
+
+    if [ "$DRY_RUN" -eq 0 ] && have gtk-update-icon-cache; then
+        run gtk-update-icon-cache -f -t "$PREFIX/share/icons/hicolor" \
+            >/dev/null 2>&1 || true
+    fi
+    if [ "$DRY_RUN" -eq 0 ] && have update-desktop-database; then
+        run update-desktop-database "$PREFIX/share/applications" \
+            >/dev/null 2>&1 || true
+    fi
+
+    for mo in "$LOCALEDIR"/*/LC_MESSAGES/fmon.mo; do
+        [ -f "$mo" ] || continue
+        run rm -f "$mo"
+        ok "已删除 $mo"
+    done
+
+    if [ -d "$LICENSE_DIR" ]; then
+        run rm -rf "$LICENSE_DIR"
+        ok "已删除 $LICENSE_DIR"
+    fi
 
     if [ -f "${LEGACY_BIN}.bak" ]; then
         if confirm "恢复旧版二进制 ${LEGACY_BIN}.bak → ${LEGACY_BIN}？"; then
@@ -696,7 +842,6 @@ do_uninstall() {
 
     if [ "$KEEP_DATA" -eq 0 ]; then
         step "清理共享内存与锁文件"
-        shm_name=$(detect_shm_name || true)
         if have posixshmcontrol && [ -n "$shm_name" ]; then
             run posixshmcontrol rm "$shm_name" 2>/dev/null || \
                 warn "共享内存 $shm_name 不存在或已清理"

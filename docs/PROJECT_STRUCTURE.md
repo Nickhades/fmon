@@ -5,7 +5,7 @@
 ## 目录 / Directory layout
 
 ```
-fmon-1.1.1/
+fmon-1.2.0/
 ├── src/
 │   ├── common/           共享内存 ABI、子进程执行
 │   │   ├── fmon_shm.c/h
@@ -36,7 +36,7 @@ fmon-1.1.1/
 1. `fmon-daemon` 以 root 运行，1 Hz 采样：
    - `sysctl`、`kvm`、`devstat`、`geom`、`libprocstat`、
      `getifaddrs`、`cam`、ZFS kstat；
-2. 采集结果写入 `/fmon_daemon_shm_v20` 的 seqlock 快照；
+2. 采集结果写入 `/fmon_daemon_shm_v23` 的 seqlock 快照；
 3. `fmon-gui` 只读 mmap，拷贝一致快照后交给 GTK/Cairo 渲染；
 4. 特权操作通过 `/var/run/fmon-ctl.sock`：
    - 结束/暂停进程、nice、cpuset、rctl；

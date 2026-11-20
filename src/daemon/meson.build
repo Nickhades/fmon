@@ -9,10 +9,12 @@ daemon_srcs = files(
   'collectors/collector_storage.c',
   'collectors/collector_proc.c',
   'collectors/collector_zfs.c',
-  'collectors/collector_meminfo.c'
+  'collectors/collector_meminfo.c',
+  'collectors/disk_smart.c',
+  'collectors/disk_meta.c'
 )
 
-daemon_deps  = [thread_dep, kvm_dep, devstat_dep, m_dep]
+daemon_deps  = [thread_dep, kvm_dep, devstat_dep, cam_dep, m_dep]
 daemon_cargs = []
 
 # 可选依赖：有 libdrm_amdgpu 时启用 AMD 显卡负载采集

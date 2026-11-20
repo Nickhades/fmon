@@ -3,6 +3,9 @@
  *
  * 读取守护进程每 10 秒写入的 history.tsv，按 1 小时 / 24 小时范围
  * 降采样到最多 FMON_HISTORY_POINTS 个点，用曲线展示 CPU 与内存。
+ *
+ * 24 小时视图每个时间桶保留真实 min/max：曲线本身仍是桶平均，
+ * 背景色带显示该桶内 10 秒原始采样的极值，避免平均把尖峰藏起来。
  */
 
 #include "history_view.h"
@@ -11,10 +14,22 @@
 #include "gui_util.h"
 
 #include <glib/gi18n.h>
+#include <math.h>
 #include <string.h>
 #include <time.h>
 
 #define HIST_POINTS FMON_HISTORY_POINTS
+
+typedef struct {
+    double  *cpu_avg;
+    double  *cpu_min;
+    double  *cpu_max;
+    double  *mem_avg;
+    double  *mem_min;
+    double  *mem_max;
+    uint64_t *time_us;
+    guint    cap;
+} HistoryOut;
 
 typedef struct {
     GtkWidget *root;
@@ -27,8 +42,13 @@ typedef struct {
     guint      timer;
 } HistoryPage;
 
-static double g_cpu[HIST_POINTS];
-static double g_mem[HIST_POINTS];
+static double   g_cpu[HIST_POINTS];
+static double   g_cpu_min[HIST_POINTS];
+static double   g_cpu_max[HIST_POINTS];
+static double   g_mem[HIST_POINTS];
+static double   g_mem_min[HIST_POINTS];
+static double   g_mem_max[HIST_POINTS];
+static uint64_t g_time_us[HIST_POINTS];
 
 static void remove_source(gpointer data)
 {
@@ -45,6 +65,15 @@ static const char *history_path(void)
     if (path[0] != '\0')
         return path;
 
+    /* 本地测试/演示用：允许把历史页指向一个合成 TSV。安装运行时不设置
+     * 该变量，仍然优先读取 /var/db/fmon/history.tsv。 */
+    const char *override = g_getenv("FMON_HISTORY_FILE");
+
+    if (override != NULL && override[0] != '\0') {
+        g_strlcpy(path, override, sizeof(path));
+        return path;
+    }
+
     if (g_file_test("/var/db/fmon/history.tsv", G_FILE_TEST_EXISTS)) {
         g_strlcpy(path, "/var/db/fmon/history.tsv", sizeof(path));
     } else {
@@ -57,11 +86,15 @@ static const char *history_path(void)
     return path;
 }
 
-/* 读取 history.tsv，按范围降采样；返回点数（0 表示没有数据） */
-static guint load_history(gint64 range_secs, double *out_cpu, double *out_mem,
+/* 读取 history.tsv，按范围降采样；返回点数（0 表示没有数据）。
+ * 每个桶输出平均/最小/最大和桶末时间戳。 */
+static guint load_history(gint64 range_secs, const HistoryOut *out,
                           gint64 *out_interval_secs, gdouble *avg_cpu,
                           gdouble *max_cpu, gdouble *avg_mem)
 {
+    if (out == NULL || out->cap == 0)
+        return 0;
+
     gchar *content = NULL;
     gsize  len     = 0;
 
@@ -74,7 +107,7 @@ static guint load_history(gint64 range_secs, double *out_cpu, double *out_mem,
     gchar **lines = g_strsplit(content, "\n", -1);
     g_free(content);
 
-    gint total = (gint)g_strv_length(lines);
+    gint   total  = (gint)g_strv_length(lines);
     gint64 cutoff = (gint64)time(NULL) - range_secs;
 
     /* 先统计范围内的行数 */
@@ -93,15 +126,18 @@ static guint load_history(gint64 range_secs, double *out_cpu, double *out_mem,
         return 0;
     }
 
-    /* 收集到临时数组（最多 HIST_POINTS*8 个，超出则先粗采样） */
-    gint     cap   = (n_in > HIST_POINTS * 8) ? HIST_POINTS * 8 : (gint)n_in;
-    double  *cpus  = g_new0(double, (gsize)cap);
-    double  *mems  = g_new0(double, (gsize)cap);
-    gint     got   = 0;
-    gint64   step  = (n_in > cap) ? (n_in / cap) : 1;
-    gint64   seen  = 0;
+    /* 收集范围内全部原始采样。旧版先按 step 抽掉一批点再做桶平均，
+     * 两轮抽样会漏掉尖峰，且 24h 视图的平均值取决于抽样相位。
+     * 这里只做一次按时间桶聚合，平均/极值都基于原始点计算。 */
+    gint64 *times = g_new0(gint64, (gsize)n_in);
+    double *cpus  = g_new0(double, (gsize)n_in);
+    double *mems  = g_new0(double, (gsize)n_in);
+    gint    got   = 0;
+    double  sumc_raw = 0.0;
+    double  summ_raw = 0.0;
+    double  peak = 0.0;
 
-    for (gint i = 0; i < total && got < cap; i++) {
+    for (gint i = 0; i < total && got < (gint)n_in; i++) {
         long long ts;
         double    cpu, mem;
 
@@ -109,63 +145,91 @@ static guint load_history(gint64 range_secs, double *out_cpu, double *out_mem,
             continue;
         if (ts < cutoff)
             continue;
-        if ((seen++ % step) != 0)
+        if (!isfinite(cpu) || !isfinite(mem))
             continue;
 
-        cpus[got] = cpu;
-        mems[got] = mem;
+        times[got] = (gint64)ts;
+        cpus[got]  = cpu;
+        mems[got]  = mem;
+        sumc_raw += cpu;
+        summ_raw += mem;
+        if (cpu > peak)
+            peak = cpu;
         got++;
     }
 
     g_strfreev(lines);
 
     if (got <= 0) {
+        g_free(times);
         g_free(cpus);
         g_free(mems);
         return 0;
     }
 
-    /* 桶平均降到 HIST_POINTS 以内 */
+    /* 单次桶聚合降到 HIST_POINTS 以内；时间戳取桶内最后一个采样。 */
     gint bucket = (got + HIST_POINTS - 1) / HIST_POINTS;
 
     if (bucket < 1)
         bucket = 1;
 
-    gint   n    = 0;
-    double sumc = 0.0, summ = 0.0;
-    double peak = 0.0;
+    guint n = 0;
 
-    for (gint i = 0; i < got; i += bucket) {
-        gint    cnt = 0;
-        double  sc = 0.0, sm = 0.0;
+    for (gint i = 0; i < got && n < out->cap; i += bucket) {
+        gint   cnt = 0;
+        double sc = 0.0, sm = 0.0;
+        double cmin = 0.0, cmax = 0.0;
+        double mmin = 0.0, mmax = 0.0;
+        gint64 ts_last = 0;
 
         for (gint j = i; j < got && j < i + bucket; j++) {
+            if (cnt == 0) {
+                cmin = cmax = cpus[j];
+                mmin = mmax = mems[j];
+            } else {
+                if (cpus[j] < cmin)
+                    cmin = cpus[j];
+                if (cpus[j] > cmax)
+                    cmax = cpus[j];
+                if (mems[j] < mmin)
+                    mmin = mems[j];
+                if (mems[j] > mmax)
+                    mmax = mems[j];
+            }
+
             sc += cpus[j];
             sm += mems[j];
-            if (cpus[j] > peak)
-                peak = cpus[j];
+            ts_last = times[j];
             cnt++;
         }
 
         if (cnt == 0)
             continue;
 
-        out_cpu[n] = sc / cnt;
-        out_mem[n] = sm / cnt;
-        sumc += out_cpu[n];
-        summ += out_mem[n];
+        out->cpu_avg[n] = sc / cnt;
+        out->cpu_min[n] = cmin;
+        out->cpu_max[n] = cmax;
+        out->mem_avg[n] = sm / cnt;
+        out->mem_min[n] = mmin;
+        out->mem_max[n] = mmax;
+        /* 合理范围之外的 TSV 时间戳（损坏/恶意文件）视为无效，
+         * 避免乘以 1e6 溢出，绘图端会退回等间距。 */
+        out->time_us[n] = (ts_last > 0 && ts_last < 10000000000LL)
+                              ? (uint64_t)ts_last * 1000000ULL
+                              : 0;
         n++;
     }
 
+    g_free(times);
     g_free(cpus);
     g_free(mems);
 
-    *out_interval_secs = (gint64)bucket * step * 10;   /* 采样间隔是 10 秒 */
-    *avg_cpu = (n > 0) ? sumc / n : 0.0;
-    *avg_mem = (n > 0) ? summ / n : 0.0;
+    *out_interval_secs = (gint64)bucket * 10;   /* 守护进程每 10 秒写一行 */
+    *avg_cpu = (got > 0) ? sumc_raw / got : 0.0;
+    *avg_mem = (got > 0) ? summ_raw / got : 0.0;
     *max_cpu = peak;
 
-    return (guint)n;
+    return n;
 }
 
 static void refresh_history(HistoryPage *page)
@@ -173,20 +237,37 @@ static void refresh_history(HistoryPage *page)
     guint sel = gtk_drop_down_get_selected(GTK_DROP_DOWN(page->range_dd));
     gint64 range_secs = (sel == 1) ? 24 * 3600 : 3600;
 
+    HistoryOut out = {
+        .cpu_avg = g_cpu,
+        .cpu_min = g_cpu_min,
+        .cpu_max = g_cpu_max,
+        .mem_avg = g_mem,
+        .mem_min = g_mem_min,
+        .mem_max = g_mem_max,
+        .time_us = g_time_us,
+        .cap     = HIST_POINTS,
+    };
+
     gint64  interval = 10;
     gdouble avg_cpu = 0.0, max_cpu = 0.0, avg_mem = 0.0;
 
-    guint n = load_history(range_secs, g_cpu, g_mem, &interval, &avg_cpu,
-                           &max_cpu, &avg_mem);
+    guint n = load_history(range_secs, &out, &interval, &avg_cpu, &max_cpu,
+                           &avg_mem);
 
-    page->cpu_cd.history    = g_cpu;
-    page->cpu_cd.count      = n;
-    page->cpu_cd.index      = n;
+    page->cpu_cd.history     = g_cpu;
+    page->cpu_cd.history_min = g_cpu_min;
+    page->cpu_cd.history_max = g_cpu_max;
+    page->cpu_cd.time_us     = g_time_us;
+    page->cpu_cd.count       = n;
+    page->cpu_cd.index       = n;
     page->cpu_cd.interval_us = (uint64_t)interval * 1000000ULL;
 
-    page->mem_cd.history    = g_mem;
-    page->mem_cd.count      = n;
-    page->mem_cd.index      = n;
+    page->mem_cd.history     = g_mem;
+    page->mem_cd.history_min = g_mem_min;
+    page->mem_cd.history_max = g_mem_max;
+    page->mem_cd.time_us     = g_time_us;
+    page->mem_cd.count       = n;
+    page->mem_cd.index       = n;
     page->mem_cd.interval_us = (uint64_t)interval * 1000000ULL;
 
     gtk_widget_queue_draw(page->cpu_area);
@@ -197,7 +278,8 @@ static void refresh_history(HistoryPage *page)
                            "没有历史数据（守护进程运行后每 10 秒记录一次）");
     } else {
         gchar *text = g_strdup_printf(
-            "%s：%u 个采样点 · CPU 平均 %.1f%% / 峰值 %.1f%% · 内存平均 %.1f%%",
+            "%s：%u 个采样点 · CPU 平均 %.1f%% / 原始峰值 %.1f%% · "
+            "内存平均 %.1f%% · 阴影为桶内最小–最大",
             (sel == 1) ? "最近 24 小时" : "最近 1 小时", n, avg_cpu, max_cpu,
             avg_mem);
         gtk_label_set_text(GTK_LABEL(page->summary), text);
@@ -292,11 +374,11 @@ GtkWidget *gui_history_view_new(void)
     gtk_widget_set_vexpand(cards, TRUE);
 
     gtk_box_append(GTK_BOX(cards),
-                   make_card("CPU 历史", &page->cpu_area, &page->cpu_cd,
-                             0.30, 0.85, 0.45));
+                   make_card("CPU 历史 · 平均 + 极值带", &page->cpu_area,
+                             &page->cpu_cd, 0.30, 0.85, 0.45));
     gtk_box_append(GTK_BOX(cards),
-                   make_card("内存历史", &page->mem_area, &page->mem_cd,
-                             0.35, 0.65, 0.95));
+                   make_card("内存历史 · 平均 + 极值带", &page->mem_area,
+                             &page->mem_cd, 0.35, 0.65, 0.95));
     gtk_box_append(GTK_BOX(vbox), cards);
 
     GtkWidget *hint = gtk_label_new(

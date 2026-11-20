@@ -338,6 +338,7 @@ GtkWidget *gui_gpu_page_new(int slot)
     pg->curve.history     = snap()->gpu_history[slot];
     pg->curve.max_val     = 100.0;
     pg->curve.unit        = "%";
+    pg->curve.time_us     = snap()->history_time_us;
     pg->curve.interval_us = (uint64_t)FMON_SAMPLE_INTERVAL_MS * 1000ULL;
 
     /* 每张卡一个固定颜色，避免曲线默认黑色 */
@@ -410,8 +411,12 @@ void gui_gpu_pages_update(void)
                    (g->load_available != 0) ? "传感器可用" : "无传感器");
         gtk_label_set_text(GTK_LABEL(pg->sub), sub);
 
+        pg->curve.time_us = snap()->history_time_us;
         pg->curve.count = snap()->history_count;
         pg->curve.index = snap()->history_index;
+        pg->curve.empty_hint = (g->load_available != 0)
+                                   ? "正在采集…"
+                                   : "该显卡没有可用的负载传感器";
 
         gtk_widget_queue_draw(pg->area);
         gui_gpu_fill_details(pg->grid, slot);

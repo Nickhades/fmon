@@ -17,6 +17,8 @@
 
 #include "fmon_daemon.h"
 
+#include "disk_smart.h"
+#include "disk_meta.h"
 #include "fmon_child.h"
 
 #include <ctype.h>
@@ -87,6 +89,7 @@ typedef struct {
     uint64_t size;
     uint32_t rpm;
     int      rpm_known;   /* diskinfo 的 Rotation rate 是否为确定值 */
+    int      meta_valid;  /* 内核/工具至少拿到一项元数据 */
     uint32_t kind;
     int64_t  updated_ms;
     int64_t  cam_ms;      /* 上次 camcontrol 富化时间 */
@@ -117,19 +120,20 @@ static DiskMeta *meta_slot(const char *name)
  * 返回 FMON_DISK_*，失败返回 -1。 */
 static int cam_rotation_kind(const char *name)
 {
-    char cmd[128];
+    const char *const argv[] = { "camcontrol", "identify", name, NULL };
+    FmonChildResult res;
 
-    snprintf(cmd, sizeof(cmd), "camcontrol identify %s 2>/dev/null", name);
-
-    FILE *fp = popen(cmd, "r");
-
-    if (fp == NULL)
+    if (fmon_child_run(argv, 64 * 1024, 2000, &res) != 0 ||
+        !fmon_child_ok(&res) || res.out == NULL) {
+        fmon_child_result_free(&res);
         return -1;
+    }
 
-    char line[256];
-    int  kind = -1;
+    int   kind = -1;
+    char *save = NULL;
 
-    while (fgets(line, sizeof(line), fp) != NULL) {
+    for (char *line = strtok_r(res.out, "\n", &save); line != NULL;
+         line = strtok_r(NULL, "\n", &save)) {
         char *p = strcasestr(line, "rotation rate");
 
         if (p == NULL)
@@ -154,7 +158,7 @@ static int cam_rotation_kind(const char *name)
         break;
     }
 
-    pclose(fp);
+    fmon_child_result_free(&res);
     return kind;
 }
 
@@ -169,9 +173,20 @@ static int cam_rotating(const char *name)
     if (*d == '\0')
         return -1;
 
+    char driver[16];
+    size_t n = 0;
+
+    while (name[n] != '\0' && (name[n] < '0' || name[n] > '9') &&
+           n + 1 < sizeof(driver)) {
+        driver[n] = name[n];
+        n++;
+    }
+    driver[n] = '\0';
+
     char oid[64];
 
-    snprintf(oid, sizeof(oid), "kern.cam.%s.rotating", name);
+    snprintf(oid, sizeof(oid), "kern.cam.%s.%d.rotating", driver,
+             (int)strtol(d, NULL, 10));
 
     int    v = 0;
     size_t l = sizeof(v);
@@ -196,70 +211,67 @@ static int usb_storage_speed(int64_t now)
     last = now;
     speed = 0;
 
-    FILE *fp = popen("usbconfig list 2>/dev/null", "r");
+    const char *const argv[] = { "usbconfig", "list", NULL };
+    FmonChildResult res;
 
-    if (fp != NULL) {
-        char line[256];
-
-        while (fgets(line, sizeof(line), fp) != NULL) {
-            char *id = strstr(line, "ugen");
-
-            if (id == NULL || strstr(line, "spd=") == NULL)
-                continue;
-
-            char dev[32];
-            int  n = 0;
-
-            while (id[n] != '\0' && id[n] != ' ' && id[n] != ',' &&
-                   n < (int)sizeof(dev) - 1) {
-                dev[n] = id[n];
-                n++;
-            }
-
-            dev[n] = '\0';
-
-            /* 用接口类判断是不是大容量存储：bInterfaceClass = 0x08 */
-            char cmd[160];
-
-            snprintf(cmd, sizeof(cmd),
-                     "usbconfig -d %s dump_curr_config_desc 2>/dev/null",
-                     dev);
-
-            FILE *fp2 = popen(cmd, "r");
-            int   storage = 0;
-
-            if (fp2 != NULL) {
-                char l2[256];
-
-                while (fgets(l2, sizeof(l2), fp2) != NULL) {
-                    if (strcasestr(l2, "bInterfaceClass = 0x08") != NULL ||
-                        strcasestr(l2, "bInterfaceClass = 8") != NULL ||
-                        strcasestr(l2, "Mass Storage") != NULL) {
-                        storage = 1;
-                        break;
-                    }
-                }
-
-                pclose(fp2);
-            }
-
-            if (!storage)
-                continue;
-
-            if (strcasestr(line, "spd=SUPER") != NULL) {
-                speed = 2;
-                break;
-            }
-
-            if (strcasestr(line, "spd=HIGH") != NULL ||
-                strcasestr(line, "spd=FULL") != NULL ||
-                strcasestr(line, "spd=LOW") != NULL)
-                speed = 1;
-        }
-
-        pclose(fp);
+    if (fmon_child_run(argv, 64 * 1024, 2000, &res) != 0 ||
+        !fmon_child_ok(&res) || res.out == NULL) {
+        fmon_child_result_free(&res);
+        return speed;
     }
 
+    char *save = NULL;
+
+    for (char *line = strtok_r(res.out, "\n", &save); line != NULL;
+         line = strtok_r(NULL, "\n", &save)) {
+        char *id = strstr(line, "ugen");
+
+        if (id == NULL || strstr(line, "spd=") == NULL)
+            continue;
+
+        char dev[32];
+        int  n = 0;
+
+        while (id[n] != '\0' && id[n] != ' ' && id[n] != ',' &&
+               n < (int)sizeof(dev) - 1) {
+            dev[n] = id[n];
+            n++;
+        }
+
+        dev[n] = '\0';
+
+        /* 用接口类判断是不是大容量存储：bInterfaceClass = 0x08。
+         * 参数通过 argv 传递，设备名不会被 shell 解释。 */
+        const char *const dargv[] = { "usbconfig", "-d", dev,
+                                      "dump_curr_config_desc", NULL };
+        FmonChildResult dres;
+        int storage = 0;
+
+        if (fmon_child_run(dargv, 64 * 1024, 2000, &dres) == 0 &&
+            fmon_child_ok(&dres) && dres.out != NULL) {
+            if (strcasestr(dres.out, "bInterfaceClass = 0x08") != NULL ||
+                strcasestr(dres.out, "bInterfaceClass = 8") != NULL ||
+                strcasestr(dres.out, "Mass Storage") != NULL)
+                storage = 1;
+        }
+
+        fmon_child_result_free(&dres);
+
+        if (!storage)
+            continue;
+
+        if (strcasestr(line, "spd=SUPER") != NULL) {
+            speed = 2;
+            break;
+        }
+
+        if (strcasestr(line, "spd=HIGH") != NULL ||
+            strcasestr(line, "spd=FULL") != NULL ||
+            strcasestr(line, "spd=LOW") != NULL)
+            speed = 1;
+    }
+
+    fmon_child_result_free(&res);
     return speed;
 }
 
@@ -280,19 +292,9 @@ static void finalize_kind(DiskMeta *m)
     } else {
         int cam = cam_rotation_kind(m->name);
 
-        if (cam >= 0)
-            m->kind = (uint32_t)cam;
-        else if (strcasestr(m->model, "ssd") != NULL)
-            m->kind = FMON_DISK_SSD;
-        else if (strcasestr(m->model, "datatraveler") != NULL ||
-                 strcasestr(m->model, "cruzer") != NULL ||
-                 strcasestr(m->model, "flash") != NULL ||
-                 strcasestr(m->model, "usb") != NULL)
-            m->kind = FMON_DISK_FLASH;
-        else if (m->size >= (uint64_t)256 * 1024 * 1024 * 1024)
-            m->kind = FMON_DISK_HDD;   /* 大容量 USB 盘按机械盘处理 */
-        else
-            m->kind = FMON_DISK_FLASH; /* 小容量 USB 盘按闪存盘处理 */
+        /* 没有内核/标准命令确认旋转介质时保持 UNKNOWN。
+         * 不再根据型号字符串或容量猜测 SSD/HDD/闪存。 */
+        m->kind = (cam >= 0) ? (uint32_t)cam : FMON_DISK_UNKNOWN;
     }
 
     /* 接口类型（kind 高 8 位） */
@@ -333,21 +335,22 @@ static void cam_enrich(DiskMeta *m, int64_t now)
 
     m->cam_ms = now;
 
-    char cmd[128];
+    const char *const argv[] = { "camcontrol", "identify", m->name, NULL };
+    FmonChildResult res;
 
-    snprintf(cmd, sizeof(cmd), "camcontrol identify %s 2>/dev/null", m->name);
-
-    FILE *fp = popen(cmd, "r");
-
-    if (fp == NULL)
+    if (fmon_child_run(argv, 128 * 1024, 2500, &res) != 0 ||
+        !fmon_child_ok(&res) || res.out == NULL) {
+        fmon_child_result_free(&res);
         return;
+    }
 
-    char line[256];
+    char *save = NULL;
 
-    while (fgets(line, sizeof(line), fp) != NULL) {
+    for (char *line = strtok_r(res.out, "\n", &save); line != NULL;
+         line = strtok_r(NULL, "\n", &save)) {
         char *p = line;
 
-        while (*p == ' ' || *p == '	')
+        while (*p == ' ' || *p == '\t')
             p++;
 
         /* SATA 版本有时是独立一行（不带冒号），先按整行判断 */
@@ -411,7 +414,7 @@ static void cam_enrich(DiskMeta *m, int64_t now)
         }
     }
 
-    pclose(fp);
+    fmon_child_result_free(&res);
 }
 
 /* geom disk list <name>：模型/序列号/容量/rotationrate，普通用户可读。
@@ -475,120 +478,6 @@ static int parse_geom(const char *out, DiskMeta *m)
 
     free(copy);
     return got;
-}
-
-/* 每条采样跑一次 geom disk list（单进程），热插拔/换盘 1 秒内可见。 */
-static void geom_refresh_all(int64_t now)
-{
-    const char *const argv[] = { "geom", "disk", "list", NULL };
-    FmonChildResult res;
-
-    if (fmon_child_run(argv, 64 * 1024, 2000, &res) != 0 ||
-        !fmon_child_ok(&res) || res.out == NULL) {
-        fmon_child_result_free(&res);
-        return;
-    }
-
-    char *copy = strdup(res.out);
-
-    fmon_child_result_free(&res);
-
-    if (copy == NULL)
-        return;
-
-    DiskMeta *cur = NULL;
-    DiskMeta *touched[FMON_MAX_DISKS];
-    int       nt   = 0;
-    char     *save = NULL;
-
-    for (char *line = strtok_r(copy, "\n", &save); line != NULL;
-         line = strtok_r(NULL, "\n", &save)) {
-        char *p = line;
-
-        while (*p == ' ' || *p == '\t')
-            p++;
-
-        if (strncmp(p, "Geom name:", 10) == 0) {
-            char *v = p + 10;
-
-            while (*v == ' ' || *v == '\t')
-                v++;
-
-            char *e = v + strlen(v);
-
-            while (e > v && (e[-1] == ' ' || e[-1] == '\t'))
-                *--e = '\0';
-
-            cur = meta_slot(v);
-
-            if (cur != NULL && nt < FMON_MAX_DISKS) {
-                int seen = 0;
-
-                for (int i = 0; i < nt; i++)
-                    if (touched[i] == cur)
-                        seen = 1;
-
-                if (!seen)
-                    touched[nt++] = cur;
-            }
-
-            continue;
-        }
-
-        if (cur == NULL)
-            continue;
-
-        char *colon = strchr(p, ':');
-
-        if (colon == NULL)
-            continue;
-
-        *colon = '\0';
-
-        char *val = colon + 1;
-
-        while (*val == ' ' || *val == '\t')
-            val++;
-
-        char *e = val + strlen(val);
-
-        while (e > val && (e[-1] == ' ' || e[-1] == '\t'))
-            *--e = '\0';
-
-        if (strcmp(p, "descr") == 0)
-            strlcpy(cur->model, val, sizeof(cur->model));
-        else if (strcmp(p, "ident") == 0)
-            strlcpy(cur->serial, val, sizeof(cur->serial));
-        else if (strcmp(p, "Mediasize") == 0)
-            cur->size = strtoull(val, NULL, 10);
-        else if (strcmp(p, "rotationrate") == 0) {
-            if (val[0] >= '0' && val[0] <= '9') {
-                cur->rpm       = (uint32_t)strtoul(val, NULL, 10);
-                cur->rpm_known = 1;
-            } else {
-                cur->rpm       = 0;
-                cur->rpm_known = 0;
-            }
-        }
-    }
-
-    for (int i = 0; i < nt; i++) {
-        DiskMeta *m = touched[i];
-
-        if (m->size != m->last_size) {
-            m->last_size = m->size;
-            m->cam_ms    = 0;   /* 换盘：允许立即重新执行 camcontrol */
-        }
-
-        if (strcasestr(m->model, "mass storage") != NULL ||
-            strcasestr(m->model, "usb") != NULL)
-            cam_enrich(m, now);
-
-        finalize_kind(m);
-        m->updated_ms = now;
-    }
-
-    free(copy);
 }
 
 static void parse_diskinfo(const char *out, DiskMeta *m)
@@ -661,33 +550,64 @@ static void fill_disk_meta(FmonDiskInfo *di, int64_t now)
         return;
 
     if (m->updated_ms == 0 || now - m->updated_ms > 60000) {
-        FmonChildResult res;
-        int ok = 0;
+        FmonDiskMeta km;
 
-        const char *const gargv[] = { "geom", "disk", "list", m->name, NULL };
+        m->meta_valid = 0;
 
-        if (fmon_child_run(gargv, 32 * 1024, 2000, &res) == 0 &&
-            fmon_child_ok(&res) && res.out != NULL)
-            ok = parse_geom(res.out, m);
+        /* 第一优先级：内核 ioctl / NVMe controller / CAM ATA/SCSI。 */
+        if (fmon_disk_meta_probe(m->name, &km)) {
+            strlcpy(m->model, km.model, sizeof(m->model));
+            strlcpy(m->serial, km.serial, sizeof(m->serial));
+            m->size = km.size_bytes;
+            m->kind = km.kind;
+            m->rpm  = km.rotation_rpm;
+            m->rpm_known =
+                (km.rotation_rpm > 0 ||
+                 (km.kind & FMON_DISK_TYPE_MASK) == FMON_DISK_SSD) ? 1 : 0;
+            m->meta_valid = 1;
+        } else {
+            /* 回退：geom / diskinfo 都是 base 工具，失败时保持 UNKNOWN。 */
+            FmonChildResult res;
+            int ok = 0;
 
-        fmon_child_result_free(&res);
+            const char *const gargv[] = {
+                "geom", "disk", "list", m->name, NULL
+            };
 
-        /* geom 不可用时退回 diskinfo */
-        if (!ok) {
-            char dev[64];
-
-            snprintf(dev, sizeof(dev), "/dev/%s", m->name);
-
-            const char *const dargv[] = { "diskinfo", "-v", dev, NULL };
-
-            if (fmon_child_run(dargv, 32 * 1024, 2000, &res) == 0 &&
+            if (fmon_child_run(gargv, 32 * 1024, 2000, &res) == 0 &&
                 fmon_child_ok(&res) && res.out != NULL)
-                parse_diskinfo(res.out, m);
+                ok = parse_geom(res.out, m);
 
             fmon_child_result_free(&res);
+
+            if (!ok) {
+                char dev[64];
+
+                snprintf(dev, sizeof(dev), "/dev/%s", m->name);
+
+                const char *const dargv[] = { "diskinfo", "-v", dev, NULL };
+
+                if (fmon_child_run(dargv, 32 * 1024, 2000, &res) == 0 &&
+                    fmon_child_ok(&res) && res.out != NULL)
+                    parse_diskinfo(res.out, m);
+
+                fmon_child_result_free(&res);
+            }
+
+            if (strcasestr(m->model, "mass storage") != NULL ||
+                strcasestr(m->model, "usb") != NULL)
+                cam_enrich(m, now);
+
+            finalize_kind(m);
+            m->meta_valid = (m->model[0] != '\0' || m->serial[0] != '\0' ||
+                             m->size > 0) ? 1 : 0;
         }
 
-        finalize_kind(m);
+        if (m->size != m->last_size) {
+            m->last_size = m->size;
+            m->cam_ms    = 0;
+        }
+
         m->updated_ms = now;
     }
 
@@ -696,6 +616,7 @@ static void fill_disk_meta(FmonDiskInfo *di, int64_t now)
     di->size_bytes   = m->size;
     di->kind         = m->kind;
     di->rotation_rpm = m->rpm;
+    di->meta_valid   = (m->meta_valid != 0) ? 1u : 0u;
 }
 
 static void sample_disk(FmonShmData *s)
@@ -722,9 +643,6 @@ static void sample_disk(FmonShmData *s)
         return;
 
     int64_t now = fmon_now_ms();
-
-    /* 热插拔：每采样刷新一次磁盘身份，换盘 / 拔插立即反映 */
-    geom_refresh_all(now);
 
     uint64_t r = 0, w = 0;
     uint64_t ops_r = 0, ops_w = 0;
@@ -762,6 +680,17 @@ static void sample_disk(FmonShmData *s)
                 meta_invalidate(mapped);
 
             fill_disk_meta(di, now);
+
+            FmonSmartInfo smart;
+            uint32_t      smart_source = FMON_SMART_SRC_NONE;
+
+            fmon_disk_smart_probe(di->name, now, &smart, &smart_source);
+            di->temp_c      = smart.valid ? smart.temp_c : -1.0;
+            di->spare_pct   = smart.valid ? smart.spare_pct : -1;
+            di->wear_pct    = smart.valid ? smart.wear_pct : -1;
+            di->smart_valid = smart.valid ? 1u : 0u;
+            di->smart_source = smart_source;
+
             di->read_bytes  = rb;
             di->write_bytes = wb;
             di->read_ops    = d->operations[DEVSTAT_READ];

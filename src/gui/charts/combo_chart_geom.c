@@ -4,6 +4,7 @@
 
 #include "combo_chart_internal.h"
 
+#include "gui_chart_util.h"
 #include "gui_util.h"
 #include "theme.h"
 
@@ -14,82 +15,55 @@
 
 double series_value(const CurveData *cd, uint32_t i)
 {
-    uint32_t start = (cd->index + COMBO_MAX_POINTS - cd->count) %
-                     COMBO_MAX_POINTS;
+    double v;
 
-    return cd->history[(start + i) % COMBO_MAX_POINTS];
+    if (cd == NULL || cd->history == NULL)
+        return NAN;
+
+    if (!fmon_chart_history_value(cd->history, COMBO_MAX_POINTS, cd->count,
+                                  cd->index, i, &v))
+        return NAN;
+
+    return v;
 }
 
-static int cmp_double(const void *a, const void *b)
+bool series_range(const CurveData *cd, double *lo, double *hi)
 {
-    double x = *(const double *)a;
-    double y = *(const double *)b;
+    if (cd == NULL || cd->history == NULL)
+        return false;
 
-    return (x < y) ? -1 : (x > y) ? 1 : 0;
+    return fmon_chart_history_range(cd->history, COMBO_MAX_POINTS, cd->count,
+                                    cd->index, lo, hi);
 }
 
-void series_range(const CurveData *cd, double *lo, double *hi)
+bool series_scale(const CurveData *cd, FmonChartScale *sc)
 {
-    double mn = 1e18;
-    double mx = -1e18;
+    double lo = 0.0;
+    double hi = 0.0;
+    bool   have = series_range(cd, &lo, &hi);
 
-    for (uint32_t i = 0; i < cd->count; i++) {
-        double v = series_value(cd, i);
+    /* 百分比指标在窄幅波动时至少给 1 个百分点的可视跨度。
+     * 这只是把纵轴放大，不改采样值；轴标签会明确显示真实范围。 */
+    gboolean pct = (cd != NULL && cd->unit != NULL &&
+                    strcmp(cd->unit, "%") == 0);
+    double min_span = pct ? 1.0 : 0.0;
+    gboolean auto_pct = pct && gui_chart_auto_range();
 
-        if (v < mn)
-            mn = v;
-        if (v > mx)
-            mx = v;
-    }
-
-    /* 柱形（CPU 使用率）：单个 100% 尖峰会把纵轴拉高、柱子压扁，
-     * 用 99.5% 分位作为上限，个别尖峰允许被裁掉。 */
-    if (cd->bars && cd->count >= 50) {
-        static double tmp[FMON_HISTORY_POINTS];
-
-        for (uint32_t i = 0; i < cd->count; i++)
-            tmp[i] = series_value(cd, i);
-
-        qsort(tmp, cd->count, sizeof(double), cmp_double);
-        mn = tmp[0];
-        mx = tmp[(size_t)((double)cd->count * 0.995)];
-    }
-
-    if (cd->count == 0) {
-        mn = 0.0;
-        mx = 1.0;
-    }
-
-    double span = mx - mn;
-
-    /* 百分比指标变化极小时，别把 0.02% 的抖动放大成满屏台阶 */
-    if (cd->unit != NULL && strcmp(cd->unit, "%") == 0 && span < 1.0) {
-        double mid = (mn + mx) / 2.0;
-
-        mn   = mid - 0.5;
-        mx   = mid + 0.5;
-        span = 1.0;
-    }
-
-    if (span < 1e-9) {
-        span = (mx != 0.0) ? fabs(mx) * 0.05 : 1.0;
-        if (span < 1e-6)
-            span = 1.0;
-    }
-
-    *lo = mn - span * 0.12;
-    *hi = mx + span * 0.12;
-
-    /* 非负指标（使用率、温度等）不要把刻度拉到负数 */
-    if (mn >= 0.0 && *lo < 0.0)
-        *lo = 0.0;
-
-    if (*hi - *lo < 1e-9)
-        *hi = *lo + 1.0;
+    return fmon_chart_scale(have ? lo : 0.0, have ? hi : 0.0,
+                            auto_pct
+                                ? -1.0
+                                : ((cd != NULL && cd->min_val >= 0.0)
+                                       ? cd->min_val
+                                       : -1.0),
+                            auto_pct
+                                ? 0.0
+                                : ((cd != NULL && cd->max_val > 0.0)
+                                       ? cd->max_val
+                                       : 0.0),
+                            min_span, 2, sc);
 }
 
-void series_text_color(const CurveData *cd, double *r, double *g,
-                              double *b)
+void series_text_color(const CurveData *cd, double *r, double *g, double *b)
 {
     *r = cd->r;
     *g = cd->g;
@@ -104,31 +78,7 @@ void series_text_color(const CurveData *cd, double *r, double *g,
 
 void format_value_text(char *buf, size_t n, double v, const char *unit)
 {
-    if (unit != NULL && strcmp(unit, "KB/s") == 0) {
-        char *txt = fmon_gui_format_rate(v);
-
-        g_snprintf(buf, n, "%s", txt);
-        g_free(txt);
-        return;
-    }
-
-    if (unit != NULL && strcmp(unit, "°C") == 0) {
-        g_snprintf(buf, n, "%.1f°C", v);
-        return;
-    }
-
-    if (unit != NULL && strcmp(unit, "%") == 0) {
-        g_snprintf(buf, n, "%.1f%%", v);
-        return;
-    }
-
-    /* 计数值（如 Prune 回收次数）不显示小数 */
-    if (fabs(v - (double)(long long)v) < 1e-9) {
-        g_snprintf(buf, n, "%.0f%s", v, (unit != NULL) ? unit : "");
-        return;
-    }
-
-    g_snprintf(buf, n, "%.2f%s", v, (unit != NULL) ? unit : "");
+    gui_chart_format_value(buf, n, v, unit);
 }
 
 void combo_geom_init(ComboGeom *g, int width, int height)
@@ -141,8 +91,7 @@ void combo_geom_init(ComboGeom *g, int width, int height)
     g->plot_h = (double)height - g->top - g->bottom;
 }
 
-void band_layout(const ComboGeom *g, int series_count, int s,
-                        BandGeom *b)
+void band_layout(const ComboGeom *g, int series_count, int s, BandGeom *b)
 {
     double band_h = g->plot_h / (double)series_count;
 
@@ -157,14 +106,13 @@ void band_layout(const ComboGeom *g, int series_count, int s,
 
 double band_y(const BandGeom *b, double v, double lo, double hi)
 {
-    double y = b->plot_top + b->plot_h - ((v - lo) / (hi - lo)) * b->plot_h;
+    if (!(hi > lo))
+        return b->plot_top + b->plot_h;
+    if (!isfinite(v))
+        return b->plot_top + b->plot_h;
 
-    if (y < b->plot_top)
-        y = b->plot_top;
-    if (y > b->plot_top + b->plot_h)
-        y = b->plot_top + b->plot_h;
-
-    return y;
+    return b->plot_top + b->plot_h -
+           ((v - lo) / (hi - lo)) * b->plot_h;
 }
 
 void set_font(cairo_t *cr, double size)
@@ -173,15 +121,3 @@ void set_font(cairo_t *cr, double size)
                            CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, size);
 }
-
-void format_span(char *buf, size_t n, int64_t secs)
-{
-    if (secs >= 60)
-        g_snprintf(buf, n, "-%ld.%ldm", (long)(secs / 60),
-                   (long)((secs % 60) / 6));
-    else
-        g_snprintf(buf, n, "-%lds", (long)secs);
-}
-
-
-

@@ -31,7 +31,14 @@ static uint64_t zfs_stat(const char *name)
 
 static void sample_arc(FmonShmData *s)
 {
-    s->zfs_arc_size        = zfs_stat("kstat.zfs.misc.arcstats.size");
+    uint64_t arc_size = 0;
+
+    if (fmon_sysctl_u64("kstat.zfs.misc.arcstats.size", &arc_size) == 0)
+        s->probe_valid |= FMON_PROBE_ZFS_ARC;
+    else
+        s->probe_valid &= ~FMON_PROBE_ZFS_ARC;
+
+    s->zfs_arc_size        = arc_size;
     s->zfs_arc_c_max       = zfs_stat("kstat.zfs.misc.arcstats.c_max");
     s->zfs_arc_mru_size    = zfs_stat("kstat.zfs.misc.arcstats.mru_size");
     s->zfs_arc_mfu_size    = zfs_stat("kstat.zfs.misc.arcstats.mfu_size");
@@ -75,8 +82,11 @@ static int sample_pool_capacity(FmonShmData *s)
     if (fmon_child_run(argv, 32 * 1024, 4000, &res) != 0 ||
         !fmon_child_ok(&res) || res.out == NULL) {
         fmon_child_result_free(&res);
-        return 0;
+        s->probe_valid &= ~FMON_PROBE_POOLS;
+        return -1;
     }
+
+    s->probe_valid |= FMON_PROBE_POOLS;
 
     int   n    = 0;
     char *save = NULL;
@@ -228,7 +238,7 @@ void *thread_zfs(void *arg)
 
         if (now >= next_cap_ms) {
             int n = sample_pool_capacity(g_shm);
-            if (n > 0)
+            if (n >= 0)
                 g_shm->pool_count = (uint32_t)n;
             next_cap_ms = now + 10000;
         }

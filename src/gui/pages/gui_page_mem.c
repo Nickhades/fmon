@@ -395,10 +395,17 @@ void gui_mem_totals_update(void)
     g_free(used);
     g_free(avail);
 
-    double swap_total = (double)snap->swap_total_kb / (1024.0 * 1024.0);
-    double swap_used  = (double)snap->swap_used_kb / (1024.0 * 1024.0);
-    gchar *s = g_strdup_printf(_("Swap 总 %.2f GB · 已用 %.2f GB"),
-                               swap_total, swap_used);
+    gchar *s;
+
+    if ((snap->probe_valid & FMON_PROBE_SWAP) == 0) {
+        s = g_strdup(_("Swap：不可用"));
+    } else {
+        double swap_total = (double)snap->swap_total_kb / (1024.0 * 1024.0);
+        double swap_used  = (double)snap->swap_used_kb / (1024.0 * 1024.0);
+
+        s = g_strdup_printf(_("Swap 总 %.2f GB · 已用 %.2f GB"), swap_total,
+                            swap_used);
+    }
 
     gtk_label_set_text(GTK_LABEL(s_totals_swap), s);
     g_free(s);
@@ -436,8 +443,9 @@ void gui_mem_modules_update(void)
     /* 先算签名：只有插槽/内存条信息变化时才重建这几行 */
     GString *sig = g_string_new(NULL);
 
-    g_string_append_printf(sig, "%u|%u;", snap->mem_slot_total,
-                           snap->mem_module_count);
+    g_string_append_printf(sig, "%llu|%u|%u;",
+                           (unsigned long long)snap->probe_valid,
+                           snap->mem_slot_total, snap->mem_module_count);
 
     for (uint32_t i = 0; i < snap->mem_module_count; i++) {
         const FmonMemModule *m = &snap->mem_modules[i];
@@ -460,10 +468,17 @@ void gui_mem_modules_update(void)
     while ((child = gtk_widget_get_first_child(s_mod_box)) != NULL)
         gtk_box_remove(GTK_BOX(s_mod_box), child);
 
+    if ((snap->probe_valid & FMON_PROBE_MEM_MODULES) == 0) {
+        gtk_box_append(GTK_BOX(s_mod_box),
+                       mod_line(_("内存条信息不可用（dmidecode 未安装或探测失败）"),
+                                "group-desc", FALSE));
+        return;
+    }
+
     if (snap->mem_module_count == 0) {
         gtk_box_append(GTK_BOX(s_mod_box),
-                       mod_line(_("未检测到内存条信息（需要 root 运行 dmidecode）"),
-                                "group-desc", FALSE));
+                       mod_line(_("未检测到已安装的内存条"), "group-desc",
+                                FALSE));
         return;
     }
 

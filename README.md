@@ -2,6 +2,16 @@
 
 A native FreeBSD system monitor and resource manager written in C11 with GTK4.
 
+## What's new in 1.2.0
+
+- **Strict provider contract**: kernel API first, FreeBSD base tools/optional dependencies only as fallback; unsupported values show `—`, never fake 0.
+- **Real disk SMART**: NVMe ioctl, CAM ATA SMART, CAM SCSI LOG SENSE; multi-NVMe controller mapping; no hard dependency on nvmecontrol/smartctl.
+- **Kernel disk metadata**: `DIOCG*`, NVMe controller data, CAM ATA/SCSI inquiry; speculative SSD/HDD guessing removed.
+- **ABI 23 validity bits**: swap/zpool/memory modules/mounts/processes/ZFS ARC/battery distinguish real 0 from probe failure.
+- **Installer and desktop integration**: auto-installs missing dmidecode/smartmontools/libdrm; custom SVG app icon and `.desktop` entry, no system icon theme required.
+
+Full details: [1.2.0 release notes](docs/RELEASE_NOTES_1.2.0.md).
+
 ## Architecture
 
 ```
@@ -18,23 +28,7 @@ fmon-daemon (root)  --POSIX shared memory (seqlock)-->  fmon-gui (user)
 
 ## Screenshots
 
-| Overview | CPU | ZFS |
-|---|---|---|
-| ![Overview](docs/screenshots/overview.png) | ![CPU](docs/screenshots/cpu.png) | ![ZFS](docs/screenshots/zfs.png) |
-
-<details>
-<summary>More screenshots (storage, network, processes, services, logs, battery)</summary>
-
-| Storage | Network | Processes |
-|---|---|---|
-| ![Storage](docs/screenshots/storage.png) | ![Network](docs/screenshots/network.png) | ![Processes](docs/screenshots/processes.png) |
-
-| Services | Logs | Battery |
-|---|---|---|
-| ![Services](docs/screenshots/services.png) | ![Logs](docs/screenshots/logs.png) | ![Battery](docs/screenshots/battery.png) |
-
-See [project structure](docs/PROJECT_STRUCTURE.md) for the current data flow and directory layout.
-</details>
+![fmon overview](docs/screenshot.png)
 
 ## Features
 
@@ -52,7 +46,7 @@ See [project structure](docs/PROJECT_STRUCTURE.md) for the current data flow and
 ## Install from the package
 
 ```sh
-sudo pkg install ./fmon-1.1.1.pkg
+sudo pkg install ./fmon-1.2.0.pkg
 sudo sysrc fmon_daemon_enable=YES
 sudo service fmon_daemon start
 fmon-gui
@@ -96,6 +90,16 @@ BSD-2-Clause. See [LICENSE](LICENSE).
 
 用 C11 + GTK4 编写的 FreeBSD 原生系统监控与资源管理工具。
 
+## 1.2.0 更新
+
+- **严格采集契约**：内核接口优先，FreeBSD base 工具/可选依赖只做回退；无接口显示 `—`，绝不伪造 0。
+- **磁盘 SMART 内核化**：NVMe ioctl、CAM ATA SMART、CAM SCSI LOG SENSE；多 NVMe 控制器反查；不硬依赖 nvmecontrol/smartctl。
+- **磁盘元数据内核化**：`DIOCG*`、NVMe controller data、CAM ATA/SCSI inquiry；删除按型号/容量猜盘型。
+- **ABI 23 有效位**：Swap、zpool、内存条、挂载点、进程、ZFS ARC、电池区分“真实 0”和“探测失败”。
+- **安装与桌面集成**：自动补齐 dmidecode/smartmontools/libdrm；自绘 SVG 应用图标与 `.desktop` 入口，不依赖系统图标主题。
+
+完整说明：[1.2.0 发布说明](docs/RELEASE_NOTES_1.2.0.md)。
+
 ## 架构
 
 - **fmon-daemon（root）**：1 Hz 采集 CPU/内存/磁盘/网络/ZFS/进程，通过共享内存发布一致快照。
@@ -106,23 +110,7 @@ BSD-2-Clause. See [LICENSE](LICENSE).
 
 ## 界面截图
 
-| 概览 | CPU | ZFS |
-|---|---|---|
-| ![概览](docs/screenshots/overview.png) | ![CPU](docs/screenshots/cpu.png) | ![ZFS](docs/screenshots/zfs.png) |
-
-<details>
-<summary>更多截图（存储、网络、进程、服务、日志、电池）</summary>
-
-| 存储 | 网络 | 进程 |
-|---|---|---|
-| ![存储](docs/screenshots/storage.png) | ![网络](docs/screenshots/network.png) | ![进程](docs/screenshots/processes.png) |
-
-| 服务 | 日志 | 电池 |
-|---|---|---|
-| ![服务](docs/screenshots/services.png) | ![日志](docs/screenshots/logs.png) | ![电池](docs/screenshots/battery.png) |
-
-当前数据流与目录结构见 [项目结构](docs/PROJECT_STRUCTURE.md)。
-</details>
+![fmon 概览](docs/screenshot.png)
 
 ## 功能
 
@@ -134,12 +122,13 @@ BSD-2-Clause. See [LICENSE](LICENSE).
 - rc.d 服务启停/重启/重载、自启、状态、日志、依赖树、PID 跳转、批量操作；
 - 日志多源、级别/时间过滤、正则、重复折叠、PID 链接、上下文展开、导出；
 - 电池健康度、设计/满充容量、循环次数、电压/电流、双轴历史；
-- 阈值告警、桌面通知、告警历史、静默。
+- 阈值告警、桌面通知、告警历史、静默；
+- 自绘 SVG 应用图标、导航/菜单图标与 `.desktop` 入口，不依赖桌面图标主题。
 
 ## 安装
 
 ```sh
-sudo pkg install ./fmon-1.1.1.pkg
+sudo pkg install ./fmon-1.2.0.pkg
 sudo sysrc fmon_daemon_enable=YES
 sudo service fmon_daemon start
 fmon-gui
@@ -163,6 +152,7 @@ sudo ./install.sh
 ```
 
 要求：FreeBSD 15+、C11 编译器、Meson/Ninja、GTK4、Cairo、SQLite3；AMD GPU 传感器可选依赖 libdrm。
+安装脚本会自动检测并安装 `dmidecode`、`smartmontools`、`libdrm`（已有则跳过，`--skip-deps` 可禁用）。
 
 ## 目录
 
@@ -181,3 +171,6 @@ BSD-2-Clause，见 [LICENSE](LICENSE)。
 
 - [中文完整说明](README.zh-CN.md)
 - [English README](README.en.md)
+- [折线图设计说明（线性/缺口/保峰值）](docs/CHARTS.md)
+- [硬件探测覆盖与边界](docs/HARDWARE.md)
+- [全功能探测契约与审计](docs/PROBE_POLICY.md)

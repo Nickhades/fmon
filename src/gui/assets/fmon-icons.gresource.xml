@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/org/fmon/icons">
+    <file>scalable/apps/org.freebsd.fmon.svg</file>
     <file>scalable/actions/fmon-overview-symbolic.svg</file>
     <file>scalable/actions/fmon-storage-symbolic.svg</file>
     <file>scalable/actions/fmon-system-symbolic.svg</file>
@@ -19,6 +20,7 @@
     <file>scalable/actions/fmon-connection-symbolic.svg</file>
     <file>scalable/actions/fmon-zfs-symbolic.svg</file>
     <file>scalable/actions/fmon-limits-symbolic.svg</file>
+    <file>scalable/actions/fmon-menu-symbolic.svg</file>
     <file>scalable/actions/fmon-interface-symbolic.svg</file>
     <file>scalable/actions/fmon-temperature-symbolic.svg</file>
   </gresource>
