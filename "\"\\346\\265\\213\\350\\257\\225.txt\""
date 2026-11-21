@@ -1,0 +1,76 @@
+# ============================================================================
+# fmon 构建 / 运行 / 测试步骤（FreeBSD 15.1）
+# ============================================================================
+
+# ---- 最省事：一键安装 / 卸载 ----
+sudo ./install.sh                 # 装依赖 + 编译 + 安装 + 开机自启 + 启动 + 自检
+./install.sh --dry-run -y         # 只预演，不改系统
+./install.sh --build-only -y      # 只编译（普通用户可用）
+sudo ./install.sh --uninstall     # 卸载
+# 安装日志：/var/log/fmon-install.log
+
+# ---- 依赖 ----
+sudo pkg install meson ninja pkgconf gtk4 cairo
+
+# ---- 构建（预期 0 warning）----
+rm -rf build
+meson setup build
+ninja -C build
+# 产物：build/src/daemon/fmon-daemon、build/src/gui/fmon-gui
+
+# ---- 运行 ----
+# 守护进程需要 root（kvm、部分 sysctl、/var/run 下的锁文件）
+sudo ./build/src/daemon/fmon-daemon &
+# 普通用户运行界面
+./build/src/gui/fmon-gui
+
+# 也可以直接打开指定页面
+./build/src/gui/fmon-gui --page zfs
+
+# ---- 安装（可选）----
+sudo ninja -C build install
+# 安装内容：
+#   /usr/local/sbin/fmon-daemon
+#   /usr/local/bin/fmon-gui
+#   /usr/local/etc/rc.d/fmon_daemon
+
+# 设为开机自启
+sudo sysrc fmon_daemon_enable=YES
+sudo service fmon_daemon start
+
+# ---- 修改代码后的重新编译 ----
+# 只改了 .c：直接 ninja 即可
+ninja -C build
+
+# 如果改了 FmonShmData（src/common/fmon_shm.h），必须：
+#   1) 递增 FMON_ABI_VERSION，并修改 FMON_SHM_NAME 的版本号
+#   2) 全量重编，并【同时重启】daemon 与 gui
+rm -rf build
+meson setup build && ninja -C build
+sudo service fmon_daemon restart
+# 旧 GUI 会被新 daemon 拒绝并提示“ABI 不兼容”（不会崩溃）
+
+# ---- 自检 ----
+# 1) 界面顶部不应出现“未连接到 fmon-daemon”或“数据已过期”横幅
+# 2) 数据源对照：
+sysctl kern.cp_time          # CPU 百分比
+swapinfo -k                  # Swap 卡片
+zpool list -Hp -o name,size,alloc,free,health   # ZFS 页面
+sysctl hw.acpi.battery.life  # 电池
+# 3) 关闭窗口后进程应干净退出，不产生 core：
+ls *.core 2>/dev/null || echo "no core"
+# 4) 正常退出守护进程（会打印“已安全退出”，界面显示“已停止运行”横幅）
+sudo service fmon_daemon stop
+
+# ---- 排错 ----
+# 崩溃复现与定位
+G_DEBUG=fatal-criticals ./build/src/gui/fmon-gui
+lldb -c fmon-gui.core ./build/src/gui/fmon-gui -o 'bt all' -o quit
+
+# 单实例冲突
+sudo pkill -f fmon-daemon
+sudo ./build/src/daemon/fmon-daemon -f     # 强制接管共享内存
+
+# 日志
+tail -n 50 /var/log/messages | grep fmon-daemon
+tail -n 50 /var/log/fmon-daemon.log 2>/dev/null

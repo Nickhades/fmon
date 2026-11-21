@@ -22,7 +22,10 @@
 
 ## 界面截图
 
-![fmon 概览](docs/screenshot.png)
+![fmon CPU](docs/screenshots/01-cpu.png)
+![fmon processes](docs/screenshots/02-process.png)
+![fmon ZFS](docs/screenshots/03-zfs.png)
+![fmon history](docs/screenshots/04-history.png)
 
 ## 功能
 
