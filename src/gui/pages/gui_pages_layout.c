@@ -182,9 +182,20 @@ GtkStack *gui_pages_layout_build(GtkWidget *content)
                                        g_net_page.sub);
     }
 
-    /* 网卡硬件型号放标题行右侧 */
-    gtk_box_append(GTK_BOX(g_net_page.header_right),
-                   gui_net_nic_header());
+    /* 网卡型号单独占标题下的一整行，长型号可以完整换行显示。 */
+    {
+        GtkWidget *nic = gui_net_nic_header();
+        GtkWidget *net_card = gtk_widget_get_parent(g_net_page.area);
+
+        if (GTK_IS_BOX(net_card)) {
+            GtkWidget *header = gtk_widget_get_first_child(net_card);
+
+            if (header != NULL)
+                gtk_box_insert_child_after(GTK_BOX(net_card), nic, header);
+            else
+                gtk_box_prepend(GTK_BOX(net_card), nic);
+        }
+    }
 
     /* 链路错误/丢包与 TCP 健康度并入网络大卡片 */
     {

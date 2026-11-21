@@ -10,10 +10,10 @@
 | 项 | 值 |
 |---|---|
 | 路径 | `FreeBSD图形化系统资源管理器/fmon4` |
-| 版本 | 1.3.0 |
+| 版本 | 1.3.1 |
 | 语言/标准 | C11（`c_std=c11`），clang 19 |
 | GUI | GTK 4.20（C，无 C++） |
-| 共享内存 ABI | **23**，`/fmon_daemon_shm_v23` |
+| 共享内存 ABI | **24**，`/fmon_daemon_shm_v24` |
 | 采样 | 1 Hz（`FMON_SAMPLE_INTERVAL_MS 1000`），历史 1200 点，逐点 `history_time_us` |
 | 数据源 | daemon 采集 → seqlock 共享内存 → GUI 一致快照 |
 | 已验证平台 | FreeBSD 15.1-RELEASE-p6 amd64（AMD 核显 + NVIDIA 独显 + ZFS） |
@@ -34,7 +34,7 @@ meson setup --reconfigure build
 ninja -C build            # 必须 0 warning
 meson test -C build       # 15/15：shm、child、图表几何/时间轴/离屏渲染、ps、rc.conf、内存、ZFS、CPU、网络等
 
-# 本地调试（用构建产物，daemon 以当前用户运行、ABI 23）
+# 本地调试（用构建产物，daemon 以当前用户运行、ABI 24）
 ./build/src/daemon/fmon-daemon &
 ./build/src/gui/fmon-gui --page cpu --theme light
 
@@ -56,7 +56,7 @@ sudo service fmon_daemon restart
 
 | 用途 | 路径/变量 |
 |---|---|
-| 共享内存 | `/fmon_daemon_shm_v23` |
+| 共享内存 | `/fmon_daemon_shm_v24` |
 | 控制 socket | `/var/run/fmon-ctl.sock`（GUI 也探测 `/tmp/fmon-ctl.sock`） |
 | 历史数据（root） | `/var/db/fmon/history.tsv`（普通用户调试：`~/.local/state/fmon/history.tsv`） |
 | 告警阈值 | `~/.config/fmon/alerts.ini` |
@@ -136,7 +136,7 @@ daemon/ core/{fmon_daemon,fmon_ctl,history_store,collectors.h}
   ARC 页显示 MFU/MRU/元数据/占上限，命中率页显示数据/元数据/预取命中构成与 L2，
   Prune 页显示每秒回收、跳过、空间不足、内存节流，读写带宽页显示 L2 速率，
   池空间页补“空闲”；新增“存储 → L2ARC”页：两条历史曲线（L2 大小 GB、
-  命中率 %，**由 daemon 写入 shm 历史数组，ABI 23**，1 Hz）+ 设备数/缓存/实际分配/头部
+  命中率 %，**由 daemon 写入 shm 历史数组，ABI 24**，1 Hz）+ 设备数/缓存/实际分配/头部
   开销/命中/读写速率/写入完成率/错误/驱逐/重建/MFU-MRU-预取构成；
   `zfs_l2_size > 0` 时自动绘曲线（下游配了 L2ARC 的机器直接可用），
   未配置时明确提示而不是显示 0；

@@ -81,7 +81,8 @@ static gchar     *s_nic_sig = NULL;
 GtkWidget *gui_net_nic_header(void)
 {
     s_nic_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_1);
-    gtk_widget_set_halign(s_nic_box, GTK_ALIGN_END);
+    gtk_widget_set_halign(s_nic_box, GTK_ALIGN_FILL);
+    gtk_widget_set_hexpand(s_nic_box, TRUE);
     gtk_widget_set_valign(s_nic_box, GTK_ALIGN_START);
     return s_nic_box;
 }
@@ -123,17 +124,19 @@ void gui_net_nic_update(void)
     for (uint32_t i = 0; i < snap->nic_count && i < 4; i++) {
         GtkWidget *l = cell(snap->nic_models[i], "hw-model", 0);
 
-        gtk_label_set_xalign(GTK_LABEL(l), 1.0f);
-        gtk_widget_set_halign(l, GTK_ALIGN_END);
-        /* 小字号 + 固定宽度换行：型号再长也能完整显示，不挤占标题 */
-        /* 窄窗口不撑破标题：限制模型列宽，超长省略；完整型号放 tooltip。 */
-        gtk_widget_set_size_request(l, 480, -1);
+        gtk_label_set_xalign(GTK_LABEL(l), 0.0f);
+        gtk_widget_set_halign(l, GTK_ALIGN_START);
+        gtk_widget_set_hexpand(l, TRUE);
+        /* 型号可以换行，但不能省略：完整显示，避免 RTL8852BE 一类
+         * 长型号被截成 "802.11ax Wi..."。 */
         gtk_label_set_wrap(GTK_LABEL(l), TRUE);
-        gtk_label_set_ellipsize(GTK_LABEL(l), PANGO_ELLIPSIZE_END);
-        gtk_label_set_max_width_chars(GTK_LABEL(l), 64);
-        gtk_label_set_justify(GTK_LABEL(l), GTK_JUSTIFY_RIGHT);
-        gtk_widget_set_tooltip_text(
-            l, snap->nic_models[i]);
+        gtk_label_set_wrap_mode(GTK_LABEL(l), PANGO_WRAP_WORD_CHAR);
+        gtk_label_set_ellipsize(GTK_LABEL(l), PANGO_ELLIPSIZE_NONE);
+        /* width-chars 与 max-width-chars 同时限制：只设 wrap 时，
+         * 标签仍按整行自然宽度申请空间，长型号会被窗口右边缘裁掉。 */
+        gtk_label_set_max_width_chars(GTK_LABEL(l), -1);
+        gtk_label_set_justify(GTK_LABEL(l), GTK_JUSTIFY_LEFT);
+        gtk_widget_set_tooltip_text(l, snap->nic_models[i]);
         gtk_box_append(GTK_BOX(s_nic_box), l);
     }
 }

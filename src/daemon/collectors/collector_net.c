@@ -68,7 +68,7 @@ static IfaceDetail *detail_slot(const char *name)
 }
 
 /* 从 "media: Ethernet autoselect (1000baseT <full-duplex>)" 提取速率 */
-static void probe_nic_models(char models[4][96], uint32_t *count)
+static void probe_nic_models(char models[4][192], uint32_t *count)
 {
     *count = 0;
 
@@ -130,9 +130,9 @@ static void probe_nic_models(char models[4][96], uint32_t *count)
             if (end != NULL && *count < 4) {
                 size_t len = (size_t)(end - d);
 
-                if (len < 88) {
-                    char name[96];
-                    char devname[96];
+                if (len < 160) {
+                    char name[192];
+                    char devname[160];
                     size_t ncopy = (len < sizeof(devname) - 1)
                                        ? len
                                        : sizeof(devname) - 1;
@@ -153,7 +153,7 @@ static void probe_nic_models(char models[4][96], uint32_t *count)
                     }
 
                     if (!dup)
-                        strlcpy(models[(*count)++], name, 96);
+                        strlcpy(models[(*count)++], name, 192);
                 }
             }
         }
@@ -344,7 +344,7 @@ void *thread_net(void *arg)
 
     FmonIfaceInfo ifaces[FMON_MAX_IFACES];
 
-    char     models[4][96];
+    char     models[4][192];
     uint32_t model_count = 0;
 
     probe_nic_models(models, &model_count);

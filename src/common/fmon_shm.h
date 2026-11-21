@@ -29,7 +29,7 @@ extern "C" {
 #endif
 
 /* 共享内存对象名。结构体布局变更时必须改名，避免新旧进程混用。 */
-#define FMON_SHM_NAME        "/fmon_daemon_shm_v23"
+#define FMON_SHM_NAME        "/fmon_daemon_shm_v24"
 
 /* 安装前缀：meson 会以 -DFMON_LOCALBASE="..." 传入；
  * 单独编译时回退到 FreeBSD 默认的 /usr/local。
@@ -42,10 +42,10 @@ extern "C" {
 
 /* 头部校验值："FMON" 的大端 ASCII。 */
 /* 版本号：安装脚本与 --version 使用 */
-#define FMON_VERSION_STRING  "1.3.0"
+#define FMON_VERSION_STRING  "1.3.1"
 
 #define FMON_SHM_MAGIC       0x464D4F4DU
-#define FMON_ABI_VERSION     23U  /* 23: 探测有效位 + 磁盘元数据来源 */
+#define FMON_ABI_VERSION     24U  /* 24: NIC model 扩大，完整保留长型号 */
 
 #define FMON_MAX_PROCS       32   /* 上报给界面的进程条数（按 CPU 排序） */
 #define FMON_MAX_NAME_LEN    32   /* 进程名长度 */
@@ -346,7 +346,7 @@ typedef struct {
 
     /* 网卡硬件型号（pciconf 探测，最多 4 条） */
     uint32_t     nic_count;
-    char         nic_models[4][96];
+    char         nic_models[4][192];
 
     uint32_t     disk_count;
     FmonDiskInfo disks[FMON_MAX_DISKS];

@@ -2,15 +2,16 @@
 
 A native FreeBSD system monitor and resource manager written in C11 with GTK4.
 
-## What's new in 1.3.0
+## What's new in 1.3.1
 
 - **Bilingual UI**: switch between 中文 and English at runtime; page/theme preserved.
+- **Full NIC models**: 192-byte model names, shown as a full-width row; ABI 24 requires daemon/GUI upgrade together.
 - **Window behavior**: remembers normal size, centers on X11, and closes without a 1-second collector wait.
 - **Truthful data**: missing zpool/metrics show `—`, not fake 0; NaN gaps remain gaps.
 - **UI cleanup**: top page tabs, direct quick actions, deeper dark background, fixed light-theme checkbox.
 - **Reliability**: process crash/right-click fixes, modular C11 code, 20/20 tests.
 
-Full details: [1.3.0 release notes](docs/RELEASE_NOTES_1.3.0.md).
+Full details: [1.3.1 release notes](docs/RELEASE_NOTES_1.3.1.md).
 
 ## Architecture
 
@@ -49,7 +50,7 @@ fmon-daemon (root)  --POSIX shared memory (seqlock)-->  fmon-gui (user)
 ## Install from the package
 
 ```sh
-sudo pkg install ./fmon-1.3.0.pkg
+sudo pkg install ./fmon-1.3.1.pkg
 sudo sysrc fmon_daemon_enable=YES
 sudo service fmon_daemon start
 fmon-gui
@@ -93,15 +94,16 @@ BSD-2-Clause. See [LICENSE](LICENSE).
 
 用 C11 + GTK4 编写的 FreeBSD 原生系统监控与资源管理工具。
 
-## 1.3.0 更新
+## 1.3.1 更新
 
 - **中英双语**：运行时切换中文 / English，保留当前页面与主题。
+- **完整网卡型号**：型号字段扩到 192 字节并整行显示；ABI 24 需 daemon/GUI 同升。
 - **窗口行为**：记住正常大小，X11 启动居中，关闭不再等待采集线程 1 秒。
 - **数据真实性**：缺失指标显示 `—`，无 zpool 不再伪造 0，NaN 保持断线。
 - **界面整理**：顶部页面标签、快捷操作直出、更深深色背景、浅色主题复选框修复。
 - **稳定性**：进程页崩溃/右键修复，C11 模块化，20/20 测试通过。
 
-完整说明：[1.3.0 发布说明](docs/RELEASE_NOTES_1.3.0.md)。
+完整说明：[1.3.1 发布说明](docs/RELEASE_NOTES_1.3.1.md)。
 
 ## 架构
 
@@ -134,7 +136,7 @@ BSD-2-Clause. See [LICENSE](LICENSE).
 ## 安装
 
 ```sh
-sudo pkg install ./fmon-1.3.0.pkg
+sudo pkg install ./fmon-1.3.1.pkg
 sudo sysrc fmon_daemon_enable=YES
 sudo service fmon_daemon start
 fmon-gui
