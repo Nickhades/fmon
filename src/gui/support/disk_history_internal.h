@@ -17,6 +17,9 @@ typedef struct {
     GtkWidget *area;
     GtkWidget *drop;
     GtkWidget *devdrop;
+    GtkStringList *dev_model;   /* devdrop 的 model，原地更新 */
+    guint      dev_timer;
+    gboolean   syncing;
     GtkWidget *stats;
 
     GArray    *pts;

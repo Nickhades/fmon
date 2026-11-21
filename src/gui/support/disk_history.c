@@ -35,15 +35,22 @@ static void on_device_changed(GObject *obj, GParamSpec *pspec, gpointer data)
     (void)pspec;
 
     HistDlg *d = data;
-    guint    sel = gtk_drop_down_get_selected(GTK_DROP_DOWN(d->devdrop));
+
+    if (d->syncing)
+        return;
+
+    guint sel = gtk_drop_down_get_selected(GTK_DROP_DOWN(d->devdrop));
     GtkStringList *sl = GTK_STRING_LIST(
         gtk_drop_down_get_model(GTK_DROP_DOWN(d->devdrop)));
     const char *s = gtk_string_list_get_string(sl, sel);
 
-    if (s != NULL && s[0] != '\0') {
+    if (s == NULL || s[0] == '\0' || strcmp(s, _("未检测到磁盘")) == 0) {
+        d->dev[0] = '\0';
+    } else {
         g_strlcpy(d->dev, s, sizeof(d->dev));
-        gtk_widget_queue_draw(d->area);
     }
+
+    gtk_widget_queue_draw(d->area);
 }
 
 static void export_ctx_free(gpointer data)
@@ -208,6 +215,116 @@ static void on_metric_changed(GObject *obj, GParamSpec *pspec, gpointer data)
     gtk_widget_queue_draw(d->area);
 }
 
+/* 只列出当前快照中仍然存在的磁盘；历史 DB 里的旧设备不再出现在下拉框。 */
+static guint live_device_names(const char **names, guint max)
+{
+    const FmonShmData *s = gui_state_snapshot();
+    guint n = 0;
+
+    for (uint32_t i = 0; i < s->disk_count && n + 1 < max; i++) {
+        const char *name = s->disks[i].name;
+
+        if (name[0] == '\0')
+            continue;
+
+        gboolean dup = FALSE;
+
+        for (guint k = 0; k < n; k++)
+            if (strcmp(names[k], name) == 0)
+                dup = TRUE;
+
+        if (!dup)
+            names[n++] = name;
+    }
+
+    if (n == 0)
+        names[n++] = _("未检测到磁盘");
+
+    return n;
+}
+
+static void update_stats_hint(HistDlg *d)
+{
+    if (d->stats == NULL)
+        return;
+
+    if (d->dev[0] == '\0')
+        gtk_label_set_text(GTK_LABEL(d->stats), _("未检测到已连接磁盘"));
+    else
+        gtk_label_set_text(GTK_LABEL(d->stats), _("历史数据由守护进程每分钟写入"));
+}
+
+static void refresh_live_devices(HistDlg *d)
+{
+    if (d->devdrop == NULL || d->dev_model == NULL)
+        return;
+
+    const char *names[FMON_MAX_DISKS + 2] = { 0 };
+    guint n = live_device_names(names, G_N_ELEMENTS(names));
+    guint old_n = g_list_model_get_n_items(G_LIST_MODEL(d->dev_model));
+    gboolean same = (old_n == n);
+
+    for (guint i = 0; same && i < n; i++) {
+        const char *old = gtk_string_list_get_string(d->dev_model, i);
+
+        if (g_strcmp0(old, names[i]) != 0)
+            same = FALSE;
+    }
+
+    if (same)
+        return;
+
+    char keep[16];
+
+    g_strlcpy(keep, d->dev, sizeof(keep));
+    d->syncing = TRUE;
+    gtk_string_list_splice(d->dev_model, 0, old_n, names);
+
+    guint sel = GTK_INVALID_LIST_POSITION;
+
+    for (guint i = 0; i < n; i++) {
+        if (keep[0] != '\0' && strcmp(keep, names[i]) == 0) {
+            sel = i;
+            break;
+        }
+    }
+
+    if (sel == GTK_INVALID_LIST_POSITION && n > 0 &&
+        strcmp(names[0], _("未检测到磁盘")) != 0)
+        sel = 0;
+
+    if (sel != GTK_INVALID_LIST_POSITION)
+        gtk_drop_down_set_selected(GTK_DROP_DOWN(d->devdrop), sel);
+
+    if (sel != GTK_INVALID_LIST_POSITION)
+        g_strlcpy(d->dev, names[sel], sizeof(d->dev));
+    else
+        d->dev[0] = '\0';
+
+    d->syncing = FALSE;
+    update_stats_hint(d);
+    gtk_widget_queue_draw(d->area);
+}
+
+static gboolean refresh_live_devices_cb(gpointer data)
+{
+    refresh_live_devices(data);
+    return G_SOURCE_CONTINUE;
+}
+
+static void hist_dlg_free(gpointer data)
+{
+    HistDlg *d = data;
+
+    if (d == NULL)
+        return;
+
+    if (d->dev_timer != 0)
+        g_source_remove(d->dev_timer);
+
+    g_free(d);
+}
+
 void disk_history_open_dialog(const char *dev, GtkWindow *parent)
 {
     HistDlg *d = g_new0(HistDlg, 1);
@@ -235,31 +352,10 @@ void disk_history_open_dialog(const char *dev, GtkWindow *parent)
 
     gtk_box_append(GTK_BOX(top), devlab);
 
-    GPtrArray   *devs = disk_history_query_devices();
-    GtkStringList *sl = gtk_string_list_new(NULL);
-    int            cur = -1;
-
-    for (guint i = 0; i < devs->len; i++) {
-        const char *nm = g_ptr_array_index(devs, i);
-
-        gtk_string_list_append(sl, nm);
-        if (strcmp(nm, dev) == 0)
-            cur = (int)i;
-    }
-
-    if (cur < 0) {
-        gtk_string_list_append(sl, dev);
-        cur = (int)devs->len;
-    }
-
-    /* gtk_drop_down_new() 的 model 是 transfer full：所有权交给下拉框，
-     * 这里不能再 unref，也不能再挂到窗口 data 上，否则关闭窗口时 double free。 */
-    d->devdrop = gtk_drop_down_new(G_LIST_MODEL(sl), NULL);
-
-    if (cur >= 0)
-        gtk_drop_down_set_selected(GTK_DROP_DOWN(d->devdrop), (guint)cur);
-
-    g_ptr_array_free(devs, TRUE);
+    /* 下拉框只使用当前快照中的磁盘；不读取 SQLite 里的历史设备名，
+     * 否则拔掉的外置盘会一直残留在列表里。 */
+    d->dev_model = gtk_string_list_new(NULL);
+    d->devdrop = gtk_drop_down_new(G_LIST_MODEL(d->dev_model), NULL);
     gtk_box_append(GTK_BOX(top), d->devdrop);
 
     GtkWidget *lab = gtk_label_new(_("指标"));
@@ -306,7 +402,9 @@ void disk_history_open_dialog(const char *dev, GtkWindow *parent)
     g_signal_connect(d->devdrop, "notify::selected",
                      G_CALLBACK(on_device_changed), d);
 
-    g_object_set_data_full(G_OBJECT(win), "hist-dlg", d, g_free);
+    refresh_live_devices(d);
+    d->dev_timer = g_timeout_add_seconds(2, refresh_live_devices_cb, d);
+    g_object_set_data_full(G_OBJECT(win), "hist-dlg", d, hist_dlg_free);
 
     gtk_window_present(GTK_WINDOW(win));
 }
