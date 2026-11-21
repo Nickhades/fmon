@@ -5,13 +5,35 @@ gio_dep  = dependency('gio-2.0')
 # 折线图几何/量程/缺口/抽取/离屏渲染（纯 C + Cairo，不需要 GTK/X11）
 test_chart = executable('test_chart', 'test_chart.c',
   files('../src/gui/charts/chart_geom.c',
-        '../src/gui/charts/gui_chart_util.c'),
+        '../src/gui/charts/gui_chart_util.c',
+        '../src/gui/charts/chart_geom_polyline.c',
+        '../src/gui/charts/chart_geom_cairo.c'),
   include_directories : [common_inc,
                          include_directories('../src/gui/charts')],
   dependencies : [glib_dep, cairo_dep, m_dep],
   install : false
 )
 test('fmon_chart', test_chart, timeout : 30)
+
+test_fidelity = executable('test_fidelity', 'test_fidelity.c',
+  files('../src/gui/charts/chart_geom.c',
+        '../src/gui/charts/chart_geom_polyline.c',
+        '../src/gui/charts/chart_geom_cairo.c'),
+  include_directories : [common_inc,
+                         include_directories('../src/gui/charts')],
+  dependencies : [glib_dep, cairo_dep, m_dep],
+  install : false
+)
+test('fmon_fidelity', test_fidelity, timeout : 30)
+
+test_history_provider = executable('test_history_provider', 'test_history_provider.c',
+  files('../src/gui/history/history_provider.c',
+        '../src/gui/history/history_parse.c'),
+  include_directories : [common_inc, include_directories('../src/gui')],
+  dependencies : [glib_dep, m_dep],
+  install : false
+)
+test('fmon_history_provider', test_history_provider, timeout : 30)
 
 test_child = executable('test_child', 'test_child.c',
   common_srcs,
@@ -144,10 +166,28 @@ test_disk_queue = executable('test_disk_queue', 'test_disk_queue.c',
 test('fmon_disk_queue', test_disk_queue, timeout : 30)
 
 test_zpool_health = executable('test_zpool_health', 'test_zpool_health.c',
-  files('../src/gui/pages/zpool_health.c'),
+  files('../src/gui/pages/zpool_health.c',
+        '../src/gui/pages/zpool_parse.c'),
   include_directories : [common_inc,
                          include_directories('../src/gui/pages')],
   dependencies : [glib_dep, gio_dep],
   install : false
 )
 test('fmon_zpool_health', test_zpool_health, timeout : 30)
+
+no_bezier = find_program('check_no_bezier.sh')
+test('fmon_no_bezier', no_bezier, args : [meson.project_source_root()])
+
+translations = find_program('check_translations.py')
+test('fmon_translations', translations,
+     args : [meson.project_source_root()], timeout : 60)
+
+# 日志过滤纯函数（无 GTK）
+test_log_filter = executable('test_log_filter', 'test_log_filter.c',
+  files('../src/gui/views/log_filter.c'),
+  include_directories : [common_inc,
+                         include_directories('../src/gui/views')],
+  dependencies : [glib_dep],
+  install : false
+)
+test('fmon_log_filter', test_log_filter, timeout : 30)

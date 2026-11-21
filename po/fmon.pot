@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fmon\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-20 21:31+0800\n"
+"POT-Creation-Date: 2026-11-21 21:17+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,42 +17,53 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/gui/app/gui_export.c:49 src/gui/views/process_view.c:655
+#: src/gui/app/gui_export.c:105 src/gui/views/process_view.c:676
 msgid "无法保存文件"
 msgstr ""
 
-#: src/gui/app/gui_export.c:60 src/gui/app/gui_export.c:68
-#: src/gui/app/gui_export.c:112 src/gui/views/process_view.c:666
-#: src/gui/views/process_view.c:676
+#: src/gui/app/gui_export.c:116 src/gui/app/gui_export.c:124
+#: src/gui/app/gui_export.c:137 src/gui/app/gui_export.c:190
+#: src/gui/views/process_view.c:687 src/gui/views/process_view.c:697
 msgid "导出失败"
 msgstr ""
 
-#: src/gui/app/gui_export.c:60 src/gui/views/process_view.c:666
+#: src/gui/app/gui_export.c:116 src/gui/views/process_view.c:687
 msgid "请选择本地文件系统上的位置。"
 msgstr ""
 
-#: src/gui/app/gui_export.c:67 src/gui/views/process_view.c:674
+#: src/gui/app/gui_export.c:123 src/gui/views/process_view.c:695
 #, c-format
 msgid "无法写入 %s：%s"
 msgstr ""
 
-#: src/gui/app/gui_export.c:111
+#: src/gui/app/gui_export.c:135 src/gui/app/gui_export.c:189
 #, c-format
 msgid "写入 %s 时出错：%s"
 msgstr ""
 
-#: src/gui/app/gui_export.c:115
+#: src/gui/app/gui_export.c:140
+#, c-format
+msgid ""
+"已导出 %u 个长历史采样点到：\n"
+"%s"
+msgstr ""
+
+#: src/gui/app/gui_export.c:143
+msgid "导出成功"
+msgstr ""
+
+#: src/gui/app/gui_export.c:193
 #, c-format
 msgid ""
 "已导出 %u 个采样点到：\n"
 "%s"
 msgstr ""
 
-#: src/gui/app/gui_export.c:131
+#: src/gui/app/gui_export.c:209
 msgid "无法导出"
 msgstr ""
 
-#: src/gui/app/gui_export.c:131
+#: src/gui/app/gui_export.c:209
 msgid "尚未连接到 fmon-daemon，没有可导出的数据。"
 msgstr ""
 
@@ -86,308 +97,390 @@ msgstr ""
 msgid "深色"
 msgstr ""
 
-#: src/gui/app/gui_window.c:294
+#: src/gui/app/gui_window.c:160
+msgid "无法切换语言"
+msgstr ""
+
+#: src/gui/app/gui_window.c:161
+msgid "找不到 fmon-gui 可执行文件。"
+msgstr ""
+
+#: src/gui/app/gui_window.c:181
+#, c-format
+msgid "无法重启 fmon-gui：%s"
+msgstr ""
+
+#: src/gui/app/gui_window.c:184
+msgid "语言切换失败"
+msgstr ""
+
+#: src/gui/app/gui_window.c:318
+msgid "长历史不可用"
+msgstr ""
+
+#: src/gui/app/gui_window.c:319
+msgid "没有可用的历史金字塔文件。"
+msgstr ""
+
+#: src/gui/app/gui_window.c:504
 msgid "FreeBSD 监控中心"
 msgstr ""
 
-#: src/gui/app/gui_window.c:358
+#: src/gui/app/gui_window.c:555
+msgid "界面语言（切换后自动重启）"
+msgstr ""
+
+#: src/gui/app/gui_window.c:605
 msgid "⚠ 告警"
 msgstr ""
 
+#: src/gui/app/gui_window.c:614
+msgid "1 分钟"
+msgstr ""
+
+#: src/gui/app/gui_window.c:614
+msgid "5 分钟"
+msgstr ""
+
+#: src/gui/app/gui_window.c:614
+msgid "15 分钟"
+msgstr ""
+
+#: src/gui/app/gui_window.c:614
+msgid "20 分钟"
+msgstr ""
+
+#: src/gui/app/gui_window.c:615
+msgid "1 小时"
+msgstr ""
+
+#: src/gui/app/gui_window.c:615
+msgid "24 小时"
+msgstr ""
+
+#: src/gui/app/gui_window.c:615
+msgid "7 天"
+msgstr ""
+
+#: src/gui/app/gui_window.c:615
+msgid "30 天"
+msgstr ""
+
+#: src/gui/app/gui_window.c:615
+msgid "自定义"
+msgstr ""
+
+#: src/gui/app/gui_window.c:624
+msgid "实时图 20 分钟内；1 小时/24 小时使用 1 分钟金字塔"
+msgstr ""
+
 #. 导出：主按钮（蓝色）
-#: src/gui/app/gui_window.c:368
+#: src/gui/app/gui_window.c:634
 msgid "导出数据"
 msgstr ""
 
-#: src/gui/app/gui_window.c:378
-msgid "更多"
-msgstr ""
-
-#: src/gui/app/gui_window.c:389
+#. 关于 / 告警 / 自动量程直接放在工具栏，不再收进 “...” 下拉。
+#: src/gui/app/gui_window.c:642
 msgid "关于"
 msgstr ""
 
-#: src/gui/app/gui_window.c:402
-msgid "百分比图表自动量程"
+#: src/gui/app/gui_window.c:646
+msgid "关于 fmon"
 msgstr ""
 
-#: src/gui/app/gui_window.c:407
-msgid "默认 0–100%；打开后按当前窗口数据缩放，轴标签仍显示真实范围"
+#: src/gui/app/gui_window.c:655
+msgid "告警"
 msgstr ""
 
-#: src/gui/pages/gui_coreview.c:119
+#: src/gui/app/gui_window.c:656 src/gui/support/alerts.c:459
+#: src/gui/support/alerts.c:547
+msgid "告警设置"
+msgstr ""
+
+#: src/gui/app/gui_window.c:659
+msgid "自动量程"
+msgstr ""
+
+#: src/gui/app/gui_window.c:665
+msgid "百分比图表默认 0–100%；打开后按当前窗口数据缩放，轴标签仍显示真实范围"
+msgstr ""
+
+#: src/gui/app/gui_window.c:693
+msgid ""
+"长历史模式（ZFS/GPU 部分聚合）：CPU / 内存 / 网络 / 磁盘读写/温度、ZFS 池使用"
+"率/ARC 命中率/L2ARC/ZFS IO、GPU 利用率/温度/显存使用；ZFS 容量构成等仍为实"
+"时。"
+msgstr ""
+
+#: src/gui/pages/gui_coreview.c:182
 #, c-format
 msgid "CPU %d 总使用率"
 msgstr ""
 
-#: src/gui/pages/gui_coreview.c:166
+#: src/gui/pages/gui_coreview.c:232
 #, c-format
 msgid "%d 核 · %u 线程 · 总使用率 %.1f %%"
 msgstr ""
 
-#: src/gui/pages/gui_coreview.c:169
+#: src/gui/pages/gui_coreview.c:235
 #, c-format
 msgid "%u 线程 · 总使用率 %.1f %%"
 msgstr ""
 
-#: src/gui/pages/gui_page_batt.c:108
+#: src/gui/pages/gui_page_batt.c:109
 msgid "打开电池页后开始记录（约 20 分钟窗口）"
 msgstr ""
 
-#: src/gui/pages/gui_page_batt.c:208
+#: src/gui/pages/gui_page_batt.c:214
 msgid "蓝：电量（0-100%） 绿/红：充电/放电功率"
 msgstr ""
 
-#: src/gui/pages/gui_page_batt.c:312
+#: src/gui/pages/gui_page_batt.c:320
 msgid "电池健康与供电"
 msgstr ""
 
-#: src/gui/pages/gui_page_batt.c:357
+#: src/gui/pages/gui_page_batt.c:365
 msgid "设计容量"
 msgstr ""
 
-#: src/gui/pages/gui_page_batt.c:357
+#: src/gui/pages/gui_page_batt.c:365
 msgid "满充容量"
 msgstr ""
 
-#: src/gui/pages/gui_page_batt.c:358
+#: src/gui/pages/gui_page_batt.c:366
 msgid "健康度"
 msgstr ""
 
-#: src/gui/pages/gui_page_batt.c:358
+#: src/gui/pages/gui_page_batt.c:366
 msgid "循环次数"
 msgstr ""
 
-#: src/gui/pages/gui_page_batt.c:359
+#: src/gui/pages/gui_page_batt.c:367
 msgid "电压"
 msgstr ""
 
-#: src/gui/pages/gui_page_batt.c:359
+#: src/gui/pages/gui_page_batt.c:367
 msgid "电流 / 功率"
 msgstr ""
 
-#: src/gui/pages/gui_page_batt.c:360
+#: src/gui/pages/gui_page_batt.c:368
 msgid "剩余时间"
 msgstr ""
 
-#: src/gui/pages/gui_page_batt.c:360
+#: src/gui/pages/gui_page_batt.c:368
 msgid "电池温度"
 msgstr ""
 
-#: src/gui/pages/gui_page_batt.c:361
+#: src/gui/pages/gui_page_batt.c:369
 msgid "型号 / OEM"
 msgstr ""
 
-#: src/gui/pages/gui_page_batt.c:361
+#: src/gui/pages/gui_page_batt.c:369
 msgid "充电阈值"
 msgstr ""
 
-#: src/gui/pages/gui_page_batt.c:407 src/gui/pages/gui_page_batt.c:487
+#: src/gui/pages/gui_page_batt.c:415 src/gui/pages/gui_page_batt.c:495
 msgid "不可用（ACPI 未暴露）"
 msgstr ""
 
-#: src/gui/pages/gui_page_batt.c:433
+#: src/gui/pages/gui_page_batt.c:441
 #, c-format
 msgid "%.1f %%（损耗 %.1f %%）"
 msgstr ""
 
-#: src/gui/pages/gui_page_batt.c:449
+#: src/gui/pages/gui_page_batt.c:457
 #, c-format
 msgid "%d 次"
 msgstr ""
 
-#: src/gui/pages/gui_page_batt.c:451
+#: src/gui/pages/gui_page_batt.c:459
 msgid "不可用"
 msgstr ""
 
-#: src/gui/pages/gui_page_batt.c:469
+#: src/gui/pages/gui_page_batt.c:477
 #, c-format
 msgid "%.2f W（充电中）"
 msgstr ""
 
-#: src/gui/pages/gui_page_batt.c:472
+#: src/gui/pages/gui_page_batt.c:480
 #, c-format
 msgid "%.2f W（放电中）"
 msgstr ""
 
-#: src/gui/pages/gui_page_batt.c:475
+#: src/gui/pages/gui_page_batt.c:483
 msgid "已充满"
 msgstr ""
 
-#: src/gui/pages/gui_page_batt.c:484
+#: src/gui/pages/gui_page_batt.c:492
 msgid "未知（ACPI 未报告）"
 msgstr ""
 
-#: src/gui/pages/gui_page_batt.c:497
+#: src/gui/pages/gui_page_batt.c:505
 msgid "未设置 / 不支持"
 msgstr ""
 
-#: src/gui/pages/gui_page_cpu.c:157
+#: src/gui/pages/gui_page_cpu.c:164
 msgid "CPU 时间分布"
 msgstr ""
 
 #. 状态：4 列（键、值、键、值），行距统一
-#: src/gui/pages/gui_page_cpu.c:199
+#: src/gui/pages/gui_page_cpu.c:206
 msgid "状态与调度"
 msgstr ""
 
-#: src/gui/pages/gui_page_cpu.c:390
+#: src/gui/pages/gui_page_cpu.c:462
 msgid "CPU 使用率"
 msgstr ""
 
-#: src/gui/pages/gui_page_cpu.c:396
+#: src/gui/pages/gui_page_cpu.c:468
 msgid "当前值 · 历史平均 · 1/5/15 分钟负载"
 msgstr ""
 
-#: src/gui/pages/gui_page_cpu.c:412
+#: src/gui/pages/gui_page_cpu.c:484
 msgid "设备正常"
 msgstr ""
 
-#: src/gui/pages/gui_page_cpu.c:1028
+#: src/gui/pages/gui_page_cpu.c:1333
 msgid "CPU 负载与温度"
 msgstr ""
 
-#: src/gui/pages/gui_page_cpu.c:1036
+#: src/gui/pages/gui_page_cpu.c:1341
 msgid "左：CPU 使用率的 1/5/10 分钟平均值（%）· 右：温度曲线 + CPU 温度计"
 msgstr ""
 
-#: src/gui/pages/gui_page_cpu.c:1126
-msgid "已启用（vmm）"
-msgstr ""
-
-#: src/gui/pages/gui_page_cpu.c:1126
-msgid "未启用"
-msgstr ""
-
-#: src/gui/pages/gui_page_cpu.c:1132
+#: src/gui/pages/gui_page_cpu.c:1459
 #, c-format
 msgid "基准频率 %.2f GHz"
 msgstr ""
 
-#: src/gui/pages/gui_page_cpu.c:1138
+#: src/gui/pages/gui_page_cpu.c:1465
 msgid "该平台按封装调频，仅 CPU0 暴露频率"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:102
+#: src/gui/pages/gui_page_disk.c:120
 msgid "性能：采集中…"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:107
+#: src/gui/pages/gui_page_disk.c:125
 #, c-format
 msgid "IOPS 读 %.0f / 写 %.0f · 延迟 %.2f ms · 繁忙 %.0f%% · 队列 %.1f"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:146
+#: src/gui/pages/gui_page_disk.c:175
 #, c-format
 msgid "寿命已用 %d%% · 备用空间 %d%% · 累计 读 %s / 写 %s"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:149
+#: src/gui/pages/gui_page_disk.c:178
 #, c-format
 msgid "累计 读 %s / 写 %s"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:202 src/gui/pages/gui_page_disk.c:406
+#: src/gui/pages/gui_page_disk.c:231 src/gui/pages/gui_page_disk.c:467
 msgid "NVMe"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:204 src/gui/pages/gui_page_disk.c:408
+#: src/gui/pages/gui_page_disk.c:233 src/gui/pages/gui_page_disk.c:469
 msgid "SATA"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:206
+#: src/gui/pages/gui_page_disk.c:235
 msgid "USB"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:208 src/gui/pages/gui_page_disk.c:420
+#: src/gui/pages/gui_page_disk.c:237 src/gui/pages/gui_page_disk.c:481
 msgid "SCSI/SAS"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:210
+#: src/gui/pages/gui_page_disk.c:239
 msgid "未知接口"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:236
+#: src/gui/pages/gui_page_disk.c:265
 msgid "磁盘明细（图表为所有磁盘合计）"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:353
+#: src/gui/pages/gui_page_disk.c:412
 msgid "未检测到磁盘"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:366
+#: src/gui/pages/gui_page_disk.c:423
+msgid "元数据不可用"
+msgstr ""
+
+#: src/gui/pages/gui_page_disk.c:427
 msgid "未知型号"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:376
+#: src/gui/pages/gui_page_disk.c:437
 msgid " · 机械硬盘"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:378
+#: src/gui/pages/gui_page_disk.c:439
 msgid " · 固态硬盘"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:380
+#: src/gui/pages/gui_page_disk.c:441
 msgid " · 移动闪存盘"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:382
+#: src/gui/pages/gui_page_disk.c:443
 msgid " · 外置硬盘"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:384
+#: src/gui/pages/gui_page_disk.c:445
 msgid " · 类型未知"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:390
+#: src/gui/pages/gui_page_disk.c:451
 #, c-format
 msgid "SN %s"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:413
+#: src/gui/pages/gui_page_disk.c:474
 msgid "USB 链路 3.0（5 Gbps）"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:415
+#: src/gui/pages/gui_page_disk.c:476
 msgid "USB 链路 2.0（480 Mbps）"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:417
+#: src/gui/pages/gui_page_disk.c:478
 msgid "USB 链路"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:426
+#: src/gui/pages/gui_page_disk.c:487
 msgid "SATA 6 Gb/s"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:428
+#: src/gui/pages/gui_page_disk.c:489
 msgid "SATA 3 Gb/s"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:430
+#: src/gui/pages/gui_page_disk.c:491
 msgid "SATA 1.5 Gb/s"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:432
+#: src/gui/pages/gui_page_disk.c:493
 msgid "PCIe/NVMe"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:436
+#: src/gui/pages/gui_page_disk.c:497
 #, c-format
 msgid "接口 %s"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:442
+#: src/gui/pages/gui_page_disk.c:503
 #, c-format
 msgid " · 磁盘 %s"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:445
+#: src/gui/pages/gui_page_disk.c:506
 #, c-format
 msgid " · 扇区 %u B"
 msgstr ""
 
-#: src/gui/pages/gui_page_disk.c:451
+#: src/gui/pages/gui_page_disk.c:512
 msgid ""
 "USB 链路速率是设备与主机实际协商的结果。若设备或线材是\n"
 "USB 2.0，即使插在 USB 3.0 接口上也只能协商到 480 Mbps；\n"
@@ -396,334 +489,356 @@ msgid ""
 msgstr ""
 
 #. 详情并入同一张大卡片（与 CPU 页一致），不再单独占一张卡
-#: src/gui/pages/gui_page_gpu.c:372
+#: src/gui/pages/gui_page_gpu.c:458
 msgid "显卡详情"
 msgstr ""
 
-#: src/gui/pages/gui_page_l2arc.c:132
+#: src/gui/pages/gui_page_l2arc.c:147
 msgid "L2ARC"
 msgstr ""
 
-#: src/gui/pages/gui_page_l2arc.c:136
+#: src/gui/pages/gui_page_l2arc.c:151
 msgid "二级读缓存（SSD 上的 ARC 扩展）"
 msgstr ""
 
-#: src/gui/pages/gui_page_l2arc.c:140
+#: src/gui/pages/gui_page_l2arc.c:155
 msgid ""
 "未配置 L2ARC：当前系统没有 L2ARC 设备（vfs.zfs.l2arc_* / 缓存盘），以下指标为"
 "空。"
 msgstr ""
 
-#: src/gui/pages/gui_page_l2arc.c:148
+#: src/gui/pages/gui_page_l2arc.c:163
 msgid "L2ARC 明细"
 msgstr ""
 
-#: src/gui/pages/gui_page_l2arc.c:165
+#: src/gui/pages/gui_page_l2arc.c:180
 msgid "L2 缓存大小"
 msgstr ""
 
-#: src/gui/pages/gui_page_l2arc.c:168
+#: src/gui/pages/gui_page_l2arc.c:183
 msgid "L2 命中率"
 msgstr ""
 
-#: src/gui/pages/gui_page_mem.c:133
+#: src/gui/pages/gui_page_mem.c:134
 msgid "内存队列"
 msgstr ""
 
-#: src/gui/pages/gui_page_mem.c:202
+#: src/gui/pages/gui_page_mem.c:203
 msgid "回收与压力"
 msgstr ""
 
-#: src/gui/pages/gui_page_mem.c:204
+#: src/gui/pages/gui_page_mem.c:205
 msgid "ZFS 缓存"
 msgstr ""
 
-#: src/gui/pages/gui_page_mem.c:206
+#: src/gui/pages/gui_page_mem.c:207
 msgid "内核内存（UMA）"
 msgstr ""
 
-#: src/gui/pages/gui_page_mem.c:389
+#: src/gui/pages/gui_page_mem.c:390
 #, c-format
 msgid "内存 %s · 已用 %s · 可用 %s"
 msgstr ""
 
-#: src/gui/pages/gui_page_mem.c:400
+#: src/gui/pages/gui_page_mem.c:402
+msgid "Swap：不可用"
+msgstr ""
+
+#: src/gui/pages/gui_page_mem.c:407
 #, c-format
 msgid "Swap 总 %.2f GB · 已用 %.2f GB"
 msgstr ""
 
-#: src/gui/pages/gui_page_mem.c:465
-msgid "未检测到内存条信息（需要 root 运行 dmidecode）"
+#: src/gui/pages/gui_page_mem.c:474
+msgid "内存条信息不可用（dmidecode 未安装或探测失败）"
 msgstr ""
 
-#: src/gui/pages/gui_page_mem.c:506
+#: src/gui/pages/gui_page_mem.c:481
+msgid "未检测到已安装的内存条"
+msgstr ""
+
+#: src/gui/pages/gui_page_mem.c:522
 msgid "内存条"
 msgstr ""
 
-#: src/gui/pages/gui_page_net.c:114
+#: src/gui/pages/gui_page_net.c:115
 msgid "未检测到网卡硬件"
 msgstr ""
 
-#: src/gui/pages/gui_page_net.c:141
+#: src/gui/pages/gui_page_net.c:147
 msgid "链路与错误"
 msgstr ""
 
-#: src/gui/pages/gui_page_net.c:156
+#: src/gui/pages/gui_page_net.c:162
 msgid "TCP 健康度"
 msgstr ""
 
-#: src/gui/pages/gui_page_net.c:284
+#: src/gui/pages/gui_page_net.c:296
 #, c-format
 msgid ""
 "重传率 %.2f%%（重传 %llu / 发送 %llu） · 监听队列溢出 %llu · 连接尝试 %llu / "
 "关闭 %llu"
 msgstr ""
 
-#: src/gui/pages/gui_page_net.c:298
+#: src/gui/pages/gui_page_net.c:310
 msgid "网络接口详情"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:110
+#: src/gui/pages/gui_page_zfs.c:111
 msgid "池详情"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:142
+#: src/gui/pages/gui_page_zfs.c:143
 msgid "延迟（读）"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:143
+#: src/gui/pages/gui_page_zfs.c:144
 msgid "延迟（写）"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:144
+#: src/gui/pages/gui_page_zfs.c:145
 msgid "队列"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:145
+#: src/gui/pages/gui_page_zfs.c:146
 msgid "已用（物理 / 逻辑）"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:146
+#: src/gui/pages/gui_page_zfs.c:147
 msgid "近 1 分钟变化"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:147 src/gui/views/network_view.c:929
+#: src/gui/pages/gui_page_zfs.c:148 src/gui/views/network_view.c:929
 msgid "错误"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:148
+#: src/gui/pages/gui_page_zfs.c:149
 msgid "慢 I/O"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:151
+#: src/gui/pages/gui_page_zfs.c:152
 msgid "TXG"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:152
+#: src/gui/pages/gui_page_zfs.c:153
 msgid "脏数据延迟"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:153
+#: src/gui/pages/gui_page_zfs.c:154
 msgid "ZIL / SLOG"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:156
+#: src/gui/pages/gui_page_zfs.c:157
 msgid "vdev"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:158
+#: src/gui/pages/gui_page_zfs.c:159
 msgid "最近 scrub"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:181
+#: src/gui/pages/gui_page_zfs.c:182
 msgid "没有 vdev 数据"
-msgstr ""
-
-#: src/gui/pages/gui_page_zfs.c:229
-#, c-format
-msgid "已用 %s / 总量 %s"
 msgstr ""
 
 #: src/gui/pages/gui_page_zfs.c:230
 #, c-format
+msgid "已用 %s / 总量 %s"
+msgstr ""
+
+#: src/gui/pages/gui_page_zfs.c:231
+#, c-format
 msgid "使用率 %.1f %% · 空闲 %s"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:249 src/gui/pages/gui_page_zfs.c:250
-#: src/gui/pages/gui_page_zfs.c:371
+#: src/gui/pages/gui_page_zfs.c:246
+msgid "zpool 不可用"
+msgstr ""
+
+#: src/gui/pages/gui_page_zfs.c:247
+msgid "无可用池"
+msgstr ""
+
+#: src/gui/pages/gui_page_zfs.c:257 src/gui/pages/gui_page_zfs.c:258
+#: src/gui/pages/gui_page_zfs.c:379
 msgid "采集中…"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:254 src/gui/pages/gui_page_zfs.c:338
+#: src/gui/pages/gui_page_zfs.c:262 src/gui/pages/gui_page_zfs.c:346
 msgid "碎片率 —"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:263 src/gui/pages/gui_page_zfs.c:265
+#: src/gui/pages/gui_page_zfs.c:271 src/gui/pages/gui_page_zfs.c:273
 #, c-format
 msgid "total %.2f ms · disk %.2f ms"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:277
+#: src/gui/pages/gui_page_zfs.c:285
 #, c-format
 msgid "pend %.0f / activ %.0f"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:312
+#: src/gui/pages/gui_page_zfs.c:320
 #, c-format
 msgid "%+.2f MB（%+.4f%%）"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:318
+#: src/gui/pages/gui_page_zfs.c:326
 msgid "采样中…"
-msgstr ""
-
-#: src/gui/pages/gui_page_zfs.c:322
-#, c-format
-msgid "读 %llu / 写 %llu / CKSUM %llu"
 msgstr ""
 
 #: src/gui/pages/gui_page_zfs.c:330
 #, c-format
+msgid "读 %llu / 写 %llu / CKSUM %llu"
+msgstr ""
+
+#: src/gui/pages/gui_page_zfs.c:338
+#, c-format
 msgid "%llu 次"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:337
+#: src/gui/pages/gui_page_zfs.c:345
 #, c-format
 msgid "碎片率 %d %%"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:348
+#: src/gui/pages/gui_page_zfs.c:356
 #, c-format
 msgid "txg %llu · stime %.2f s（近 %d 次均值 %.2f s）%s"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:351 src/gui/pages/gui_page_zfs.c:357
+#: src/gui/pages/gui_page_zfs.c:359 src/gui/pages/gui_page_zfs.c:365
 msgid " · 疑似脏数据节流（同步尖峰）"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:354
+#: src/gui/pages/gui_page_zfs.c:362
 #, c-format
 msgid "txg %llu · stime %.1f ms（近 %d 次均值 %.1f ms）%s"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:361
+#: src/gui/pages/gui_page_zfs.c:369
 #, c-format
 msgid "%s · qtime %.1f ms · wtime %.1f ms（流水线）"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:376
+#: src/gui/pages/gui_page_zfs.c:384
 #, c-format
 msgid "dirty_delay %llu · throttle %llu · wrlog_delay %llu"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:391
+#: src/gui/pages/gui_page_zfs.c:399
 #, c-format
 msgid "ARC 命中率 %.2f %%"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:394
+#: src/gui/pages/gui_page_zfs.c:402
 msgid "ARC 命中率 —"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:403
+#: src/gui/pages/gui_page_zfs.c:411
 msgid "已配置（SLOG）"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:404
+#: src/gui/pages/gui_page_zfs.c:412
 msgid "未配置（ZIL 在池内）"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:407
+#: src/gui/pages/gui_page_zfs.c:415
 #, c-format
 msgid "扫描中 %s%% · 剩余 %s"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:414
+#: src/gui/pages/gui_page_zfs.c:422
 msgid "没有 scrub 记录"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:461
+#: src/gui/pages/gui_page_zfs.c:469
 msgid "ARC 明细"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:653
+#: src/gui/pages/gui_page_zfs.c:664
 msgid "命中率明细"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:799
+#: src/gui/pages/gui_page_zfs.c:810
 msgid "带宽明细"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:929
+#: src/gui/pages/gui_page_zfs.c:940
 #, c-format
 msgid "—（当前写入过低）"
 msgstr ""
 
 #. 延迟直方图：只显示计数 > 0 的桶，避免一行太长
-#: src/gui/pages/gui_page_zfs.c:936 src/gui/pages/gui_page_zfs.c:948
+#: src/gui/pages/gui_page_zfs.c:947 src/gui/pages/gui_page_zfs.c:959
 msgid "延迟直方图  "
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:949
+#: src/gui/pages/gui_page_zfs.c:960
 msgid "无数据（空闲）"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:987
+#: src/gui/pages/gui_page_zfs.c:998
 #, c-format
 msgid "%s  延迟 读 %.2f / 写 %.2f ms · disk 读 %.2f / 写 %.2f ms"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:997
+#: src/gui/pages/gui_page_zfs.c:1008
 msgid "vdev 延迟：采集中…"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:1006
+#: src/gui/pages/gui_page_zfs.c:1017
 #, c-format
 msgid "写请求大小  ≤4K %.0f · 8–64K %.0f · ≥128K %.0f"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:1038
+#: src/gui/pages/gui_page_zfs.c:1049
 msgid "回收明细"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:1146
+#: src/gui/pages/gui_page_zfs.c:1085
+msgid ""
+"说明：ARC Prune 是事件累计计数；无内存压力、没有 ARC 驱逐时保持 0 属于正常，"
+"不需要配置。"
+msgstr ""
+
+#: src/gui/pages/gui_page_zfs.c:1168
 msgid "无 ZFS 数据"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:1218
+#: src/gui/pages/gui_page_zfs.c:1240
 #, c-format
 msgid "状态：内存压力回收（prune %.1f/s · skip %.1f/s · 节流 +%llu）"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:1221
+#: src/gui/pages/gui_page_zfs.c:1243
 #, c-format
 msgid "状态：正常回收（prune %.1f/s · skip %.1f/s）"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:1224
+#: src/gui/pages/gui_page_zfs.c:1246
 #, c-format
 msgid "状态：空闲（无回收活动）"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:1231
+#: src/gui/pages/gui_page_zfs.c:1253
 #, c-format
 msgid "L2ARC 淘汰跳过 %llu · 淘汰读 %llu · free_on_write %llu · 写错误 %llu"
 msgstr ""
 
-#: src/gui/pages/gui_page_zfs.c:1237
+#: src/gui/pages/gui_page_zfs.c:1259
 #, c-format
 msgid "L2ARC：未配置"
 msgstr ""
 
-#: src/gui/pages/gui_pages_layout.c:305
+#: src/gui/pages/gui_pages_layout.c:301
 msgid "构成趋势（数据缓冲 / 元数据）"
 msgstr ""
 
-#: src/gui/pages/gui_pages_layout.c:324
+#: src/gui/pages/gui_pages_layout.c:320
 msgid "近 60 秒命中率"
 msgstr ""
 
-#: src/gui/pages/gui_pages_layout.c:348
+#: src/gui/pages/gui_pages_layout.c:344
 msgid "幽灵缓存趋势（MRU / MFU）"
 msgstr ""
 
@@ -764,65 +879,61 @@ msgstr ""
 msgid "关闭"
 msgstr ""
 
-#: src/gui/support/alerts.c:148
+#: src/gui/support/alerts.c:157
 msgid "无法发送桌面通知"
 msgstr ""
 
-#: src/gui/support/alerts.c:148
+#: src/gui/support/alerts.c:157
 msgid "未找到 notify-send 命令，请安装 libnotify（pkg install libnotify）。"
 msgstr ""
 
-#: src/gui/support/alerts.c:278
+#: src/gui/support/alerts.c:287
 #, c-format
 msgid "CPU 使用率 %.1f%%（阈值 %.0f%%）"
 msgstr ""
 
-#: src/gui/support/alerts.c:291
+#: src/gui/support/alerts.c:300
 #, c-format
 msgid "内存使用率 %.1f%%（阈值 %.0f%%，已扣除可回收的 ARC/缓存）"
 msgstr ""
 
-#: src/gui/support/alerts.c:300
+#: src/gui/support/alerts.c:309
 #, c-format
 msgid "Swap 使用率 %.1f%%（阈值 %.0f%%）"
 msgstr ""
 
-#: src/gui/support/alerts.c:309
+#: src/gui/support/alerts.c:318
 #, c-format
 msgid "ZFS 池 %s 使用率 %.1f%%（阈值 %.0f%%）"
 msgstr ""
 
-#: src/gui/support/alerts.c:320
+#: src/gui/support/alerts.c:329
 #, c-format
 msgid "CPU 温度 %.1f℃（阈值 %.0f℃）"
 msgstr ""
 
-#: src/gui/support/alerts.c:330
+#: src/gui/support/alerts.c:339
 #, c-format
 msgid "电池电量仅 %.0f%%（阈值 %.0f%%）"
 msgstr ""
 
-#: src/gui/support/alerts.c:450 src/gui/support/alerts.c:538
-msgid "告警设置"
-msgstr ""
-
-#: src/gui/support/alerts.c:461
+#: src/gui/support/alerts.c:470
 msgid "启用阈值告警（桌面通知）"
 msgstr ""
 
-#: src/gui/support/alerts.c:489
+#: src/gui/support/alerts.c:498
 msgid "同一指标 10 分钟内只通知一次；超过阈值的项目会显示在窗口右上角。"
 msgstr ""
 
-#: src/gui/support/alerts.c:498
+#: src/gui/support/alerts.c:507
 msgid "测试通知"
 msgstr ""
 
-#: src/gui/support/alerts.c:499 src/gui/views/service_actions.c:777
+#: src/gui/support/alerts.c:508 src/gui/views/service_actions.c:777
 msgid "取消"
 msgstr ""
 
-#: src/gui/support/alerts.c:500
+#: src/gui/support/alerts.c:509
 msgid "保存"
 msgstr ""
 
@@ -847,29 +958,29 @@ msgstr ""
 msgid "最新 %.2f %s · 最小 %.2f · 最大 %.2f · 平均 %.2f · %u 个采样点"
 msgstr ""
 
-#: src/gui/support/disk_history.c:762
+#: src/gui/support/disk_history.c:765
 #, c-format
 msgid "历史明细 · %s"
 msgstr ""
 
-#: src/gui/support/disk_history.c:843
+#: src/gui/support/disk_history.c:846
 #, c-format
 msgid "设备历史 · %s"
 msgstr ""
 
-#: src/gui/support/disk_history.c:857 src/gui/views/storage_view.c:600
+#: src/gui/support/disk_history.c:860 src/gui/views/storage_view.c:620
 msgid "设备"
 msgstr ""
 
-#: src/gui/support/disk_history.c:888
+#: src/gui/support/disk_history.c:891
 msgid "指标"
 msgstr ""
 
-#: src/gui/support/disk_history.c:897
+#: src/gui/support/disk_history.c:900
 msgid "完整列表"
 msgstr ""
 
-#: src/gui/support/disk_history.c:898
+#: src/gui/support/disk_history.c:901
 msgid "导出 CSV"
 msgstr ""
 
@@ -903,8 +1014,8 @@ msgstr ""
 msgid "导出当前日志"
 msgstr ""
 
-#: src/gui/views/log_view.c:1299 src/gui/views/process_view.c:935
-#: src/gui/views/service_view.c:154 src/gui/views/storage_view.c:577
+#: src/gui/views/log_view.c:1299 src/gui/views/process_view.c:966
+#: src/gui/views/service_view.c:154 src/gui/views/storage_view.c:591
 msgid "刷新"
 msgstr ""
 
@@ -952,7 +1063,7 @@ msgstr ""
 msgid "按进程、PID、地址或协议过滤"
 msgstr ""
 
-#: src/gui/views/network_view.c:874 src/gui/views/process_list.c:271
+#: src/gui/views/network_view.c:874 src/gui/views/process_list.c:302
 msgid "用户"
 msgstr ""
 
@@ -960,7 +1071,7 @@ msgstr ""
 msgid "UID"
 msgstr ""
 
-#: src/gui/views/network_view.c:874 src/gui/views/process_list.c:273
+#: src/gui/views/network_view.c:874 src/gui/views/process_list.c:304
 msgid "命令"
 msgstr ""
 
@@ -969,7 +1080,7 @@ msgid "协议"
 msgstr ""
 
 #: src/gui/views/network_view.c:875 src/gui/views/network_view.c:929
-#: src/gui/views/process_list.c:271 src/gui/views/storage_view.c:600
+#: src/gui/views/process_list.c:302 src/gui/views/storage_view.c:620
 msgid "状态"
 msgstr ""
 
@@ -1107,7 +1218,7 @@ msgstr ""
 msgid "提高优先级"
 msgstr ""
 
-#: src/gui/views/process_actions.c:580 src/gui/views/process_view.c:893
+#: src/gui/views/process_actions.c:580 src/gui/views/process_view.c:924
 #, c-format
 msgid "结束进程 %u（%s）？"
 msgstr ""
@@ -1117,178 +1228,178 @@ msgstr ""
 msgid "强制杀死进程 %u（%s）？"
 msgstr ""
 
-#: src/gui/views/process_actions.c:754 src/gui/views/process_actions.c:800
+#: src/gui/views/process_actions.c:793 src/gui/views/process_actions.c:839
 msgid "需要进程属主或 root 权限"
 msgstr ""
 
-#: src/gui/views/process_actions.c:759
+#: src/gui/views/process_actions.c:798
 msgid "进程已暂停"
 msgstr ""
 
-#: src/gui/views/process_actions.c:764
+#: src/gui/views/process_actions.c:803
 msgid "进程未暂停"
 msgstr ""
 
-#: src/gui/views/process_actions.c:783
+#: src/gui/views/process_actions.c:822
 msgid "结束进程树 (SIGTERM)"
 msgstr ""
 
-#: src/gui/views/process_actions.c:789
+#: src/gui/views/process_actions.c:828
 msgid "强制结束进程树 (SIGKILL)"
 msgstr ""
 
-#: src/gui/views/process_actions.c:816
+#: src/gui/views/process_actions.c:855
 #, c-format
 msgid "结束选中的 %llu 个进程"
 msgstr ""
 
-#: src/gui/views/process_actions.c:825 src/gui/views/process_actions.c:838
+#: src/gui/views/process_actions.c:864 src/gui/views/process_actions.c:877
 msgid "选中的进程包含其他用户，需 root"
 msgstr ""
 
-#: src/gui/views/process_actions.c:829
+#: src/gui/views/process_actions.c:868
 #, c-format
 msgid "强制结束选中的 %llu 个进程"
 msgstr ""
 
-#: src/gui/views/process_list.c:87
+#: src/gui/views/process_list.c:118
 msgid "R - 运行中 / 可运行"
 msgstr ""
 
-#: src/gui/views/process_list.c:88
+#: src/gui/views/process_list.c:119
 msgid "S - 可中断睡眠"
 msgstr ""
 
-#: src/gui/views/process_list.c:89
+#: src/gui/views/process_list.c:120
 msgid "I - 空闲（内核线程）"
 msgstr ""
 
-#: src/gui/views/process_list.c:90
+#: src/gui/views/process_list.c:121
 msgid "D - 不可中断睡眠（多在等磁盘 I/O）"
 msgstr ""
 
-#: src/gui/views/process_list.c:91
+#: src/gui/views/process_list.c:122
 msgid "T - 已暂停 / 被跟踪"
 msgstr ""
 
-#: src/gui/views/process_list.c:92
+#: src/gui/views/process_list.c:123
 msgid "Z - 僵尸进程"
 msgstr ""
 
-#: src/gui/views/process_list.c:93
+#: src/gui/views/process_list.c:124
 msgid "W - 换出等待"
 msgstr ""
 
-#: src/gui/views/process_list.c:94
+#: src/gui/views/process_list.c:125
 msgid "未知状态"
 msgstr ""
 
-#: src/gui/views/process_list.c:140
+#: src/gui/views/process_list.c:171
 msgid ""
 "FreeBSD 不提供每进程当前 swap；这里显示上次换出前的 RSS（ki_swrss），常为 0"
 msgstr ""
 
-#: src/gui/views/process_list.c:271 src/gui/views/storage_view.c:600
+#: src/gui/views/process_list.c:302 src/gui/views/storage_view.c:620
 msgid "类型"
 msgstr ""
 
-#: src/gui/views/process_list.c:272
+#: src/gui/views/process_list.c:303
 msgid "内存"
 msgstr ""
 
-#: src/gui/views/process_list.c:272
+#: src/gui/views/process_list.c:303
 msgid "CPU 时间"
 msgstr ""
 
-#: src/gui/views/process_list.c:272
+#: src/gui/views/process_list.c:303
 msgid "Swap"
 msgstr ""
 
-#: src/gui/views/process_list.c:273
+#: src/gui/views/process_list.c:304
 msgid "线程"
 msgstr ""
 
-#: src/gui/views/process_view.c:533
+#: src/gui/views/process_view.c:554
 msgid "系统视图：root 与系统账户的进程"
 msgstr ""
 
-#: src/gui/views/process_view.c:535
+#: src/gui/views/process_view.c:556
 msgid ""
 "系统进程（只读）：可以查看，但普通用户不能结束/调整；操作需以 root 运行 fmon-"
 "gui（sudo/doas）"
 msgstr ""
 
-#: src/gui/views/process_view.c:538
+#: src/gui/views/process_view.c:559
 #, c-format
 msgid "普通用户视图：只显示你自己的进程（uid %u）"
 msgstr ""
 
-#: src/gui/views/process_view.c:541
+#: src/gui/views/process_view.c:562
 msgid "普通用户视图：所有非系统账户的进程"
 msgstr ""
 
-#: src/gui/views/process_view.c:564
+#: src/gui/views/process_view.c:585
 #, c-format
 msgid "%s（已选中 %llu 个进程，自动刷新已暂停）"
 msgstr ""
 
-#: src/gui/views/process_view.c:568
+#: src/gui/views/process_view.c:589
 #, c-format
 msgid "%s（已选中 PID %u，自动刷新时视口保持不动）"
 msgstr ""
 
-#: src/gui/views/process_view.c:720
+#: src/gui/views/process_view.c:741
 #, c-format
 msgid ""
 "已导出 %u 行到：\n"
 "%s"
 msgstr ""
 
-#: src/gui/views/process_view.c:873
+#: src/gui/views/process_view.c:904
 msgid "结束选中的进程（SIGTERM）"
 msgstr ""
 
-#: src/gui/views/process_view.c:874
+#: src/gui/views/process_view.c:905
 msgid "普通用户不能操作其他用户的进程；需以 root 运行 fmon-gui"
 msgstr ""
 
-#: src/gui/views/process_view.c:939
+#: src/gui/views/process_view.c:970
 msgid "进程树"
 msgstr ""
 
-#: src/gui/views/process_view.c:942
+#: src/gui/views/process_view.c:973
 msgid "按父子关系缩进显示；关闭后恢复扁平列表"
 msgstr ""
 
-#: src/gui/views/process_view.c:950
+#: src/gui/views/process_view.c:981
 msgid "普通用户"
 msgstr ""
 
-#: src/gui/views/process_view.c:951
+#: src/gui/views/process_view.c:982
 msgid "系统 (root)"
 msgstr ""
 
-#: src/gui/views/process_view.c:964
+#: src/gui/views/process_view.c:995
 msgid "查看系统进程（只读）；操作 root 进程需以 root 运行 fmon-gui"
 msgstr ""
 
-#: src/gui/views/process_view.c:969
+#: src/gui/views/process_view.c:1000
 msgid "按进程名、PID、用户名过滤"
 msgstr ""
 
-#: src/gui/views/process_view.c:976
+#: src/gui/views/process_view.c:1007
 msgid "更多操作"
 msgstr ""
 
-#: src/gui/views/process_view.c:980
+#: src/gui/views/process_view.c:1011
 msgid "导出列表"
 msgstr ""
 
-#: src/gui/views/process_view.c:1023
+#: src/gui/views/process_view.c:1054
 msgid "详细信息"
 msgstr ""
 
-#: src/gui/views/process_view.c:1024
+#: src/gui/views/process_view.c:1055
 msgid "结束任务"
 msgstr ""
 
@@ -1642,38 +1753,42 @@ msgid ""
 "使用率 %.1f%%"
 msgstr ""
 
-#: src/gui/views/storage_view.c:490
+#: src/gui/views/storage_view.c:284
+msgid "挂载点信息不可用（daemon 采集失败）"
+msgstr ""
+
+#: src/gui/views/storage_view.c:504
 msgid "历史"
 msgstr ""
 
-#: src/gui/views/storage_view.c:495
+#: src/gui/views/storage_view.c:509
 msgid "查看该设备 24 小时延迟 / 吞吐 / 温度"
 msgstr ""
 
-#: src/gui/views/storage_view.c:581
-msgid "容量统计来自 statvfs(2)，与 df 的 Use% 口径一致"
+#: src/gui/views/storage_view.c:595
+msgid "容量统计来自 statfs(2)，与 df 的 Use% 口径一致"
 msgstr ""
 
-#: src/gui/views/storage_view.c:600
+#: src/gui/views/storage_view.c:620
 msgid "挂载点"
 msgstr ""
 
-#: src/gui/views/storage_view.c:600
+#: src/gui/views/storage_view.c:620
 msgid "总容量"
 msgstr ""
 
-#: src/gui/views/storage_view.c:600
+#: src/gui/views/storage_view.c:620
 msgid "已用"
 msgstr ""
 
-#: src/gui/views/storage_view.c:600
+#: src/gui/views/storage_view.c:620
 msgid "可用"
 msgstr ""
 
-#: src/gui/views/storage_view.c:600
+#: src/gui/views/storage_view.c:620
 msgid "使用率"
 msgstr ""
 
-#: src/gui/views/storage_view.c:600
+#: src/gui/views/storage_view.c:620
 msgid "Inode"
 msgstr ""

@@ -19,6 +19,7 @@
 #include "net_stats.h"
 #include "disk_perf.h"
 #include "gui_page_zfs.h"
+#include "gui_page_prune.h"
 #include "zfs_stats.h"
 #include "disk_queue.h"
 #include "collector_thread.h"
@@ -102,7 +103,9 @@ static void upd_cpu_combo(void)
         g_snprintf(b, sizeof(b), "—");
     cset(p, 3, b);
 
-    cset(p, 4, (access("/dev/vmm", F_OK) == 0) ? "已启用（vmm）" : "未启用");
+    const CpuStats *cs = cpu_stats_get();
+
+    cset(p, 4, (cs != NULL) ? cs->virt.state : "—");
 
     g_snprintf(b, sizeof(b), "%.2f / %.2f / %.2f", gui_state_snapshot()->load_avg[0],
                gui_state_snapshot()->load_avg[1], gui_state_snapshot()->load_avg[2]);
@@ -122,7 +125,15 @@ static void upd_zsum(void)
             ? &snap->pools[0]
             : NULL;
 
-    cset(p, i++, z ? z->name : "无可用池");
+    /* 无池时不要用 0 GB / 0% 冒充真实数据。 */
+    if (z == NULL) {
+        cset(p, 0, "无可用池");
+        for (int k = 1; k < 12; k++)
+            cset(p, k, "—");
+        return;
+    }
+
+    cset(p, i++, z->name);
     cset(p, i++, z ? z->health : "—");
 
     g_snprintf(b, sizeof(b), "%.2f / %.2f GB",
@@ -171,16 +182,22 @@ static void upd_net_combo(void)
     if (g_net_page.area == NULL)
         return;
 
-    g_zpool_cd.count = gui_state_snapshot()->history_count;
-    g_zpool_cd.index = gui_state_snapshot()->history_index;
-    g_zpool_cd.time_us = gui_state_snapshot()->history_time_us;
+    if (!g_zpool_cd.frozen) {
+        g_zpool_cd.count = gui_state_snapshot()->history_count;
+        g_zpool_cd.index = gui_state_snapshot()->history_index;
+        g_zpool_cd.time_us = gui_state_snapshot()->history_time_us;
+    }
 
-    g_net_rx_cd.time_us = gui_state_snapshot()->history_time_us;
-    g_net_tx_cd.time_us = gui_state_snapshot()->history_time_us;
-    g_net_rx_cd.count = gui_state_snapshot()->history_count;
-    g_net_rx_cd.index = gui_state_snapshot()->history_index;
-    g_net_tx_cd.count = gui_state_snapshot()->history_count;
-    g_net_tx_cd.index = gui_state_snapshot()->history_index;
+    if (!g_net_rx_cd.frozen) {
+        g_net_rx_cd.time_us = gui_state_snapshot()->history_time_us;
+        g_net_rx_cd.count = gui_state_snapshot()->history_count;
+        g_net_rx_cd.index = gui_state_snapshot()->history_index;
+    }
+    if (!g_net_tx_cd.frozen) {
+        g_net_tx_cd.time_us = gui_state_snapshot()->history_time_us;
+        g_net_tx_cd.count = gui_state_snapshot()->history_count;
+        g_net_tx_cd.index = gui_state_snapshot()->history_index;
+    }
 
     queue_draw_maybe(g_net_page.area);
 
@@ -209,12 +226,16 @@ static void upd_disk_combo(void)
     if (g_disk_page.area == NULL)
         return;
 
-    g_disk_rd_cd.time_us = gui_state_snapshot()->history_time_us;
-    g_disk_wr_cd.time_us = gui_state_snapshot()->history_time_us;
-    g_disk_rd_cd.count = gui_state_snapshot()->history_count;
-    g_disk_rd_cd.index = gui_state_snapshot()->history_index;
-    g_disk_wr_cd.count = gui_state_snapshot()->history_count;
-    g_disk_wr_cd.index = gui_state_snapshot()->history_index;
+    if (!g_disk_rd_cd.frozen) {
+        g_disk_rd_cd.time_us = gui_state_snapshot()->history_time_us;
+        g_disk_rd_cd.count = gui_state_snapshot()->history_count;
+        g_disk_rd_cd.index = gui_state_snapshot()->history_index;
+    }
+    if (!g_disk_wr_cd.frozen) {
+        g_disk_wr_cd.time_us = gui_state_snapshot()->history_time_us;
+        g_disk_wr_cd.count = gui_state_snapshot()->history_count;
+        g_disk_wr_cd.index = gui_state_snapshot()->history_index;
+    }
 
     queue_draw_maybe(g_disk_page.area);
 
@@ -555,25 +576,3 @@ void gui_pages_redraw_all(void)
     if (g_core_area != NULL)
         queue_draw_maybe(g_core_area);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

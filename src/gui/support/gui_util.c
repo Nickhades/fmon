@@ -19,19 +19,8 @@ extern GtkWindow *g_main_window;
 static void panel_path(cairo_t *cr, double x, double y, double w, double h,
                        double r)
 {
-    const double q = 1.5707963267948966;
-
-    if (r > w / 2.0)
-        r = w / 2.0;
-    if (r > h / 2.0)
-        r = h / 2.0;
-
-    cairo_new_sub_path(cr);
-    cairo_arc(cr, x + w - r, y + r, r, -q, 0.0);
-    cairo_arc(cr, x + w - r, y + h - r, r, 0.0, q);
-    cairo_arc(cr, x + r, y + h - r, r, q, 2.0 * q);
-    cairo_arc(cr, x + r, y + r, r, 2.0 * q, 3.0 * q);
-    cairo_close_path(cr);
+    (void)r;
+    cairo_rectangle(cr, x, y, w, h);
 }
 
 void fmon_gui_draw_panel(cairo_t *cr, double x, double y, double w, double h,
@@ -41,48 +30,17 @@ void fmon_gui_draw_panel(cairo_t *cr, double x, double y, double w, double h,
     if (w <= 2.0 || h <= 2.0)
         return;
 
-    panel_path(cr, x, y, w, h, 10.0);
+    panel_path(cr, x, y, w, h, 0.0);
 
     double top[4];
     double bottom[4];
 
     fmon_theme_panel_colors(top, bottom);
+    (void)bottom;
 
-    cairo_pattern_t *grad = cairo_pattern_create_linear(0.0, y, 0.0, y + h);
-
-    cairo_pattern_add_color_stop_rgba(grad, 0.0, top[0], top[1], top[2],
-                                      top[3]);
-    cairo_pattern_add_color_stop_rgba(grad, 1.0, bottom[0], bottom[1],
-                                      bottom[2], bottom[3]);
-
-    cairo_set_source(cr, grad);
+    /* 终端风格：纯色面板、直角、1px 边框，没有渐变/纹理/阴影。 */
+    cairo_set_source_rgba(cr, top[0], top[1], top[2], top[3]);
     cairo_fill_preserve(cr);
-    cairo_pattern_destroy(grad);
-
-    /* 几何纹理：横竖网格（小方块），裁剪在圆角面板内，只作背景质感 */
-    cairo_save(cr);
-    panel_path(cr, x, y, w, h, 10.0);
-    cairo_clip(cr);
-    cairo_set_line_width(cr, 1.0);
-
-    double tex[4];
-
-    fmon_theme_texture_color(tex);
-    cairo_set_source_rgba(cr, tex[0], tex[1], tex[2], tex[3]);
-
-    for (double gx = x + 16.0; gx < x + w; gx += 16.0) {
-        cairo_move_to(cr, gx, y);
-        cairo_line_to(cr, gx, y + h);
-        cairo_stroke(cr);
-    }
-
-    for (double gy = y + 16.0; gy < y + h; gy += 16.0) {
-        cairo_move_to(cr, x, gy);
-        cairo_line_to(cr, x + w, gy);
-        cairo_stroke(cr);
-    }
-
-    cairo_restore(cr);
 
     if (border_a > 0.0) {
         cairo_set_source_rgba(cr, border_r, border_g, border_b, border_a);
@@ -222,7 +180,7 @@ void fmon_gui_show_info(GtkWindow *parent, const char *message,
 
     if (detail != NULL)
         gtk_alert_dialog_set_detail(dlg, detail);
-    gtk_alert_dialog_set_buttons(dlg, (const char *[]){ "确定", NULL });
+    fmon_i18n_alert_buttons(dlg, (const char *[]){ "确定", NULL });
     gtk_alert_dialog_show(dlg, parent);
     g_object_unref(dlg);
 }
@@ -234,7 +192,7 @@ void fmon_gui_show_error(GtkWindow *parent, const char *message,
 
     if (detail != NULL)
         gtk_alert_dialog_set_detail(dlg, detail);
-    gtk_alert_dialog_set_buttons(dlg, (const char *[]){ "关闭", NULL });
+    fmon_i18n_alert_buttons(dlg, (const char *[]){ "关闭", NULL });
     gtk_alert_dialog_show(dlg, parent);
     g_object_unref(dlg);
 }
@@ -281,7 +239,7 @@ void fmon_gui_confirm(GtkWindow *parent, const char *message, const char *detail
 
     const char *buttons[] = { (accept_label != NULL) ? accept_label : "确定",
                               "取消", NULL };
-    gtk_alert_dialog_set_buttons(dlg, buttons);
+    fmon_i18n_alert_buttons(dlg, buttons);
     gtk_alert_dialog_set_cancel_button(dlg, 1);
     gtk_alert_dialog_set_default_button(dlg, 1);
 

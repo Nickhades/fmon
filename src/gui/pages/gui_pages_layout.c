@@ -3,6 +3,7 @@
  */
 
 #include "gui_pages_layout.h"
+#include "ui_metrics.h"
 
 #include "gui_page_build.h"
 #include "gui_page_state.h"
@@ -15,6 +16,7 @@
 #include "gui_page_batt.h"
 #include "gui_page_cpu.h"
 #include "gui_page_zfs.h"
+#include "gui_page_prune.h"
 #include "gui_page_gpu.h"
 #include "gui_coreview.h"
 #include "gui_state.h"
@@ -65,7 +67,7 @@ GtkStack *gui_pages_layout_build(GtkWidget *content)
     (void)page_cpu;
 
     /* 三张独立卡片：半圆仪表 / 负载与温度 / 线程与详情 */
-    GtkWidget *cpu_root = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+    GtkWidget *cpu_root = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_3);
     GtkWidget *gauge = gui_cpu_gauge_card();
 
     /* CPU 型号放最上方仪表卡片右上角 */
@@ -75,14 +77,14 @@ GtkStack *gui_pages_layout_build(GtkWidget *content)
     /* 状态与调度移到仪表卡片右侧空白处 */
     GtkWidget *cpu_status = gui_cpu_status_box();
 
-    gtk_widget_set_size_request(cpu_status, 470, -1);
+    gtk_widget_set_size_request(cpu_status, 420, -1);
     gtk_widget_set_valign(cpu_status, GTK_ALIGN_CENTER);
-    gtk_box_append(GTK_BOX(gui_cpu_gauge_body()), cpu_status);
+    gtk_flow_box_append(GTK_FLOW_BOX(gui_cpu_gauge_body()), cpu_status);
 
     gtk_box_append(GTK_BOX(cpu_root), gauge);
     gtk_box_append(GTK_BOX(cpu_root), gui_cpu_thermal_card());
 
-    GtkWidget *cpu_details = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+    GtkWidget *cpu_details = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_2);
     gtk_widget_add_css_class(cpu_details, "page-card");
 
     g_core_caption = gtk_label_new(NULL);
@@ -92,9 +94,9 @@ GtkStack *gui_pages_layout_build(GtkWidget *content)
 
     g_core_area = gui_core_view_new();
 
-    GtkWidget *core_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
-    gtk_widget_set_margin_start(core_box, 8);
-    gtk_widget_set_margin_end(core_box, 8);
+    GtkWidget *core_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_2);
+    gtk_widget_set_margin_start(core_box, FMON_SPACE_2);
+    gtk_widget_set_margin_end(core_box, FMON_SPACE_2);
     gtk_box_append(GTK_BOX(core_box), g_core_caption);
     gtk_box_append(GTK_BOX(core_box), g_core_area);
 
@@ -153,14 +155,12 @@ GtkStack *gui_pages_layout_build(GtkWidget *content)
     g_net_rx_cd.unit        = "KB/s";
     g_net_rx_cd.max_val     = 0.0;
     g_net_rx_cd.interval_us = (uint64_t)FMON_SAMPLE_INTERVAL_MS * 1000ULL;
-    g_net_rx_cd.r = 0.25; g_net_rx_cd.g = 0.70; g_net_rx_cd.b = 1.00;
 
     g_net_tx_cd.history     = snap->net_tx_history;
     g_net_tx_cd.time_us     = snap->history_time_us;
     g_net_tx_cd.unit        = "KB/s";
     g_net_tx_cd.max_val     = 0.0;
     g_net_tx_cd.interval_us = (uint64_t)FMON_SAMPLE_INTERVAL_MS * 1000ULL;
-    g_net_tx_cd.r = 0.35; g_net_tx_cd.g = 0.85; g_net_tx_cd.b = 0.45;
 
     g_net_chart.n = 0;
     g_net_chart.series[g_net_chart.n++] = (ComboSeries){ "接收", &g_net_rx_cd, "" };
@@ -202,14 +202,12 @@ GtkStack *gui_pages_layout_build(GtkWidget *content)
     g_disk_rd_cd.unit        = "KB/s";
     g_disk_rd_cd.max_val     = 0.0;
     g_disk_rd_cd.interval_us = (uint64_t)FMON_SAMPLE_INTERVAL_MS * 1000ULL;
-    g_disk_rd_cd.r = 0.95; g_disk_rd_cd.g = 0.55; g_disk_rd_cd.b = 0.20;
 
     g_disk_wr_cd.history     = snap->disk_write_history;
     g_disk_wr_cd.time_us     = snap->history_time_us;
     g_disk_wr_cd.unit        = "KB/s";
     g_disk_wr_cd.max_val     = 0.0;
     g_disk_wr_cd.interval_us = (uint64_t)FMON_SAMPLE_INTERVAL_MS * 1000ULL;
-    g_disk_wr_cd.r = 0.75; g_disk_wr_cd.g = 0.55; g_disk_wr_cd.b = 0.95;
 
     g_disk_chart.n = 0;
     g_disk_chart.series[g_disk_chart.n++] =
@@ -270,7 +268,6 @@ GtkStack *gui_pages_layout_build(GtkWidget *content)
     g_zpool_cd.unit        = "%";
     g_zpool_cd.max_val     = 100.0;
     g_zpool_cd.interval_us = (uint64_t)FMON_SAMPLE_INTERVAL_MS * 1000ULL;
-    g_zpool_cd.r = 0.95; g_zpool_cd.g = 0.55; g_zpool_cd.b = 0.20;
 
     g_zpool_chart.n = 0;
     g_zpool_chart.series[g_zpool_chart.n++] =
@@ -306,7 +303,7 @@ GtkStack *gui_pages_layout_build(GtkWidget *content)
 
             gtk_widget_add_css_class(tt, "detail-title");
             gtk_label_set_xalign(GTK_LABEL(tt), 0.0f);
-            gtk_widget_set_margin_top(tt, 10);
+            gtk_widget_set_margin_top(tt, FMON_SPACE_3);
             gtk_box_append(GTK_BOX(arc_card), tt);
             gtk_box_append(GTK_BOX(arc_card), gui_arc_trend_chart());
             gtk_box_append(GTK_BOX(arc_card), gui_arc_detail_box());
@@ -325,7 +322,7 @@ GtkStack *gui_pages_layout_build(GtkWidget *content)
 
             gtk_widget_add_css_class(rt, "detail-title");
             gtk_label_set_xalign(GTK_LABEL(rt), 0.0f);
-            gtk_widget_set_margin_top(rt, 10);
+            gtk_widget_set_margin_top(rt, FMON_SPACE_3);
             gtk_box_append(GTK_BOX(zcard), rt);
             gtk_box_append(GTK_BOX(zcard), gui_zhit_roll_chart());
             gtk_box_append(GTK_BOX(zcard), gui_zhit_detail_box());
@@ -338,8 +335,8 @@ GtkStack *gui_pages_layout_build(GtkWidget *content)
                                               "写速率与累计", zwrite_keys, 4,
                                               gui_upd_zwrite, TRUE);
     GtkWidget *mp_zprune = gui_metric_page_new(&g_metrics[11], 11, "ARC Prune",
-                                              "累计回收次数（只增不减）与幽灵缓存", NULL, 0,
-                                              gui_upd_zprune, TRUE);
+                                              "累计回收次数（只增不减；无回收时保持 0）与幽灵缓存",
+                                              NULL, 0, gui_upd_zprune, TRUE);
 
     {
         GtkWidget *pcard = gtk_widget_get_parent(g_metrics[11].area);
@@ -349,7 +346,7 @@ GtkStack *gui_pages_layout_build(GtkWidget *content)
 
             gtk_widget_add_css_class(gt, "detail-title");
             gtk_label_set_xalign(GTK_LABEL(gt), 0.0f);
-            gtk_widget_set_margin_top(gt, 10);
+            gtk_widget_set_margin_top(gt, FMON_SPACE_3);
             gtk_box_append(GTK_BOX(pcard), gt);
             gtk_box_append(GTK_BOX(pcard), gui_prune_ghost_chart());
             gtk_box_append(GTK_BOX(pcard), gui_prune_detail_box());
@@ -459,15 +456,3 @@ GtkStack *gui_pages_layout_build(GtkWidget *content)
 
     return stack;
 }
-
-
-
-
-
-
-
-
-
-
-
-

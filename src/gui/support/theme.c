@@ -7,7 +7,7 @@
 #include <glib/gstdio.h>
 #include <string.h>
 
-static FmonThemeMode g_mode      = FMON_THEME_AUTO;
+static FmonThemeMode g_mode      = FMON_THEME_DARK;
 static gboolean      g_dark      = TRUE;
 static gboolean      g_applying  = FALSE;
 static void        (*g_observer)(void) = NULL;

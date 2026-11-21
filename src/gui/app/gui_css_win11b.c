@@ -5,7 +5,7 @@
 #include "gui_css_bits.h"
 
 const char *const gui_css_win11b =
-        "button { border-radius: 4px; box-shadow: none;"
+        "button { border-radius: 0; box-shadow: none;"
         "  background-color: alpha(@theme_fg_color, 0.05);"
         "  border: 1px solid alpha(@theme_fg_color, 0.08);"
         "  padding: 6px 14px; }"
@@ -26,19 +26,19 @@ const char *const gui_css_win11b =
         "entry, spinbutton, dropdown {"
         "  background-color: alpha(@theme_fg_color, 0.04);"
         "  border: 1px solid alpha(@theme_fg_color, 0.10);"
-        "  border-radius: 4px; }"
+        "  border-radius: 0; }"
         "entry:focus-within, dropdown:focus-within {"
         "  border-color: #0078d4; }"
 
         ".page-card { background-color: shade(@theme_bg_color, 1.04);"
         "  border: 1px solid alpha(@theme_fg_color, 0.13);"
-        "  border-radius: 12px; padding: 12px 14px;"
-        "  box-shadow: 0 3px 10px alpha(@theme_fg_color, 0.22); }"
+        "  border-radius: 0; padding: 16px;"
+        "  box-shadow: none; }"
         ".detail-card, .metric-detail, .card, .view-card {"
-        "  box-shadow: 0 1px 4px alpha(@theme_fg_color, 0.14); }"
+        "  box-shadow: none; }"
         ".card, .view-card { background-color: shade(@theme_bg_color, 1.08);"
         "  border: 1px solid alpha(@theme_fg_color, 0.07);"
-        "  border-radius: 8px; }"
+        "  border-radius: 0; }"
 
         "columnview > listview > row { min-height: 40px;"
         "  border-bottom: 1px solid alpha(@theme_fg_color, 0.06); }"
@@ -50,29 +50,25 @@ const char *const gui_css_win11b =
         "  border-bottom: 1px solid alpha(@theme_fg_color, 0.10); }"
 
         "notebook > header { background-color: transparent; border: none; }"
-        "notebook > header > tabs > tab { border-radius: 4px;"
+        "notebook > header > tabs > tab { border-radius: 0;"
         "  padding: 6px 12px; }"
         "notebook > header > tabs > tab:checked {"
-        "  box-shadow: inset 0 -2px #0078d4;"
+        "  box-shadow: none;"
         "  color: #4cc2ff; }"
 
         "scrollbar slider { background: alpha(@theme_fg_color, 0.22);"
-        "  border-radius: 3px; min-width: 6px; min-height: 6px; }"
+        "  border-radius: 0; min-width: 6px; min-height: 6px; }"
 
         ".alert-row, .service-row {"
         "  border-bottom: 1px solid alpha(@theme_fg_color, 0.06); }"
         ".action-bar { border-top: 1px solid alpha(@theme_fg_color, 0.08);"
         "  padding-top: 8px; margin-top: 2px; }"
 
-        ".sub-sidebar { background-color: shade(@theme_bg_color, 1.02);"
-        "  border-right: 1px solid alpha(@theme_fg_color, 0.08); }"
-        ".sub-title { font-size: 13px; opacity: 0.6; }"
-
         ".metric-detail { background-color: shade(@theme_bg_color, 1.08);"
-        "  border: 1px solid alpha(@theme_fg_color, 0.07); border-radius: 8px;"
+        "  border: 1px solid alpha(@theme_fg_color, 0.07); border-radius: 0;"
         "  padding: 8px 0; }"
         ".detail-card { background-color: shade(@theme_bg_color, 1.08);"
-        "  border: 1px solid alpha(@theme_fg_color, 0.07); border-radius: 8px;"
+        "  border: 1px solid alpha(@theme_fg_color, 0.07); border-radius: 0;"
         "  padding: 10px 14px; }"
         ".detail-title { font-size: 13px; opacity: 0.70; }"
         ".detail-key { font-size: 12px; opacity: 0.60; }"
@@ -84,12 +80,10 @@ const char *const gui_css_win11b =
         ".group-title { font-size: 24px; }"
         ".group-desc { font-size: 12px; opacity: 0.6; }"
         ".hw-model { font-size: 12px; opacity: 0.66; }"
-        ".group-tile { padding: 0; border-radius: 8px;"
+        ".group-tile { padding: 0; border-radius: 0;"
         "  background-color: shade(@theme_bg_color, 1.08);"
         "  border: 1px solid alpha(@theme_fg_color, 0.07); }"
         ".group-tile:hover { background-color: alpha(#0078d4, 0.12);"
         "  border-color: alpha(#0078d4, 0.55); }"
         "separator { background-color: alpha(@theme_fg_color, 0.08);"
         "  min-width: 1px; min-height: 1px; }";
-
-

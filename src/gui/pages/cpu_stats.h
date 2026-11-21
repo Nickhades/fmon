@@ -24,6 +24,30 @@ enum {
     CPU_TIME_COUNT
 };
 
+/* CPU 硬件虚拟化能力 + vmm/guest 状态。全部来自 CPUID / sysctl /
+ * 内核设备节点，不根据发行版或机器名猜测。 */
+typedef struct {
+    gboolean hw_supported;      /* CPUID 暴露 VMX 或 SVM */
+    gboolean vmx;               /* Intel VT-x */
+    gboolean svm;               /* AMD-V */
+    gboolean guest;             /* 当前运行在客户机中 */
+    gboolean vmm_loaded;        /* vmm 模块已加载（sysctl 或 /dev/vmm） */
+    gboolean vmm_dev;           /* /dev/vmm 设备目录可用 */
+    gboolean vmm_module;        /* /boot/kernel/vmm.ko 存在 */
+    gboolean bhyve;             /* bhyve 用户态可用 */
+    gboolean npt;               /* AMD NPT（Intel EPT 需 vmm 加载后才能确认） */
+    gboolean iommu;             /* vmm 报告 IOMMU 已初始化 */
+    gboolean iommu_valid;       /* hw.vmm.iommu.initialized 可读 */
+    gboolean vm_list_valid;     /* /dev/vmm 可枚举 */
+    guint32  svm_features;      /* CPUID 0x8000000A EDX */
+    guint32  vm_count;          /* /dev/vmm 下正在运行的 VM 数 */
+    char     guest_name[32];    /* kern.vm_guest */
+    char     hw_name[32];       /* AMD-V (SVM) / Intel VT-x */
+    char     features[128];     /* NPT/NRIP/VClean/... */
+    char     state[64];         /* 紧凑状态 */
+    char     detail[256];       /* 完整真实数据 */
+} CpuVirt;
+
 typedef struct {
     int    ncpu;
     double pct[CPU_TIME_COUNT];       /* 总体时间占比（0–100） */
@@ -38,7 +62,7 @@ typedef struct {
 
     int    sockets;                   /* 物理插槽数 */
     double base_mhz;                  /* 标称频率（hw.clockrate） */
-    gboolean virt_enabled;            /* /dev/vmm 是否存在 */
+    CpuVirt virt;                     /* 硬件虚拟化/vmm/guest 完整状态 */
 } CpuStats;
 
 void cpu_stats_update(void);

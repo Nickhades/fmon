@@ -24,6 +24,7 @@
  */
 
 #include "fmon_ctl.h"
+#include "fmon_ctl_internal.h"
 
 #include "fmon_daemon.h"
 #include "fmon_sysctl.h"
@@ -64,7 +65,7 @@ static gid_t g_sock_gid = (gid_t)-1;   /* 套接字属组：operator / wheel */
  * =========================================================================== */
 
 /* 服务名/标识符：字母数字开头，只含 [A-Za-z0-9._+-] */
-static bool valid_token(const char *s)
+bool ctl_valid_token(const char *s)
 {
     if (s == NULL || s[0] == '\0' || strlen(s) > 64)
         return false;
@@ -77,35 +78,6 @@ static bool valid_token(const char *s)
                   (*p >= '0' && *p <= '9') || *p == '.' || *p == '_' ||
                   *p == '+' || *p == '-';
         if (!ok)
-            return false;
-    }
-    return true;
-}
-
-static bool service_exists(const char *name)
-{
-    static const char *const dirs[] = { "/etc/rc.d",
-                                        FMON_LOCALBASE "/etc/rc.d" };
-
-    for (size_t i = 0; i < sizeof(dirs) / sizeof(dirs[0]); i++) {
-        char path[256];
-        snprintf(path, sizeof(path), "%s/%s", dirs[i], name);
-
-        struct stat st;
-        if (stat(path, &st) == 0 && S_ISREG(st.st_mode))
-            return true;
-    }
-    return false;
-}
-
-/* CPU 列表：0,1,2 或 0-3，只允许数字、逗号、连字符 */
-static bool valid_cpu_list(const char *s)
-{
-    if (s == NULL || s[0] == '\0' || strlen(s) > 64)
-        return false;
-
-    for (const char *p = s; *p != '\0'; p++) {
-        if (!((*p >= '0' && *p <= '9') || *p == ',' || *p == '-'))
             return false;
     }
     return true;
@@ -138,37 +110,13 @@ static bool valid_rctl_rule(const char *s)
     return false;
 }
 
-static int parse_signal(const char *name)
-{
-    if (strcmp(name, "TERM") == 0) return SIGTERM;
-    if (strcmp(name, "KILL") == 0) return SIGKILL;
-    if (strcmp(name, "STOP") == 0) return SIGSTOP;
-    if (strcmp(name, "CONT") == 0) return SIGCONT;
-    if (strcmp(name, "HUP") == 0)  return SIGHUP;
-    return 0;
-}
-
-static bool parse_pid(const char *s, pid_t *out)
-{
-    char *end = NULL;
-    long  v   = strtol(s, &end, 10);
-
-    if (end == NULL || *end != '\0' || v <= 1 || v > 100000000L)
-        return false;
-    if ((pid_t)v == getpid())
-        return false;
-
-    *out = (pid_t)v;
-    return true;
-}
-
 /* ===========================================================================
  * 命令实现
  * =========================================================================== */
-static void reply(int fd, bool ok, const char *fmt, ...)
+void ctl_reply(int fd, bool ok, const char *fmt, ...)
     __attribute__((format(printf, 3, 4)));
 
-static void reply(int fd, bool ok, const char *fmt, ...)
+void ctl_reply(int fd, bool ok, const char *fmt, ...)
 {
     char    body[1024];
     char    line[1200];
@@ -183,110 +131,6 @@ static void reply(int fd, bool ok, const char *fmt, ...)
         (void)write(fd, line, (size_t)n);
 }
 
-static void cmd_signal(int fd, char *args)
-{
-    char *pid_s = strsep(&args, " ");
-    char *sig_s = args;
-
-    if (pid_s == NULL || sig_s == NULL) {
-        reply(fd, false, "用法: SIGNAL <pid> <TERM|KILL|STOP|CONT|HUP>");
-        return;
-    }
-
-    pid_t pid = 0;
-    if (!parse_pid(pid_s, &pid)) {
-        reply(fd, false, "非法 pid: %s", pid_s);
-        return;
-    }
-
-    int sig = parse_signal(sig_s);
-    if (sig == 0) {
-        reply(fd, false, "不允许的信号: %s", sig_s);
-        return;
-    }
-
-    if (kill(pid, sig) != 0) {
-        reply(fd, false, "kill(%d) 失败: %s", (int)pid, strerror(errno));
-        return;
-    }
-
-    reply(fd, true, "signal %s -> %d", sig_s, (int)pid);
-}
-
-static void cmd_renice(int fd, char *args)
-{
-    char *pid_s  = strsep(&args, " ");
-    char *nice_s = args;
-
-    if (pid_s == NULL || nice_s == NULL) {
-        reply(fd, false, "用法: RENICE <pid> <-20..19>");
-        return;
-    }
-
-    pid_t pid = 0;
-    if (!parse_pid(pid_s, &pid)) {
-        reply(fd, false, "非法 pid: %s", pid_s);
-        return;
-    }
-
-    char *end  = NULL;
-    long  nice = strtol(nice_s, &end, 10);
-    if (end == NULL || *end != '\0' || nice < -20 || nice > 19) {
-        reply(fd, false, "非法 nice 值: %s", nice_s);
-        return;
-    }
-
-    if (setpriority(PRIO_PROCESS, (id_t)pid, (int)nice) != 0) {
-        reply(fd, false, "setpriority(%d) 失败: %s", (int)pid,
-              strerror(errno));
-        return;
-    }
-
-    reply(fd, true, "nice %ld -> %d", nice, (int)pid);
-}
-
-static void cmd_cpuset(int fd, char *args)
-{
-    char *pid_s = strsep(&args, " ");
-    char *list  = args;
-
-    if (pid_s == NULL || list == NULL || !valid_cpu_list(list)) {
-        reply(fd, false, "用法: CPUSET <pid> <0,1,2|0-3>");
-        return;
-    }
-
-    pid_t pid = 0;
-    if (!parse_pid(pid_s, &pid)) {
-        reply(fd, false, "非法 pid: %s", pid_s);
-        return;
-    }
-
-    const char *argv[] = { "/bin/cpuset", "-l", list, "-p", pid_s, NULL };
-
-    FmonChildResult res;
-    if (fmon_child_run_merged(argv, 16 * 1024, 5000, &res) != 0) {
-        fmon_child_result_free(&res);
-        reply(fd, false, "执行 cpuset 失败");
-        return;
-    }
-
-    bool ok = fmon_child_ok(&res);
-    char msg[256] = "";
-
-    if (res.out != NULL) {
-        char *nl = strchr(res.out, '\n');
-        if (nl != NULL)
-            *nl = '\0';
-        strlcpy(msg, res.out, sizeof(msg));
-    }
-    fmon_child_result_free(&res);
-
-    if (ok)
-        reply(fd, true, "cpuset %s -> %s", list, pid_s);
-    else
-        reply(fd, false, "cpuset 失败: %s", (msg[0] != '\0') ? msg : "未知原因");
-}
-
 /* 列出规则：先回 OK 行，再原样输出（多行），由客户端读到 EOF */
 static void cmd_rctl_list(int fd)
 {
@@ -295,18 +139,18 @@ static void cmd_rctl_list(int fd)
     FmonChildResult res;
     if (fmon_child_run_merged(argv, 256 * 1024, 5000, &res) != 0) {
         fmon_child_result_free(&res);
-        reply(fd, false, "执行 rctl 失败");
+        ctl_reply(fd, false, "执行 rctl 失败");
         return;
     }
 
     if (res.out != NULL && strstr(res.out, "disabled") != NULL) {
-        reply(fd, false, "RACCT/RCTL 未启用：%s", res.out);
+        ctl_reply(fd, false, "RACCT/RCTL 未启用：%s", res.out);
         fmon_child_result_free(&res);
         return;
     }
 
     if (!fmon_child_ok(&res)) {
-        reply(fd, false, "rctl 失败：%s",
+        ctl_reply(fd, false, "rctl 失败：%s",
               (res.out != NULL) ? res.out : "未知原因");
         fmon_child_result_free(&res);
         return;
@@ -333,7 +177,7 @@ static void cmd_rctl(int fd, char *args)
     if (verb == NULL || rule == NULL ||
         (strcmp(verb, "ADD") != 0 && strcmp(verb, "REMOVE") != 0) ||
         !valid_rctl_rule(rule)) {
-        reply(fd, false, "用法: RCTL <ADD|REMOVE> <rule> 或 RCTL LIST");
+        ctl_reply(fd, false, "用法: RCTL <ADD|REMOVE> <rule> 或 RCTL LIST");
         return;
     }
 
@@ -344,7 +188,7 @@ static void cmd_rctl(int fd, char *args)
     FmonChildResult res;
     if (fmon_child_run_merged(argv, 32 * 1024, 5000, &res) != 0) {
         fmon_child_result_free(&res);
-        reply(fd, false, "执行 rctl 失败");
+        ctl_reply(fd, false, "执行 rctl 失败");
         return;
     }
 
@@ -360,96 +204,9 @@ static void cmd_rctl(int fd, char *args)
     fmon_child_result_free(&res);
 
     if (ok)
-        reply(fd, true, "rctl %s %s", verb, rule);
+        ctl_reply(fd, true, "rctl %s %s", verb, rule);
     else
-        reply(fd, false, "rctl 失败: %s", (msg[0] != '\0') ? msg : "未知原因");
-}
-
-static void cmd_service(int fd, char *args)
-{
-    char *name = strsep(&args, " ");
-    char *act  = args;
-
-    if (name == NULL || act == NULL || !valid_token(name)) {
-        reply(fd, false, "用法: SERVICE <name> <start|stop|restart>");
-        return;
-    }
-    if (strcmp(act, "start") != 0 && strcmp(act, "onestart") != 0 &&
-        strcmp(act, "stop") != 0 && strcmp(act, "restart") != 0 &&
-        strcmp(act, "reload") != 0) {
-        reply(fd, false, "不允许的动作: %s", act);
-        return;
-    }
-    if (!service_exists(name)) {
-        reply(fd, false, "找不到服务脚本: %s", name);
-        return;
-    }
-
-    const char *argv[] = { "/usr/sbin/service", name, act, NULL };
-
-    FmonChildResult res;
-    if (fmon_child_run_merged(argv, 64 * 1024, 15000, &res) != 0) {
-        fmon_child_result_free(&res);
-        reply(fd, false, "执行 service 失败");
-        return;
-    }
-
-    bool ok = fmon_child_ok(&res);
-
-    /* 只回传第一行，避免把整个服务输出塞进协议 */
-    char msg[512] = "";
-    if (res.out != NULL) {
-        char *nl = strchr(res.out, '\n');
-        if (nl != NULL)
-            *nl = '\0';
-        strlcpy(msg, res.out, sizeof(msg));
-    }
-    fmon_child_result_free(&res);
-
-    if (ok)
-        reply(fd, true, "service %s %s", name, act);
-    else
-        reply(fd, false, "service %s %s 失败: %s", name, act,
-              (msg[0] != '\0') ? msg : "未知原因");
-}
-
-static void cmd_sysrc(int fd, char *args)
-{
-    char *name = strsep(&args, " ");
-    char *val  = args;
-
-    if (name == NULL || val == NULL || !valid_token(name)) {
-        reply(fd, false, "用法: SYSRC <name> <YES|NO>");
-        return;
-    }
-    if (strcmp(val, "YES") != 0 && strcmp(val, "NO") != 0) {
-        reply(fd, false, "只允许 YES / NO");
-        return;
-    }
-    if (!service_exists(name)) {
-        reply(fd, false, "找不到服务脚本: %s", name);
-        return;
-    }
-
-    char assign[128];
-    snprintf(assign, sizeof(assign), "%s_enable=%s", name, val);
-
-    const char *argv[] = { "/usr/sbin/sysrc", assign, NULL };
-
-    FmonChildResult res;
-    if (fmon_child_run_merged(argv, 32 * 1024, 10000, &res) != 0) {
-        fmon_child_result_free(&res);
-        reply(fd, false, "执行 sysrc 失败");
-        return;
-    }
-
-    bool ok = fmon_child_ok(&res);
-    fmon_child_result_free(&res);
-
-    if (ok)
-        reply(fd, true, "sysrc %s", assign);
-    else
-        reply(fd, false, "sysrc %s 失败", assign);
+        ctl_reply(fd, false, "rctl 失败: %s", (msg[0] != '\0') ? msg : "未知原因");
 }
 
 /* ===========================================================================
@@ -492,7 +249,7 @@ static void handle_connection(int fd)
             if (!allowed) {
                 fprintf(stderr, "[FMON-CTL] 拒绝来自 uid=%d 的请求\n",
                         (int)peer_uid);
-                reply(fd, false, "权限不足（需要 root 或套接字属组成员）");
+                ctl_reply(fd, false, "权限不足（需要 root 或套接字属组成员）");
                 return;
             }
         }
@@ -523,7 +280,7 @@ static void handle_connection(int fd)
 
     /* 协议头 */
     if (strncmp(buf, "FMONCTL 1 ", 10) != 0) {
-        reply(fd, false, "协议不匹配，期望: FMONCTL 1 <CMD> ...");
+        ctl_reply(fd, false, "协议不匹配，期望: FMONCTL 1 <CMD> ...");
         return;
     }
 
@@ -537,42 +294,42 @@ static void handle_connection(int fd)
     }
 
     if (strcmp(cmd, "PING") == 0) {
-        reply(fd, true, "pong");
+        ctl_reply(fd, true, "pong");
     } else if (strcmp(cmd, "INFO") == 0) {
-        reply(fd, true, "fmon %s abi %u", FMON_VERSION_STRING,
+        ctl_reply(fd, true, "fmon %s abi %u", FMON_VERSION_STRING,
               FMON_ABI_VERSION);
     } else if (strcmp(cmd, "SIGNAL") == 0) {
         if (args == NULL)
-            reply(fd, false, "缺少参数");
+            ctl_reply(fd, false, "缺少参数");
         else
-            cmd_signal(fd, args);
+            ctl_cmd_signal(fd, args);
     } else if (strcmp(cmd, "RENICE") == 0) {
         if (args == NULL)
-            reply(fd, false, "缺少参数");
+            ctl_reply(fd, false, "缺少参数");
         else
-            cmd_renice(fd, args);
+            ctl_cmd_renice(fd, args);
     } else if (strcmp(cmd, "CPUSET") == 0) {
         if (args == NULL)
-            reply(fd, false, "缺少参数");
+            ctl_reply(fd, false, "缺少参数");
         else
-            cmd_cpuset(fd, args);
+            ctl_cmd_cpuset(fd, args);
     } else if (strcmp(cmd, "RCTL") == 0) {
         if (args == NULL)
-            reply(fd, false, "缺少参数");
+            ctl_reply(fd, false, "缺少参数");
         else
             cmd_rctl(fd, args);
     } else if (strcmp(cmd, "SERVICE") == 0) {
         if (args == NULL)
-            reply(fd, false, "缺少参数");
+            ctl_reply(fd, false, "缺少参数");
         else
-            cmd_service(fd, args);
+            ctl_cmd_service(fd, args);
     } else if (strcmp(cmd, "SYSRC") == 0) {
         if (args == NULL)
-            reply(fd, false, "缺少参数");
+            ctl_reply(fd, false, "缺少参数");
         else
-            cmd_sysrc(fd, args);
+            ctl_cmd_sysrc(fd, args);
     } else {
-        reply(fd, false, "未知命令: %s", cmd);
+        ctl_reply(fd, false, "未知命令: %s", cmd);
     }
 }
 

@@ -190,7 +190,7 @@ static void on_clear_clicked(GtkButton *btn, gpointer data)
     const char *buttons[] = { "取消", "清空", NULL };
 
     gtk_alert_dialog_set_detail(dlg, "该操作不可撤销。");
-    gtk_alert_dialog_set_buttons(dlg, buttons);
+    fmon_i18n_alert_buttons(dlg, buttons);
     gtk_alert_dialog_set_cancel_button(dlg, 0);
     gtk_alert_dialog_set_default_button(dlg, 0);
     gtk_alert_dialog_choose(dlg, GTK_WINDOW(gtk_widget_get_root(page->root)),

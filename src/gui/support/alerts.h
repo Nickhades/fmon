@@ -19,7 +19,7 @@
 extern "C" {
 #endif
 
-typedef struct {
+typedef struct AlertSettings {
     gboolean enabled;
 
     double cpu_pct;      /* CPU 使用率 >= 该值告警 */
@@ -29,6 +29,9 @@ typedef struct {
     double temp_c;       /* CPU 温度 */
     double battery_pct;  /* 电池低于该值告警 */
 } AlertSettings;
+
+/* 最近一次 alerts_load() 的设置指针；只读，供图表阈值线使用。 */
+const AlertSettings *alerts_current(void);
 
 /* 告警级别 */
 typedef enum {

@@ -3,6 +3,7 @@
  */
 
 #include "gui_page_build.h"
+#include "ui_metrics.h"
 
 #include "gui_page_state.h"
 #include "gui_chart.h"
@@ -40,12 +41,12 @@ GtkWidget *gui_combo_page_new(const char *title, const char *subtitle,
 {
     page->nvals = 0;
 
-    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_2);
     gtk_widget_set_vexpand(vbox, TRUE);
-    gtk_widget_set_margin_top(vbox, 14);
-    gtk_widget_set_margin_bottom(vbox, 14);
-    gtk_widget_set_margin_start(vbox, 16);
-    gtk_widget_set_margin_end(vbox, 16);
+    gtk_widget_set_margin_top(vbox, FMON_SPACE_4);
+    gtk_widget_set_margin_bottom(vbox, FMON_SPACE_4);
+    gtk_widget_set_margin_start(vbox, FMON_SPACE_4);
+    gtk_widget_set_margin_end(vbox, FMON_SPACE_4);
 
     GtkWidget *t = gtk_label_new(title);
     gtk_widget_add_css_class(t, "group-title");
@@ -60,23 +61,23 @@ GtkWidget *gui_combo_page_new(const char *title, const char *subtitle,
 
     /* 标题行：左边标题/副标题，右边留给页面自己的摘要（内存页放内存条信息），
      * 这样标题区右侧的空白不会被浪费，也不用把内容挤到曲线下面。 */
-    GtkWidget *title_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
+    GtkWidget *title_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_1);
 
     gtk_widget_set_hexpand(title_box, TRUE);
     gtk_box_append(GTK_BOX(title_box), t);
     gtk_box_append(GTK_BOX(title_box), s);
 
-    page->header_right = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
+    page->header_right = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_1);
     gtk_widget_set_halign(page->header_right, GTK_ALIGN_END);
     gtk_widget_set_valign(page->header_right, GTK_ALIGN_START);
 
-    GtkWidget *header = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 16);
+    GtkWidget *header = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, FMON_SPACE_4);
 
     gtk_box_append(GTK_BOX(header), title_box);
     gtk_box_append(GTK_BOX(header), page->header_right);
 
     /* 标题、副标题与曲线共用一张大卡片 */
-    GtkWidget *page_card = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
+    GtkWidget *page_card = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_1);
     gtk_widget_add_css_class(page_card, "page-card");
     gtk_box_append(GTK_BOX(page_card), header);
 
@@ -86,6 +87,8 @@ GtkWidget *gui_combo_page_new(const char *title, const char *subtitle,
     gtk_widget_set_vexpand(area, TRUE);
     gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(area), combo_chart_draw,
                                    chart, NULL);
+    gui_chart_attach_interactions(
+        area, chart->n > 0 ? chart->series[0].cd : NULL);
     page->area = area;
 
     GtkEventController *motion = gtk_event_controller_motion_new();
@@ -97,8 +100,8 @@ GtkWidget *gui_combo_page_new(const char *title, const char *subtitle,
     gtk_box_append(GTK_BOX(vbox), page_card);
 
     /* 下方数据：每个分类一张横向卡片，卡片有表头，数值用大字号 */
-    GtkWidget *cards = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
-    gtk_widget_set_margin_top(cards, 8);
+    GtkWidget *cards = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, FMON_SPACE_3);
+    gtk_widget_set_margin_top(cards, FMON_SPACE_2);
     gtk_widget_set_hexpand(cards, TRUE);
 
     GtkWidget *card  = NULL;
@@ -109,7 +112,7 @@ GtkWidget *gui_combo_page_new(const char *title, const char *subtitle,
             if (card != NULL)
                 gtk_box_append(GTK_BOX(cards), card);
 
-            card = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+            card = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_2);
             gtk_widget_add_css_class(card, "detail-card");
             gtk_widget_set_hexpand(card, TRUE);
 
@@ -119,22 +122,22 @@ GtkWidget *gui_combo_page_new(const char *title, const char *subtitle,
             gtk_widget_set_halign(sec, GTK_ALIGN_START);
             gtk_box_append(GTK_BOX(card), sec);
 
-            rowsv = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
+            rowsv = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_1);
             gtk_box_append(GTK_BOX(card), rowsv);
             continue;
         }
 
         if (rowsv == NULL) {
-            card = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+            card = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_2);
             gtk_widget_add_css_class(card, "detail-card");
             gtk_widget_set_hexpand(card, TRUE);
-            rowsv = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
+            rowsv = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_1);
             gtk_box_append(GTK_BOX(card), rowsv);
         }
 
-        GtkWidget *row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
-        gtk_widget_set_margin_top(row, 1);
-        gtk_widget_set_margin_bottom(row, 1);
+        GtkWidget *row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, FMON_SPACE_3);
+        gtk_widget_set_margin_top(row, FMON_SPACE_1);
+        gtk_widget_set_margin_bottom(row, FMON_SPACE_1);
 
         GtkWidget *k = gtk_label_new(rows[i]);
         gtk_widget_add_css_class(k, "detail-key");
@@ -195,12 +198,12 @@ GtkWidget *gui_metric_page_new(MetricPage *mp, int idx, const char *title,
 
     int nv = 0;
 
-    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_2);
     gtk_widget_set_vexpand(vbox, TRUE);
-    gtk_widget_set_margin_top(vbox, 14);
-    gtk_widget_set_margin_bottom(vbox, 14);
-    gtk_widget_set_margin_start(vbox, 16);
-    gtk_widget_set_margin_end(vbox, 16);
+    gtk_widget_set_margin_top(vbox, FMON_SPACE_4);
+    gtk_widget_set_margin_bottom(vbox, FMON_SPACE_4);
+    gtk_widget_set_margin_start(vbox, FMON_SPACE_4);
+    gtk_widget_set_margin_end(vbox, FMON_SPACE_4);
 
     GtkWidget *t = gtk_label_new(title);
     gtk_widget_add_css_class(t, "group-title");
@@ -214,12 +217,12 @@ GtkWidget *gui_metric_page_new(MetricPage *mp, int idx, const char *title,
     mp->sub = s;
 
     /* 标题、副标题与曲线共用一张大卡片 */
-    GtkWidget *page_card = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
+    GtkWidget *page_card = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_1);
     gtk_widget_add_css_class(page_card, "page-card");
 
     if (compact) {
         /* 数值放在标题行右侧：左边标题/副标题，右边 2~3 列键值对 */
-        GtkWidget *title_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
+        GtkWidget *title_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_1);
 
         gtk_widget_set_hexpand(title_box, TRUE);
         gtk_box_append(GTK_BOX(title_box), t);
@@ -229,8 +232,8 @@ GtkWidget *gui_metric_page_new(MetricPage *mp, int idx, const char *title,
 
         GtkWidget *grid = gtk_grid_new();
 
-        gtk_grid_set_row_spacing(GTK_GRID(grid), 2);
-        gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
+        gtk_grid_set_row_spacing(GTK_GRID(grid), FMON_SPACE_1);
+        gtk_grid_set_column_spacing(GTK_GRID(grid), FMON_SPACE_3);
         gtk_widget_set_halign(grid, GTK_ALIGN_END);
         gtk_widget_set_valign(grid, GTK_ALIGN_START);
 
@@ -253,7 +256,7 @@ GtkWidget *gui_metric_page_new(MetricPage *mp, int idx, const char *title,
                 mp->vals[nv++] = val;
         }
 
-        GtkWidget *header = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 16);
+        GtkWidget *header = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, FMON_SPACE_4);
 
         gtk_box_append(GTK_BOX(header), title_box);
         gtk_box_append(GTK_BOX(header), grid);
@@ -269,6 +272,7 @@ GtkWidget *gui_metric_page_new(MetricPage *mp, int idx, const char *title,
     gtk_widget_set_vexpand(area, TRUE);
     gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(area), gui_chart_draw,
                                    gui_metric_curve(idx), NULL);
+    gui_chart_attach_interactions(area, gui_metric_curve(idx));
     mp->area = area;
 
     /* 鼠标悬停显示精确数据（与卡片一致） */
@@ -288,16 +292,16 @@ GtkWidget *gui_metric_page_new(MetricPage *mp, int idx, const char *title,
         return vbox;
     }
 
-    GtkWidget *detail = gtk_box_new(GTK_ORIENTATION_VERTICAL, 7);
+    GtkWidget *detail = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_2);
     gtk_widget_add_css_class(detail, "metric-detail");
-    gtk_widget_set_margin_top(detail, 4);
+    gtk_widget_set_margin_top(detail, FMON_SPACE_1);
 
     for (int i = 0; i < nkeys; i++) {
-        GtkWidget *row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 16);
-        gtk_widget_set_margin_start(row, 14);
-        gtk_widget_set_margin_end(row, 14);
-        gtk_widget_set_margin_top(row, 3);
-        gtk_widget_set_margin_bottom(row, 3);
+        GtkWidget *row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, FMON_SPACE_4);
+        gtk_widget_set_margin_start(row, FMON_SPACE_4);
+        gtk_widget_set_margin_end(row, FMON_SPACE_4);
+        gtk_widget_set_margin_top(row, FMON_SPACE_1);
+        gtk_widget_set_margin_bottom(row, FMON_SPACE_1);
 
         GtkWidget *k = gtk_label_new(keys[i]);
         gtk_widget_add_css_class(k, "small-text");
@@ -321,4 +325,3 @@ GtkWidget *gui_metric_page_new(MetricPage *mp, int idx, const char *title,
     update(mp);
     return vbox;
 }
-

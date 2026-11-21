@@ -186,5 +186,3 @@ const DiskPerf *disk_perf_get(void)
 {
     return g_valid ? &g_perf : NULL;
 }
-
-

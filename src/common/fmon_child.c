@@ -221,4 +221,3 @@ int fmon_child_run_merged(const char *const argv[], size_t max_bytes,
 {
     return child_run_impl(argv, max_bytes, timeout_ms, true, res);
 }
-

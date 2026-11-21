@@ -32,8 +32,47 @@ bool series_range(const CurveData *cd, double *lo, double *hi)
     if (cd == NULL || cd->history == NULL)
         return false;
 
-    return fmon_chart_history_range(cd->history, COMBO_MAX_POINTS, cd->count,
-                                    cd->index, lo, hi);
+    uint32_t n = (cd->count > COMBO_MAX_POINTS) ? COMBO_MAX_POINTS
+                                                : cd->count;
+    uint64_t t0 = 0, t1 = 0;
+    bool window = gui_chart_view_range(cd, n, &t0, &t1) &&
+                  gui_chart_window_us() > 0;
+    bool have = false;
+    double l = 0.0, h = 0.0;
+
+    for (uint32_t i = 0; i < n; i++) {
+        if (window) {
+            uint64_t ti;
+
+            if (!fmon_chart_history_time(cd->time_us, COMBO_MAX_POINTS, n,
+                                         cd->index, i, &ti))
+                continue;
+            if (ti < t0 || ti > t1)
+                continue;
+        }
+
+        double v = series_value(cd, i);
+
+        if (!isfinite(v))
+            continue;
+
+        if (!have) {
+            l = h = v;
+            have = true;
+        } else {
+            if (v < l)
+                l = v;
+            if (v > h)
+                h = v;
+        }
+    }
+
+    if (have) {
+        *lo = l;
+        *hi = h;
+    }
+
+    return have;
 }
 
 bool series_scale(const CurveData *cd, FmonChartScale *sc)
@@ -117,7 +156,7 @@ double band_y(const BandGeom *b, double v, double lo, double hi)
 
 void set_font(cairo_t *cr, double size)
 {
-    cairo_select_font_face(cr, "Noto Sans CJK SC", CAIRO_FONT_SLANT_NORMAL,
+    cairo_select_font_face(cr, "monospace", CAIRO_FONT_SLANT_NORMAL,
                            CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, size);
 }

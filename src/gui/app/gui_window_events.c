@@ -3,6 +3,8 @@
  */
 
 #include "gui_window_events.h"
+#include "gui_window.h"
+#include "gui_window_state.h"
 #include "collector_thread.h"
 
 #include "gui_runtime.h"
@@ -22,6 +24,7 @@ extern GtkWindow *g_main_window;
  * SIGTERM/SIGINT/Ctrl+Q 不需要走窗口销毁，直接退出最稳。 */
 static void quit_now(void)
 {
+    gui_window_state_save();
     gui_collector_stop();
     gui_runtime_shutdown();
     exit(0);
@@ -40,6 +43,7 @@ gboolean gui_window_close_request(GtkWindow *window, gpointer data)
     (void)data;
     (void)window;
 
+    gui_window_state_save();
     gui_collector_stop();
     gui_runtime_shutdown();
 
@@ -76,4 +80,3 @@ gboolean gui_window_key_pressed(GtkEventControllerKey *controller,
 
     return FALSE;
 }
-

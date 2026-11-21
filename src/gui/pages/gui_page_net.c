@@ -5,6 +5,7 @@
  */
 
 #include "gui_page_net.h"
+#include "ui_metrics.h"
 
 #include "gui_state.h"
 #include "gui_util.h"
@@ -79,7 +80,7 @@ static gchar     *s_nic_sig = NULL;
 
 GtkWidget *gui_net_nic_header(void)
 {
-    s_nic_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
+    s_nic_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_1);
     gtk_widget_set_halign(s_nic_box, GTK_ALIGN_END);
     gtk_widget_set_valign(s_nic_box, GTK_ALIGN_START);
     return s_nic_box;
@@ -125,37 +126,42 @@ void gui_net_nic_update(void)
         gtk_label_set_xalign(GTK_LABEL(l), 1.0f);
         gtk_widget_set_halign(l, GTK_ALIGN_END);
         /* 小字号 + 固定宽度换行：型号再长也能完整显示，不挤占标题 */
-        gtk_widget_set_size_request(l, 640, -1);
+        /* 窄窗口不撑破标题：限制模型列宽，超长省略；完整型号放 tooltip。 */
+        gtk_widget_set_size_request(l, 480, -1);
         gtk_label_set_wrap(GTK_LABEL(l), TRUE);
+        gtk_label_set_ellipsize(GTK_LABEL(l), PANGO_ELLIPSIZE_END);
+        gtk_label_set_max_width_chars(GTK_LABEL(l), 64);
         gtk_label_set_justify(GTK_LABEL(l), GTK_JUSTIFY_RIGHT);
+        gtk_widget_set_tooltip_text(
+            l, snap->nic_models[i]);
         gtk_box_append(GTK_BOX(s_nic_box), l);
     }
 }
 
 GtkWidget *gui_net_health_box(void)
 {
-    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
+    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_1);
 
-    gtk_widget_set_margin_top(box, 10);
+    gtk_widget_set_margin_top(box, FMON_SPACE_3);
 
     GtkWidget *t = cell(_("链路与错误"), "detail-title", 0);
 
     gtk_box_append(GTK_BOX(box), t);
 
     s_if_grid = gtk_grid_new();
-    gtk_grid_set_row_spacing(GTK_GRID(s_if_grid), 3);
-    gtk_grid_set_column_spacing(GTK_GRID(s_if_grid), 14);
-    gtk_widget_set_margin_top(s_if_grid, 2);
+    gtk_grid_set_row_spacing(GTK_GRID(s_if_grid), FMON_SPACE_1);
+    gtk_grid_set_column_spacing(GTK_GRID(s_if_grid), FMON_SPACE_4);
+    gtk_widget_set_margin_top(s_if_grid, FMON_SPACE_1);
     gtk_box_append(GTK_BOX(box), s_if_grid);
 
     s_wifi_line = cell("", "group-desc", 0);
-    gtk_widget_set_margin_top(s_wifi_line, 2);
+    gtk_widget_set_margin_top(s_wifi_line, FMON_SPACE_1);
     gtk_widget_set_visible(s_wifi_line, FALSE);
     gtk_box_append(GTK_BOX(box), s_wifi_line);
 
     GtkWidget *tcp_title = cell(_("TCP 健康度"), "detail-title", 0);
 
-    gtk_widget_set_margin_top(tcp_title, 10);
+    gtk_widget_set_margin_top(tcp_title, FMON_SPACE_3);
     gtk_box_append(GTK_BOX(box), tcp_title);
 
     s_tcp_line = cell("—", "group-desc", 0);
@@ -208,6 +214,7 @@ static void rebuild_if_grid(const NetStats *ns)
 void gui_net_health_update(void)
 {
     const NetStats *ns = net_stats_get();
+    const FmonShmData *snap = gui_state_snapshot();
 
     if (ns == NULL || s_if_grid == NULL)
         return;
@@ -262,18 +269,23 @@ void gui_net_health_update(void)
     /* 无线接口：SSID / 信道 / 协议（有 wlan 接口时才显示） */
     GString *wifi = g_string_new(NULL);
 
-    for (int i = 0; i < ns->nifs; i++) {
-        const NetIfaceStat *f = &ns->ifs[i];
+    for (uint32_t i = 0; i < snap->iface_count && i < FMON_MAX_IFACES; i++) {
+        const FmonIfaceInfo *f = &snap->ifaces[i];
 
-        if (!f->wireless)
+        if (f->link_type != FMON_LINK_WIFI)
             continue;
 
         if (wifi->len > 0)
             g_string_append(wifi, " · ");
-        g_string_append_printf(wifi, "%s：SSID %s · 信道 %d · %s", f->name,
+
+        char rate[32] = "—";
+
+        if (f->detail_valid != 0 && f->speed_mbps > 0)
+            g_snprintf(rate, sizeof(rate), "%u Mbps", f->speed_mbps);
+
+        g_string_append_printf(wifi, "%s：SSID %s · 信道 %u · %s", f->name,
                                (f->ssid[0] != '\0') ? f->ssid : "—",
-                               f->channel,
-                               (f->media[0] != '\0') ? f->media : "—");
+                               f->channel, rate);
     }
 
     gtk_label_set_text(GTK_LABEL(s_wifi_line), wifi->str);
@@ -302,7 +314,7 @@ void gui_net_details_update(void)
 {
     const FmonShmData *snap = gui_state_snapshot();
 
-    if (s_grid == NULL)
+    if (s_grid == NULL || !gtk_widget_get_mapped(s_grid))
         return;
 
     GString *sig = g_string_new(NULL);
@@ -399,4 +411,3 @@ void gui_net_details_update(void)
         g_string_free(hw, TRUE);
     }
 }
-

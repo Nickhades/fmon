@@ -20,21 +20,21 @@ const char *const gui_css_tables =
         "columnview > header button { font-size: 12px; opacity: 0.8; font-weight: 600; }"
 
         /* ---------------- 控件 ---------------- */
-        "button { border-radius: 8px; padding: 6px 14px; }"
-        "button.suggested-action { border-radius: 8px; }"
-        "entry, searchentry { border-radius: 9px; }"
-        "dropdown > button { border-radius: 9px; padding: 4px 10px; }"
+        "button { border-radius: 0; padding: 6px 14px; }"
+        "button.suggested-action { border-radius: 0; }"
+        "entry, searchentry { border-radius: 0; }"
+        "dropdown > button { border-radius: 0; padding: 4px 10px; }"
 
         "scrollbar slider { min-width: 6px; min-height: 6px;"
-        "  border-radius: 3px; background-color: alpha(currentColor, 0.25); }"
+        "  border-radius: 0; background-color: alpha(currentColor, 0.25); }"
         "scrollbar slider:hover { background-color: alpha(currentColor, 0.4); }"
 
         "notebook > header { background: transparent; }"
-        "notebook > header tab { padding: 6px 16px; border-radius: 8px; }"
+        "notebook > header tab { padding: 6px 16px; border-radius: 0; }"
 
         /* ---------------- 状态 ---------------- */
         ".banner-warning { background-color: alpha(#e5a50a, 0.16);"
-        "  border: 1px solid alpha(#e5a50a, 0.45); border-radius: 10px;"
+        "  border: 1px solid alpha(#e5a50a, 0.45); border-radius: 0;"
         "  padding: 8px 12px; }"
         ".banner-warning label { color: #e5a50a; }"
 
@@ -44,7 +44,7 @@ const char *const gui_css_tables =
         /* 表格类页面：与仪表盘卡片一致的外观 */
         ".view-card { background-color: shade(@theme_bg_color, 1.04);"
         "  border: 1px solid alpha(@theme_fg_color, 0.10);"
-        "  border-radius: 14px; padding: 12px 14px; }"
+        "  border-radius: 0; padding: 16px; }"
 
         ".view-toolbar { padding-bottom: 6px; }"
 
@@ -61,7 +61,7 @@ const char *const gui_css_tables =
         "  border-bottom: 1px solid alpha(@theme_fg_color, 0.07); }"
         ".disk-row:hover { background: alpha(@theme_fg_color, 0.03); }"
         ".license-box { border: 1px solid alpha(@theme_fg_color, 0.12);"
-        "  border-radius: 10px; padding: 8px; }"
+        "  border-radius: 0; padding: 8px; }"
 
         ".service-row { padding: 8px 12px;"
         "  border-bottom: 1px solid alpha(@theme_fg_color, 0.08); }";

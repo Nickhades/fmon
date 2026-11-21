@@ -6,6 +6,7 @@
  */
 
 #include "gui_page_l2arc.h"
+#include "ui_metrics.h"
 
 #include "zfs_stats.h"
 
@@ -53,14 +54,24 @@ static double s_hit_hist[FMON_HISTORY_POINTS];
 
 static CurveData s_size_cd = {
     .history = s_size_hist, .unit = "GB",
-    .r = 0.22, .g = 0.72, .b = 0.85,
+    .r = 0.00, .g = 1.00, .b = 1.00,
     .empty_hint = "配置 L2ARC 后开始采集",
 };
 static CurveData s_hit_cd = {
     .history = s_hit_hist, .unit = "%", .max_val = 100.0,
-    .r = 0.95, .g = 0.70, .b = 0.25,
+    .r = 1.00, .g = 1.00, .b = 0.00,
     .empty_hint = "配置 L2ARC 后开始采集",
 };
+
+CurveData *gui_l2arc_size_curve(void)
+{
+    return &s_size_cd;
+}
+
+CurveData *gui_l2arc_hit_curve(void)
+{
+    return &s_hit_cd;
+}
 
 static GtkWidget *s_size_area = NULL;
 static GtkWidget *s_hit_area  = NULL;
@@ -70,6 +81,9 @@ static GtkWidget *s_hit_now   = NULL;
 static void sync_curve(CurveData *cd, const FmonShmData *snap,
                        const double *history)
 {
+    if (cd->frozen)
+        return;
+
     cd->history       = (history != NULL) ? history : cd->history;
     cd->count         = snap->history_count;
     cd->index         = snap->history_index;
@@ -83,12 +97,12 @@ static void sync_curve(CurveData *cd, const FmonShmData *snap,
 static GtkWidget *chart_card(const char *title, CurveData *cd,
                              GtkWidget **out_area, GtkWidget **out_now)
 {
-    GtkWidget *card = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+    GtkWidget *card = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_2);
 
     gtk_widget_add_css_class(card, "page-card");
-    gtk_widget_set_margin_top(card, 6);
+    gtk_widget_set_margin_top(card, FMON_SPACE_2);
 
-    GtkWidget *head = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+    GtkWidget *head = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, FMON_SPACE_2);
     GtkWidget *t    = gtk_label_new(title);
 
     gtk_widget_add_css_class(t, "detail-title");
@@ -108,6 +122,7 @@ static GtkWidget *chart_card(const char *title, CurveData *cd,
     gtk_widget_set_hexpand(*out_area, TRUE);
     gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(*out_area),
                                    gui_chart_draw, cd, NULL);
+    gui_chart_attach_interactions(*out_area, cd);
 
     gtk_box_append(GTK_BOX(card), *out_area);
     return card;
@@ -121,13 +136,13 @@ static void setv(int i, const char *text)
 
 GtkWidget *gui_l2arc_page_new(void)
 {
-    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_2);
 
     gtk_widget_set_vexpand(vbox, TRUE);
-    gtk_widget_set_margin_top(vbox, 14);
-    gtk_widget_set_margin_bottom(vbox, 14);
-    gtk_widget_set_margin_start(vbox, 16);
-    gtk_widget_set_margin_end(vbox, 16);
+    gtk_widget_set_margin_top(vbox, FMON_SPACE_4);
+    gtk_widget_set_margin_bottom(vbox, FMON_SPACE_4);
+    gtk_widget_set_margin_start(vbox, FMON_SPACE_4);
+    gtk_widget_set_margin_end(vbox, FMON_SPACE_4);
 
     GtkWidget *t = gtk_label_new(_("L2ARC"));
     gtk_widget_add_css_class(t, "group-title");
@@ -169,7 +184,7 @@ GtkWidget *gui_l2arc_page_new(void)
                               &s_hit_now));
 
     /* 提示和卡片之间留一点距离 */
-    gtk_widget_set_margin_top(card, 6);
+    gtk_widget_set_margin_top(card, FMON_SPACE_2);
     gtk_box_append(GTK_BOX(vbox), card);
 
     return vbox;

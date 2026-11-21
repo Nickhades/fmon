@@ -20,7 +20,7 @@ const char *const gui_css_main =
 
         ".nav-header { font-size: 11px; opacity: 0.5; }"
         ".nav-item-box { background-color: alpha(@theme_fg_color, 0.045);"
-        "  border-radius: 10px; margin: 6px 6px; padding: 12px 14px;"
+        "  border-radius: 0; margin: 6px 6px; padding: 12px 14px;"
         "  border: 1px solid transparent; }"
 
         ".nav-list > row:hover .nav-item-box {"
@@ -56,15 +56,15 @@ const char *const gui_css_main =
         "  background-color: alpha(@theme_fg_color, 0.18); }"
 
         /* ---------------- 内容区 ---------------- */
-        ".content-area { padding: 22px 26px 20px 26px; }"
+        ".content-area { padding: 16px 24px 16px 24px; }"
         ".header { font-size: 24px; letter-spacing: 0.3px; }"
         ".subheader { font-size: 13px; opacity: 0.72; }"
 
-        ".card { padding: 16px 18px 14px 18px; border-radius: 14px;"
+        ".card { padding: 16px; border-radius: 0;"
         "  background-color: shade(@theme_bg_color, 1.06);"
         "  border: 1px solid alpha(@theme_fg_color, 0.11);"
         "  border-left-width: 3px;"
-        "  box-shadow: 0 1px 4px alpha(#000000, 0.18);"
+        "  box-shadow: none;"
         "  transition: background-color 120ms ease, border-color 120ms ease; }"
 
         ".card:hover { background-color: shade(@theme_bg_color, 1.10);"
@@ -91,20 +91,9 @@ const char *const gui_css_main =
         ".theme-switch button:focus, .theme-switch button:focus-visible {"
         "  background: transparent; background-image: none; box-shadow: none;"
         "  border: none; outline: none; text-shadow: none;"
-        "  -gtk-icon-shadow: none; border-radius: 999px;"
+        "  -gtk-icon-shadow: none; border-radius: 0;"
         "  min-width: 0; min-height: 0; padding: 0; }"
         ".theme-switch .theme-seg:hover {"
         "  background-color: alpha(@theme_fg_color, 0.06); }"
         /* 图标由 cairo 直接绘制，按钮只保留点击区域 */
         ".theme-switch .theme-seg image { color: transparent; }";
-
-
-
-
-
-
-
-
-
-
-

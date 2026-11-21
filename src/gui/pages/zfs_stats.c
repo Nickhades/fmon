@@ -200,6 +200,3 @@ const ZfsStats *zfs_stats_get(void)
 {
     return g_valid ? &g_stats : NULL;
 }
-
-
-

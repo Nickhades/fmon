@@ -1,4 +1,6 @@
 #include "gui_window.h"
+#include "gui_language_switch.h"
+#include "gui_window_state.h"
 #include "gui_export.h"
 #include "gui_runtime.h"
 #include "gui_theme_ui.h"
@@ -29,6 +31,7 @@
 
 #include <errno.h>
 #include <glib-unix.h>
+#include <unistd.h>
 
 #include <sys/types.h>
 #include <sys/sysctl.h>
@@ -45,12 +48,14 @@
 #include "alerts.h"
 #include "alert_view.h"
 #include "history_view.h"
+#include "history/long_history.h"
 #include "rctl_view.h"
 #include "combo_chart.h"
 #include "font_setup.h"
 #include "gui_chart.h"
 #include "gui_state.h"
 #include "theme.h"
+#include "language.h"
 #include "gui_css.h"
 #include "gui_coreview.h"
 #include "gui_pages.h"
@@ -111,9 +116,16 @@ void fmon_gui_switch_page(const char *page_id)
     gui_nav_switch_page(page_id);
 }
 
+const char *gui_window_current_page(void)
+{
+    return (g_stack != NULL) ? gtk_stack_get_visible_child_name(g_stack)
+                             : NULL;
+}
+
 static void gui_nav_switch_page(const char *page_id)
 {
     if (g_stack != NULL && page_id != NULL) {
+        gui_nav_select_page(page_id);
         gtk_stack_set_visible_child_name(GTK_STACK(g_stack), page_id);
 
         /* 新页面从顶部开始，再刷新一次被隐藏跳过的详情 */
@@ -157,6 +169,8 @@ static void gui_nav_switch_page(const char *page_id)
 static AlertSettings g_alerts;
 
 static gchar *g_start_page = NULL;   /* --page 指定的启动页面 */
+static gint64 g_long_next_refresh;
+static GtkWidget *g_long_note;
 static gchar *g_theme_start = NULL;  /* --theme 指定的起始主题 */
 static int    g_gpu_start   = 0;     /* --gpu 指定的启动显卡 */
 
@@ -170,6 +184,116 @@ static int    g_gpu_start   = 0;     /* --gpu 指定的启动显卡 */
 
 
 
+static GtkDropDown *g_window_dd;
+static gboolean     g_window_sync;
+
+static void update_long_note(void)
+{
+    if (g_long_note == NULL)
+        return;
+
+    gtk_widget_set_visible(g_long_note, gui_long_history_active());
+}
+
+static void chart_window_notify(uint64_t us)
+{
+    if (g_window_dd == NULL)
+        return;
+
+    guint idx = 8;   /* 自定义 */
+    uint64_t secs = us / 1000000ULL;
+
+    if (gui_long_history_active()) {
+        if (secs == 3600)
+            idx = 4;
+        else if (secs == 86400)
+            idx = 5;
+        else if (secs == 7 * 86400ULL)
+            idx = 6;
+        else if (secs == 30 * 86400ULL)
+            idx = 7;
+        else
+            idx = 8;
+    } else if (secs == 60) {
+        idx = 0;
+    } else if (secs == 300) {
+        idx = 1;
+    } else if (secs == 900) {
+        idx = 2;
+    } else if (secs == 1200) {
+        idx = 3;
+    }
+
+    g_window_sync = TRUE;
+    gtk_drop_down_set_selected(g_window_dd, idx);
+    g_window_sync = FALSE;
+}
+
+static void on_chart_window_changed(GtkDropDown *dd, GParamSpec *pspec,
+                                    gpointer data)
+{
+    (void)pspec;
+    (void)data;
+
+    if (g_window_sync)
+        return;
+
+    guint sel = gtk_drop_down_get_selected(dd);
+
+    if (sel == 8)
+        return;   /* 自定义：由框选/滚轮设置，不覆盖 */
+
+    if (sel >= 4 && sel <= 7) {
+        gint64 range = (sel == 4) ? 3600
+                       : (sel == 5) ? 86400
+                       : (sel == 6) ? 7 * 86400
+                                    : 30 * 86400;
+
+        if (!gui_long_history_enter(range)) {
+            fmon_gui_show_error(g_main_window, _("长历史不可用"),
+                                _("没有可用的历史金字塔文件。"));
+            g_window_sync = TRUE;
+            gtk_drop_down_set_selected(dd,
+                                       gui_long_history_active() ? 4 : 3);
+            g_window_sync = FALSE;
+            return;
+        }
+
+        gui_chart_set_view_end_us(0);
+        gui_chart_set_window_us((uint64_t)range * 1000000ULL);
+        g_long_next_refresh = g_get_monotonic_time() + 60 * G_TIME_SPAN_SECOND;
+        update_long_note();
+        gui_pages_refresh(&g_snap);
+        return;
+    }
+
+    if (gui_long_history_active()) {
+        gui_long_history_leave();
+        update_long_note();
+    }
+
+    uint64_t us;
+
+    switch (sel) {
+    case 0:
+        us = 60ULL * 1000000ULL;
+        break;
+    case 1:
+        us = 5ULL * 60ULL * 1000000ULL;
+        break;
+    case 2:
+        us = 15ULL * 60ULL * 1000000ULL;
+        break;
+    default:
+        us = 20ULL * 60ULL * 1000000ULL;
+        break;
+    }
+
+    gui_chart_set_view_end_us(0);
+    gui_chart_set_window_us(us);
+    gui_pages_refresh(&g_snap);
+}
+
 static gboolean on_ui_tick(gpointer data)
 {
     (void)data;
@@ -182,6 +306,21 @@ static gboolean on_ui_tick(gpointer data)
     gui_runtime_header(NULL, NULL);   /* 顶部系统信息随 uptime 刷新 */
     gui_metric_curves_sync(&g_snap);
     gui_runtime_alert_indicator();
+
+    if (gui_long_history_active() &&
+        g_get_monotonic_time() >= g_long_next_refresh) {
+        gui_long_history_refresh();
+        g_long_next_refresh = g_get_monotonic_time() + 60 * G_TIME_SPAN_SECOND;
+
+        if (!gui_long_history_active()) {
+            g_window_sync = TRUE;
+            gtk_drop_down_set_selected(g_window_dd, 3);
+            g_window_sync = FALSE;
+            gui_chart_set_window_us(20ULL * 60ULL * 1000000ULL);
+            update_long_note();
+        }
+    }
+
     gui_pages_refresh(&g_snap);
 
     return G_SOURCE_CONTINUE;
@@ -200,6 +339,8 @@ static void present_once(void)
 
     g_presented = TRUE;
     gtk_window_present(g_main_window);
+
+    gui_window_state_center_after_present();
 
     /* 首次映射后把当前页滚到顶部，避免数据填入时停在半截 */
     g_timeout_add(120, scroll_top_cb, NULL);
@@ -278,6 +419,7 @@ void gui_window_activate(GtkApplication *app, gpointer user_data)
 
     gui_theme_ui_init(g_theme_start);
     gui_chart_settings_init();
+    gui_chart_set_window_us(20ULL * 60ULL * 1000000ULL);
 
     (void)user_data;
 
@@ -287,19 +429,19 @@ void gui_window_activate(GtkApplication *app, gpointer user_data)
     }
 
     gui_css_load();
+    gui_window_state_init();
 
     g_main_window = GTK_WINDOW(gtk_application_window_new(app));
     gtk_window_set_icon_name(g_main_window, "org.freebsd.fmon");
 
+    /* 告警阈值必须先加载，图表绑定曲线时才能拿到阈值指针。 */
+    alerts_load(&g_alerts);
+
     /* 指标页曲线绑定到快照中的历史数组 */
     gui_metric_curves_bind(&g_snap);
-
-    /* 告警阈值（~/.config/fmon/alerts.ini） */
-    alerts_load(&g_alerts);
     gtk_window_set_title(g_main_window, _("FreeBSD 监控中心"));
-    /* 不记忆窗口状态：每次使用固定的大尺寸，打开就是首页 */
-    gtk_window_set_default_size(g_main_window, 1500, 920);
-    gtk_widget_set_size_request(GTK_WIDGET(g_main_window), 1200, 760);
+
+    gui_window_state_attach(g_main_window);
     g_signal_connect(g_main_window, "close-request",
                      G_CALLBACK(gui_window_close_request), NULL);
 
@@ -314,12 +456,17 @@ void gui_window_activate(GtkApplication *app, gpointer user_data)
     gui_state_set_gpu_index(g_gpu_start);
 
     GtkWidget *main_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_box_set_homogeneous(GTK_BOX(main_hbox), FALSE);
     gtk_window_set_child(g_main_window, main_hbox);
+
+    if (fmon_theme_is_dark())
+        gtk_widget_add_css_class(GTK_WIDGET(g_main_window), "fmon-dark");
 
     /* ---------- 侧边栏 ---------- */
     GtkWidget *sidebar = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_widget_add_css_class(sidebar, "sidebar");
     gtk_widget_set_size_request(sidebar, 216, -1);
+    gtk_widget_set_hexpand(sidebar, FALSE);
 
     GtkWidget *sidebar_list = gui_nav_sidebar_new();
     GtkWidget *nav_scroll = gtk_scrolled_window_new();
@@ -330,12 +477,45 @@ void gui_window_activate(GtkApplication *app, gpointer user_data)
     gtk_widget_set_vexpand(nav_scroll, TRUE);
     gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(nav_scroll), sidebar_list);
     gtk_box_append(GTK_BOX(sidebar), nav_scroll);
+
+    /* 语言切换固定在侧边栏底部；切换后 exec 自身，整窗重建。 */
+    GtkWidget *lang_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    GtkWidget *lang_zh = gtk_toggle_button_new_with_label(
+        fmon_language_get() == FMON_LANGUAGE_EN ? "Chinese" : "中文");
+    GtkWidget *lang_en = gtk_toggle_button_new_with_label("EN");
+
+    gtk_widget_add_css_class(lang_box, "lang-switch");
+    gtk_widget_add_css_class(lang_zh, "lang-button");
+    gtk_widget_add_css_class(lang_en, "lang-button");
+    gtk_widget_set_hexpand(lang_zh, FALSE);
+    gtk_widget_set_hexpand(lang_en, FALSE);
+    gtk_widget_set_size_request(lang_zh, 96, -1);
+    gtk_widget_set_size_request(lang_en, 96, -1);
+    gtk_toggle_button_set_group(GTK_TOGGLE_BUTTON(lang_zh),
+                                GTK_TOGGLE_BUTTON(lang_en));
+    gtk_widget_set_tooltip_text(lang_box,
+                                _("界面语言（切换后自动重启）"));
+
+    g_signal_connect(lang_zh, "toggled", G_CALLBACK(gui_language_toggled),
+                     GINT_TO_POINTER(FMON_LANGUAGE_ZH));
+    g_signal_connect(lang_en, "toggled", G_CALLBACK(gui_language_toggled),
+                     GINT_TO_POINTER(FMON_LANGUAGE_EN));
+
+    gui_language_set_syncing(TRUE);
+    gtk_toggle_button_set_active(
+        GTK_TOGGLE_BUTTON(fmon_language_get() == FMON_LANGUAGE_EN ? lang_en
+                                                                  : lang_zh),
+        TRUE);
+    gui_language_set_syncing(FALSE);
+
+    gtk_box_append(GTK_BOX(lang_box), lang_zh);
+    gtk_box_append(GTK_BOX(lang_box), lang_en);
+    gtk_box_append(GTK_BOX(sidebar), lang_box);
+
     gtk_box_append(GTK_BOX(main_hbox), sidebar);
 
-    /* 二级列表：当前分组的子项（首次点击分组时滑出） */
-    GtkWidget *sub_revealer = gui_nav_revealer_new();
-
-    gtk_box_append(GTK_BOX(main_hbox), sub_revealer);
+    /* 子分组改成页面顶部标签条，不再占用第二列侧边栏。
+     * 横向多出 176px，全部留给数据卡片和图表。 */
 
     /* ---------- 内容区 ---------- */
     GtkWidget *content = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
@@ -344,17 +524,23 @@ void gui_window_activate(GtkApplication *app, gpointer user_data)
     gtk_widget_set_vexpand(content, TRUE);
     gtk_box_append(GTK_BOX(main_hbox), content);
 
+    /* 页面顶部子分组标签：CPU / 内存 / GPU / 历史记录 ... */
+    GtkWidget *pagebar = gui_nav_pagebar_new();
+    gtk_box_append(GTK_BOX(content), pagebar);
+
     GtkWidget *header_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
     GtkWidget *title_box  = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
     gtk_widget_set_hexpand(title_box, TRUE);
 
-    /* 页面名已经在侧边栏高亮显示，这里不再重复一个大标题，
+    /* 页面名已经在顶部标签高亮显示，这里不再重复一个大标题，
      * 只保留系统信息那一行。 */
     /* 先用空格占位：数据到达前标签也有行高，避免整页内容突然下移 */
     g_header_sub = gtk_label_new(" ");
     gtk_widget_add_css_class(g_header_sub, "subheader");
     gtk_widget_set_size_request(g_header_sub, -1, 18);
     gtk_widget_set_halign(g_header_sub, GTK_ALIGN_START);
+    gtk_label_set_ellipsize(GTK_LABEL(g_header_sub), PANGO_ELLIPSIZE_END);
+    gtk_label_set_max_width_chars(GTK_LABEL(g_header_sub), 64);
 
     gtk_widget_set_valign(g_header_sub, GTK_ALIGN_CENTER);
     gtk_box_append(GTK_BOX(title_box), g_header_sub);
@@ -365,6 +551,25 @@ void gui_window_activate(GtkApplication *app, gpointer user_data)
     gtk_widget_set_valign(g_alert_label, GTK_ALIGN_CENTER);
     gtk_widget_set_visible(g_alert_label, FALSE);
     gtk_box_append(GTK_BOX(header_box), g_alert_label);
+
+    /* 实时图时间窗口：1 / 5 / 15 / 20 分钟（SHM 环形缓冲上限 20 分钟）。
+     * 1h/24h 请使用“历史”页，避免把 86400 点塞进共享内存。 */
+    const char *const windows[] = {
+        _("1 分钟"), _("5 分钟"), _("15 分钟"), _("20 分钟"),
+        _("1 小时"), _("24 小时"), _("7 天"), _("30 天"), _("自定义"), NULL
+    };
+    GtkWidget *window_dd = gtk_drop_down_new_from_strings(windows);
+
+    g_window_dd = GTK_DROP_DOWN(window_dd);
+    gui_chart_set_window_notify(chart_window_notify);
+    gtk_widget_set_valign(window_dd, GTK_ALIGN_CENTER);
+    gtk_widget_set_size_request(window_dd, 108, -1);
+    gtk_widget_set_tooltip_text(
+        window_dd, _("实时图 20 分钟内；1 小时/24 小时使用 1 分钟金字塔"));
+    gtk_drop_down_set_selected(GTK_DROP_DOWN(window_dd), 3);
+    g_signal_connect(window_dd, "notify::selected",
+                     G_CALLBACK(on_chart_window_changed), NULL);
+    gtk_box_append(GTK_BOX(header_box), window_dd);
 
     /* 主题：两段式开关（浅色 / 深色） */
     gtk_box_append(GTK_BOX(header_box), gui_theme_ui_switch());
@@ -377,47 +582,42 @@ void gui_window_activate(GtkApplication *app, gpointer user_data)
                      NULL);
     gtk_box_append(GTK_BOX(header_box), btn_export);
 
-    /* 更多：关于 / 告警设置收进 “...” 菜单 */
-    GtkWidget *more = gtk_menu_button_new();
-    gtk_menu_button_set_icon_name(GTK_MENU_BUTTON(more), "fmon-menu-symbolic");
-    gtk_widget_set_tooltip_text(more, _("更多"));
-    gtk_widget_set_valign(more, GTK_ALIGN_CENTER);
+    /* 关于 / 告警 / 自动量程直接放在工具栏，不再收进 “...” 下拉。 */
+    GtkWidget *btn_about = gtk_button_new_with_label(_("关于"));
 
-    GtkWidget *pop = gtk_popover_new();
-    GtkWidget *pbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
-
-    gtk_widget_set_margin_top(pbox, 8);
-    gtk_widget_set_margin_bottom(pbox, 8);
-    gtk_widget_set_margin_start(pbox, 8);
-    gtk_widget_set_margin_end(pbox, 8);
-
-    GtkWidget *mi_about = gtk_button_new_with_label(_("关于"));
-
-    gtk_widget_add_css_class(mi_about, "flat");
-    g_signal_connect_swapped(mi_about, "clicked",
+    gtk_widget_add_css_class(btn_about, "flat");
+    gtk_widget_add_css_class(btn_about, "header-action");
+    gtk_widget_set_tooltip_text(btn_about, _("关于 fmon"));
+    g_signal_connect_swapped(btn_about, "clicked",
                              G_CALLBACK(fmon_about_show), g_main_window);
-    gtk_box_append(GTK_BOX(pbox), mi_about);
 
-    GtkWidget *mi_alerts = alerts_create_button(g_main_window, &g_alerts);
+    GtkWidget *btn_alerts = alerts_create_button(g_main_window, &g_alerts);
 
-    gtk_widget_add_css_class(mi_alerts, "flat");
-    gtk_box_append(GTK_BOX(pbox), mi_alerts);
+    gtk_widget_add_css_class(btn_alerts, "flat");
+    gtk_widget_add_css_class(btn_alerts, "header-action");
+    gtk_button_set_label(GTK_BUTTON(btn_alerts), _("告警"));
+    gtk_widget_set_tooltip_text(btn_alerts, _("告警设置"));
 
-    GtkWidget *mi_auto = gtk_check_button_new_with_label(
-        _("百分比图表自动量程"));
-    gtk_check_button_set_active(GTK_CHECK_BUTTON(mi_auto),
+    GtkWidget *auto_range = gtk_check_button_new_with_label(_("自动量程"));
+    gtk_check_button_set_active(GTK_CHECK_BUTTON(auto_range),
                                 gui_chart_auto_range());
-    gtk_widget_add_css_class(mi_auto, "flat");
+    gtk_widget_add_css_class(auto_range, "flat");
+    gtk_widget_add_css_class(auto_range, "header-action");
     gtk_widget_set_tooltip_text(
-        mi_auto, _("默认 0–100%；打开后按当前窗口数据缩放，轴标签仍显示真实范围"));
-    g_signal_connect(mi_auto, "toggled", G_CALLBACK(on_auto_range_toggled),
+        auto_range, _("百分比图表默认 0–100%；打开后按当前窗口数据缩放，"
+                      "轴标签仍显示真实范围"));
+    g_signal_connect(auto_range, "toggled", G_CALLBACK(on_auto_range_toggled),
                      NULL);
-    gtk_box_append(GTK_BOX(pbox), mi_auto);
 
-    gtk_popover_set_child(GTK_POPOVER(pop), pbox);
-    gtk_menu_button_set_popover(GTK_MENU_BUTTON(more), pop);
-    gtk_box_append(GTK_BOX(header_box), more);
     gtk_box_append(GTK_BOX(content), header_box);
+
+    GtkWidget *quick_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+    gtk_widget_add_css_class(quick_row, "quick-actions");
+    gtk_widget_set_halign(quick_row, GTK_ALIGN_END);
+    gtk_box_append(GTK_BOX(quick_row), btn_about);
+    gtk_box_append(GTK_BOX(quick_row), btn_alerts);
+    gtk_box_append(GTK_BOX(quick_row), auto_range);
+    gtk_box_append(GTK_BOX(content), quick_row);
 
     /* 离线 / 过期横幅 */
     g_banner = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
@@ -437,6 +637,16 @@ void gui_window_activate(GtkApplication *app, gpointer user_data)
 
     gtk_widget_set_visible(g_banner, FALSE);
     gtk_box_append(GTK_BOX(content), g_banner);
+
+    g_long_note = gtk_label_new(
+        _("长历史模式（ZFS/GPU 部分聚合）：CPU / 内存 / 网络 / "
+          "磁盘读写/温度、ZFS 池使用率/ARC 命中率/L2ARC/ZFS IO、"
+          "GPU 利用率/温度/显存使用；ZFS 容量构成等仍为实时。"));
+    gtk_widget_add_css_class(g_long_note, "small-text");
+    gtk_label_set_wrap(GTK_LABEL(g_long_note), TRUE);
+    gtk_label_set_xalign(GTK_LABEL(g_long_note), 0.0f);
+    gtk_widget_set_visible(g_long_note, FALSE);
+    gtk_box_append(GTK_BOX(content), g_long_note);
 
     g_stack = gui_pages_layout_build(content);
 
@@ -472,13 +682,3 @@ void gui_window_activate(GtkApplication *app, gpointer user_data)
     else
         present_once();
 }
-
-
-
-
-
-
-
-
-
-

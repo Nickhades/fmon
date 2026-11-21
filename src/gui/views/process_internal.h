@@ -116,6 +116,9 @@ int      proc_compare(gconstpointer a, gconstpointer b, gpointer data);
 /* 多选状态下刷新提示行（右键菜单打开时调用一次，保证计数准确） */
 void     proc_page_update_hint(ProcPage *page);
 
+/* 页面滚回顶部（树形模式切换/页面映射时使用） */
+void     proc_view_scroll_top(ProcPage *page);
+
 /* ===========================================================================
  * 操作层上下文
  * ========================================================================= */
@@ -137,6 +140,19 @@ SignalOp *proc_actions_signal_op_new(ProcItem *item, int sig,
                                      gboolean needs_confirm);
 void      proc_actions_send_signal(gpointer user_data);
 void      proc_actions_signal_op_free(SignalOp *op);
+
+
+/* process_actions.c：树/renice 操作核心（菜单层复用） */
+typedef struct {
+    GArray *pids;
+    int     sig;
+} TreeOp;
+
+void      tree_op_free(gpointer data);
+void      tree_op_run(gpointer data);
+GArray   *collect_descendants(guint32 root);
+void      refuse_privileged(const SignalOp *op);
+void      do_renice(gpointer user_data);
 
 /* process_windows.c：详情 / lsof / sockstat 窗口 */
 void      proc_windows_show_detail(GtkWindow *parent, ProcItem *item);

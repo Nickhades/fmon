@@ -383,5 +383,3 @@ int fmon_shm_snapshot(const FmonShmData *src, FmonShmData *dst)
 
     return -1;
 }
-
-

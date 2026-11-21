@@ -5,6 +5,7 @@
 #include "gui_theme_ui.h"
 
 #include "gui_refresh.h"
+#include "gui_pages.h"
 #include "theme.h"
 
 #include <glib/gi18n.h>
@@ -26,17 +27,8 @@ static guint  s_anim_id;
 static void rounded_rect(cairo_t *cr, double x, double y, double w, double h,
                          double r)
 {
-    if (r > h / 2.0)
-        r = h / 2.0;
-    if (r > w / 2.0)
-        r = w / 2.0;
-
-    cairo_new_sub_path(cr);
-    cairo_arc(cr, x + w - r, y + r, r, -G_PI / 2.0, 0);
-    cairo_arc(cr, x + w - r, y + h - r, r, 0, G_PI / 2.0);
-    cairo_arc(cr, x + r, y + h - r, r, G_PI / 2.0, G_PI);
-    cairo_arc(cr, x + r, y + r, r, G_PI, 3.0 * G_PI / 2.0);
-    cairo_close_path(cr);
+    (void)r;
+    cairo_rectangle(cr, x, y, w, h);
 }
 
 static void draw_thumb(GtkDrawingArea *area, cairo_t *cr, int width,
@@ -180,10 +172,18 @@ static void sync_buttons(gboolean animate)
 static void on_theme_changed(void)
 {
     sync_buttons(TRUE);
+    gui_metric_curves_apply_theme();
     gui_pages_redraw_all();
 
-    if (g_main_window != NULL)
+    if (g_main_window != NULL) {
+        if (fmon_theme_is_dark())
+            gtk_widget_add_css_class(GTK_WIDGET(g_main_window), "fmon-dark");
+        else
+            gtk_widget_remove_css_class(GTK_WIDGET(g_main_window),
+                                         "fmon-dark");
+
         gtk_widget_queue_draw(GTK_WIDGET(g_main_window));
+    }
 }
 
 static void on_mode_toggled(GtkToggleButton *btn, gpointer data)
@@ -275,16 +275,3 @@ GtkWidget *gui_theme_ui_switch(void)
     sync_buttons(FALSE);
     return overlay;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

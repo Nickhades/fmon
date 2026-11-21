@@ -2,15 +2,15 @@
 
 用 C11 + GTK4 编写的 FreeBSD 原生系统监控与资源管理工具。
 
-## 1.2.0 更新
+## 1.3.0 更新
 
-- 内核接口优先；无接口显示 `—`，绝不伪造 0。
-- NVMe/ATA/SCSI SMART 与磁盘元数据内核化。
-- ABI 23 有效位区分 Swap/zpool/内存条/挂载点/进程/ZFS/电池的真实 0 与失败。
-- 安装脚本自动补齐 dmidecode/smartmontools/libdrm。
-- 自绘 SVG 应用图标与桌面入口。
+- **中英双语**：运行时切换中文 / English，保留当前页面与主题。
+- **窗口行为**：记住正常大小，X11 启动居中，关闭不再等待采集线程 1 秒。
+- **数据真实性**：缺失指标显示 `—`，无 zpool 不再伪造 0，NaN 保持断线。
+- **界面整理**：顶部页面标签、快捷操作直出、更深深色背景、浅色主题复选框修复。
+- **稳定性**：进程页崩溃/右键修复，C11 模块化，20/20 测试通过。
 
-完整说明：[1.2.0 发布说明](docs/RELEASE_NOTES_1.2.0.md)。
+完整说明：[1.3.0 发布说明](docs/RELEASE_NOTES_1.3.0.md)。
 
 ## 架构
 
@@ -40,7 +40,7 @@
 ## 安装
 
 ```sh
-sudo pkg install ./fmon-1.2.0.pkg
+sudo pkg install ./fmon-1.3.0.pkg
 sudo sysrc fmon_daemon_enable=YES
 sudo service fmon_daemon start
 fmon-gui

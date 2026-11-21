@@ -171,6 +171,3 @@ int main(int argc, char **argv)
     g_test_add_func("/zpool_health/reqsize", test_reqsize);
     return g_test_run();
 }
-
-
-

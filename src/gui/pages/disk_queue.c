@@ -142,4 +142,3 @@ gboolean disk_queue_parse(const char *text, DiskQueue *out)
     g_strfreev(lines);
     return out->n > 0;
 }
-

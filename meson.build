@@ -1,5 +1,5 @@
 project('fmon', 'c',
-  version : '1.2.0',
+  version : '1.3.0',
   license : 'BSD-2-Clause',
   meson_version : '>= 0.60',
   default_options : [
@@ -16,6 +16,7 @@ thread_dep  = dependency('threads')
 gtk_dep     = dependency('gtk4')
 cairo_dep   = dependency('cairo')
 fontconfig_dep = dependency('fontconfig')
+x11_dep     = dependency('x11')
 i18n        = import('i18n')
 
 kvm_dep     = cc.find_library('kvm')

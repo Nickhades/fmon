@@ -45,19 +45,8 @@ static void read_tcp(NetStats *s)
     s->retrans_pct    = net_stats_pct(s->tcp_rexmit, s->tcp_sndtotal);
 }
 
-/* ===========================================================================
- * 无线接口：每 10 秒异步跑一次 ifconfig，解析 ssid / channel / media
- * ========================================================================= */
-typedef struct {
-    char ssid[64];
-    int  channel;
-    char media[96];
-} WifiInfo;
-
-static GHashTable *g_wifi;      /* name -> WifiInfo* */
-static gint64      g_wifi_ms;
-static gboolean    g_wifi_running;
-
+/* 无线接口详情由 daemon 通过 net80211 ioctl 采集后写入共享内存；
+ * 本文件不再启动 ifconfig 子进程。parse_ifconfig 仅保留为纯解析单测。 */
 int net_stats_parse_ifconfig(const char *text, NetStats *out)
 {
     if (text == NULL || out == NULL)
@@ -128,78 +117,6 @@ int net_stats_parse_ifconfig(const char *text, NetStats *out)
 
     g_strfreev(lines);
     return found;
-}
-
-static void on_ifconfig(GObject *src, GAsyncResult *res, gpointer data)
-{
-    (void)data;
-
-    GError *err = NULL;
-    gchar  *out = NULL;
-
-    g_subprocess_communicate_utf8_finish(G_SUBPROCESS(src), res, &out, NULL,
-                                         &err);
-    if (err != NULL)
-        g_error_free(err);
-
-    if (out != NULL && g_wifi != NULL) {
-        NetStats tmp;
-
-        memset(&tmp, 0, sizeof(tmp));
-
-        /* 只借 parse 的结构：先用当前接口列表填名字 */
-        const NetStats *cur = net_stats_get();
-
-        if (cur != NULL) {
-            tmp = *cur;
-            net_stats_parse_ifconfig(out, &tmp);
-
-            g_hash_table_remove_all(g_wifi);
-
-            for (int i = 0; i < tmp.nifs; i++) {
-                if (tmp.ifs[i].ssid[0] == '\0' && tmp.ifs[i].media[0] == '\0')
-                    continue;
-
-                WifiInfo *w = g_new0(WifiInfo, 1);
-
-                g_strlcpy(w->ssid, tmp.ifs[i].ssid, sizeof(w->ssid));
-                w->channel = tmp.ifs[i].channel;
-                g_strlcpy(w->media, tmp.ifs[i].media, sizeof(w->media));
-
-                g_hash_table_insert(g_wifi, g_strdup(tmp.ifs[i].name), w);
-            }
-        }
-    }
-
-    g_free(out);
-    g_object_unref(src);
-    g_wifi_running = FALSE;
-}
-
-static void wifi_poll(void)
-{
-    if (g_wifi_running)
-        return;
-
-    gint64 now = g_get_monotonic_time() / 1000;
-
-    if (g_wifi_ms != 0 && now - g_wifi_ms < 10000)
-        return;
-
-    g_wifi_ms = now;
-
-    GError      *err = NULL;
-    GSubprocess *p   = g_subprocess_new(G_SUBPROCESS_FLAGS_STDOUT_PIPE, &err,
-                                        "ifconfig", "-a", NULL);
-
-    if (p == NULL) {
-        if (err != NULL)
-            g_error_free(err);
-        return;
-    }
-
-    g_wifi_running = TRUE;
-    g_subprocess_communicate_utf8_async(p, NULL, NULL, on_ifconfig, NULL);
 }
 
 void net_stats_collect_raw(NetStats *s)
@@ -312,26 +229,11 @@ void net_stats_publish(const NetStats *in)
 
     NetStats s = *in;
 
-    /* 无线信息由主线程的 ifconfig 回调维护，合并后再发布 */
-    if (g_wifi == NULL)
-        g_wifi = g_hash_table_new_full(g_str_hash, g_str_equal, g_free,
-                                       g_free);
-
-    for (int i = 0; i < s.nifs; i++) {
+    for (int i = 0; i < s.nifs; i++)
         s.ifs[i].wireless = g_str_has_prefix(s.ifs[i].name, "wlan");
-
-        WifiInfo *w = g_hash_table_lookup(g_wifi, s.ifs[i].name);
-
-        if (w != NULL) {
-            g_strlcpy(s.ifs[i].ssid, w->ssid, sizeof(s.ifs[i].ssid));
-            s.ifs[i].channel = w->channel;
-            g_strlcpy(s.ifs[i].media, w->media, sizeof(s.ifs[i].media));
-        }
-    }
 
     g_stats = s;
     g_valid = s.nifs > 0;
-    wifi_poll();
 }
 
 static void net_task_done(GObject *src, GAsyncResult *res, gpointer data)
@@ -364,6 +266,3 @@ const NetStats *net_stats_get(void)
 {
     return g_valid ? &g_stats : NULL;
 }
-
-
-

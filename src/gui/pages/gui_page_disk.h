@@ -30,4 +30,3 @@ CurveData *gui_disk_temp_curve(void);
 void       gui_disk_temp_sample(void);
 
 #endif /* FMON_GUI_PAGE_DISK_H */
-

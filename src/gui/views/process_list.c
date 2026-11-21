@@ -14,6 +14,27 @@
 /* ===========================================================================
  * 单元格工厂
  * ========================================================================= */
+static void on_cell_item_changed(GObject *object, GParamSpec *pspec,
+                                 gpointer data)
+{
+    (void)pspec;
+    (void)data;
+
+    GtkListItem *item = GTK_LIST_ITEM(object);
+    GtkWidget   *child = gtk_list_item_get_child(item);
+
+    if (child != NULL) {
+        guint pos = gtk_list_item_get_position(item);
+
+        g_object_set_data(G_OBJECT(child), "proc-item",
+                          gtk_list_item_get_item(item));
+        g_object_set_data(G_OBJECT(child), "proc-pos",
+                          GUINT_TO_POINTER(pos == GTK_INVALID_LIST_POSITION
+                                               ? 0
+                                               : pos + 1));
+    }
+}
+
 static void setup_text_cell(GtkSignalListItemFactory *factory,
                             GtkListItem *item, gpointer data)
 {
@@ -22,9 +43,19 @@ static void setup_text_cell(GtkSignalListItemFactory *factory,
 
     GtkWidget *label = gtk_label_new(NULL);
     gtk_label_set_xalign(GTK_LABEL(label), 0.0f);
-    gtk_widget_set_halign(label, GTK_ALIGN_START);
+    /* 让 label 填满整个 cell，右键点在文字右侧的空白处也能
+     * pick 到带 proc-item 数据的 widget。 */
+    gtk_widget_set_halign(label, GTK_ALIGN_FILL);
+    gtk_widget_set_hexpand(label, TRUE);
     gtk_label_set_ellipsize(GTK_LABEL(label), PANGO_ELLIPSIZE_END);
     gtk_list_item_set_child(item, label);
+
+    /* 右键菜单需要知道鼠标下是哪一行。GtkColumnViewCell 不是
+     * GtkWidget，不能靠 parent 链取 cell；在 bind/unbind 时把
+     * 当前 ProcItem 挂到 cell 的 label 上，pick 命中即可。 */
+    g_signal_connect(item, "notify::item",
+                     G_CALLBACK(on_cell_item_changed), NULL);
+    on_cell_item_changed(G_OBJECT(item), NULL, NULL);
 }
 
 static void bind_pid(GtkSignalListItemFactory *f, GtkListItem *item, gpointer d)

@@ -5,14 +5,15 @@
  *   - 每张网卡的累计/瞬时吞吐、错误计数、MTU、MAC；
  *   - IPv4 / IPv6 首选地址；
  *   - 接口类型（以太网 / Wi-Fi / 回环 / 虚拟）；
- *   - Wi-Fi：SSID、信道、信号强度（dBm）；
- *   - 有线：链路速率（从 ifconfig media 行解析）。
+ *   - Wi-Fi：net80211 ioctl 读取 SSID/信道/RSSI/速率；失败才回退 ifconfig；
+ *   - 有线：链路速率（从 ifconfig media 行解析，作为基础工具回退）。
  *
- * 子进程（ifconfig）在共享内存写锁之外执行，明细每 5 秒刷新一次，
+ * 子进程（ifconfig/pciconf）在共享内存写锁之外执行，明细每 5 秒刷新一次，
  * 避免每秒 fork 拖慢发布线程。
  */
 
 #include "fmon_daemon.h"
+#include "collector_net_detail.h"
 #include "fmon_sysctl.h"
 
 #include "fmon_child.h"
@@ -22,6 +23,10 @@
 #include <net/if.h>
 #include <net/if_dl.h>
 #include <netinet/in.h>
+#include <net80211/ieee80211.h>
+#include <net80211/ieee80211_ioctl.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -32,17 +37,6 @@ typedef struct {
     uint64_t rx;
     uint64_t tx;
 } IfacePrev;
-
-/* 接口明细缓存（每 5 秒刷新） */
-typedef struct {
-    char     name[16];
-    char     ssid[36];
-    uint32_t channel;
-    int32_t  signal_dbm;
-    uint32_t speed_mbps;
-    uint32_t valid;
-    int64_t  updated_ms;
-} IfaceDetail;
 
 static IfaceDetail g_detail[FMON_MAX_IFACES];
 
@@ -74,134 +68,6 @@ static IfaceDetail *detail_slot(const char *name)
 }
 
 /* 从 "media: Ethernet autoselect (1000baseT <full-duplex>)" 提取速率 */
-static uint32_t parse_media_speed(const char *line)
-{
-    const char *base = strstr(line, "base");
-    if (base == NULL)
-        return 0;
-
-    const char *p = base;
-
-    while (p > line && (p[-1] >= '0' && p[-1] <= '9'))
-        p--;
-
-    if (p == base)
-        return 0;
-
-    long v = strtol(p, NULL, 10);
-
-    if (v < 0 || v > 400000)
-        return 0;
-
-    return (uint32_t)v;
-}
-
-static void parse_ifconfig(const char *out, const char *name, IfaceDetail *d)
-{
-    char *copy = strdup(out);
-    char *save = NULL;
-
-    for (char *line = strtok_r(copy, "\n", &save); line != NULL;
-         line = strtok_r(NULL, "\n", &save)) {
-
-        char *ssid = strstr(line, "ssid ");
-        if (ssid != NULL && strncmp(line, "\tssid ", 6) == 0) {
-            char *val = ssid + 5;
-            char *end = strstr(val, " channel");
-            size_t len = (end != NULL) ? (size_t)(end - val) : strlen(val);
-
-            if (len > 0 && len < sizeof(d->ssid)) {
-                memcpy(d->ssid, val, len);
-                d->ssid[len] = '\0';
-            }
-            continue;
-        }
-
-        char *ch = strstr(line, "channel ");
-        if (ch != NULL) {
-            d->channel = (uint32_t)strtoul(ch + 8, NULL, 10);
-            continue;
-        }
-
-        char *media = strstr(line, "media: Ethernet");
-        if (media != NULL) {
-            uint32_t sp = parse_media_speed(media);
-
-            if (sp > 0)
-                d->speed_mbps = sp;
-        }
-    }
-
-    (void)name;
-    free(copy);
-}
-
-/* 读取 Wi-Fi 关联站点表，取信号强度（dBm） */
-static void parse_sta_signal(const char *out, IfaceDetail *d)
-{
-    char *copy = strdup(out);
-    char *save = NULL;
-
-    for (char *line = strtok_r(copy, "\n", &save); line != NULL;
-         line = strtok_r(NULL, "\n", &save)) {
-
-        char mac[32] = {0};
-        char rate[32] = {0};
-        int  chan = 0;
-        int  rssi = 0;
-
-        if (sscanf(line, "%31s %d %31s %d", mac, &chan, rate, &rssi) >= 4) {
-            d->signal_dbm = rssi;
-            if (chan > 0)
-                d->channel = (uint32_t)chan;
-            break;
-        }
-    }
-
-    free(copy);
-}
-
-static void refresh_iface_detail(IfaceDetail *d, const char *name, int64_t now)
-{
-    if (d == NULL)
-        return;
-
-    if (d->updated_ms != 0 && now - d->updated_ms < 5000)
-        return;
-
-    d->updated_ms = now;
-    d->channel    = 0;
-    d->signal_dbm = 0;
-    d->speed_mbps = 0;
-    d->valid      = 0;
-    d->ssid[0]    = '\0';
-
-    const char *const argv[] = { "ifconfig", name, NULL };
-    FmonChildResult res;
-
-    if (fmon_child_run(argv, 32 * 1024, 1500, &res) == 0 &&
-        fmon_child_ok(&res) && res.out != NULL) {
-        parse_ifconfig(res.out, name, d);
-        d->valid = 1;
-    }
-
-    fmon_child_result_free(&res);
-
-    if (strncmp(name, "wlan", 4) == 0) {
-        const char *const sta[] = { "ifconfig", name, "list", "sta", NULL };
-
-        FmonChildResult sres;
-
-        if (fmon_child_run(sta, 32 * 1024, 1500, &sres) == 0 &&
-            fmon_child_ok(&sres) && sres.out != NULL)
-            parse_sta_signal(sres.out, d);
-
-        fmon_child_result_free(&sres);
-    }
-}
-
-
-/* 用 pciconf 读取网卡芯片型号（只需要在启动后做一次） */
 static void probe_nic_models(char models[4][96], uint32_t *count)
 {
     *count = 0;
@@ -218,16 +84,25 @@ static void probe_nic_models(char models[4][96], uint32_t *count)
     char  *copy = strdup(res.out);
     char  *save = NULL;
     bool   want = false;
+    bool   wifi = false;
     char   vendor[64] = {0};
 
     for (char *line = strtok_r(copy, "\n", &save); line != NULL;
          line = strtok_r(NULL, "\n", &save)) {
 
-        if (strchr(line, '@') != NULL && strstr(line, "@pci") != NULL)
+        if (strchr(line, '@') != NULL && strstr(line, "@pci") != NULL) {
             want = false;
+            wifi = false;
+        }
 
-        if (strstr(line, "class=0x0200") != NULL)
+        /* 0x0200 = Ethernet，0x0280 = Network other（Wi-Fi 常归此类）。 */
+        if (strstr(line, "class=0x0280") != NULL) {
             want = true;
+            wifi = true;
+        } else if (strstr(line, "class=0x0200") != NULL) {
+            want = true;
+            wifi = false;
+        }
 
         if (!want)
             continue;
@@ -265,7 +140,8 @@ static void probe_nic_models(char models[4][96], uint32_t *count)
                     memcpy(devname, d, ncopy);
                     devname[ncopy] = '\0';
 
-                    snprintf(name, sizeof(name), "%s%s%s",
+                    snprintf(name, sizeof(name), "%s: %s%s%s",
+                             wifi ? "Wi-Fi" : "Ethernet",
                              (vendor[0] != '\0') ? vendor : "",
                              (vendor[0] != '\0') ? " " : "", devname);
 
@@ -401,7 +277,7 @@ static void sample_interfaces(FmonIfaceInfo *out, int *out_n, double *out_rx,
 
         if (d != NULL && (tmp[i].flags & IFF_UP) != 0 &&
             tmp[i].link_type != FMON_LINK_LOOP)
-            refresh_iface_detail(d, nm, now);
+            net_refresh_iface_detail(d, nm, now);
 
         if (d != NULL) {
             strlcpy(tmp[i].ssid, d->ssid, sizeof(tmp[i].ssid));

@@ -77,11 +77,26 @@ static gpointer collector_main(gpointer data)
 
         next += G_TIME_SPAN_SECOND;
 
+        /* 分段睡眠：关闭窗口时 gui_collector_stop() 最多等 50ms，
+         * 而不是等完整 1 秒采样周期。 */
+        while (g_atomic_int_get(&g_running)) {
+            gint64 now = g_get_monotonic_time();
+
+            if (now >= next)
+                break;
+
+            gint64 remain = next - now;
+            gint64 slice = MIN(remain, 50 * G_TIME_SPAN_MILLISECOND);
+
+            g_usleep((gulong)slice);
+        }
+
+        if (!g_atomic_int_get(&g_running))
+            break;
+
         gint64 now = g_get_monotonic_time();
 
-        if (next > now)
-            g_usleep((gulong)(next - now));
-        else
+        if (next < now)
             next = now;
     }
 

@@ -10,6 +10,8 @@
 
 #include "history_view.h"
 
+#include "history_internal.h"
+
 #include "gui_chart.h"
 #include "gui_util.h"
 
@@ -17,38 +19,6 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
-
-#define HIST_POINTS FMON_HISTORY_POINTS
-
-typedef struct {
-    double  *cpu_avg;
-    double  *cpu_min;
-    double  *cpu_max;
-    double  *mem_avg;
-    double  *mem_min;
-    double  *mem_max;
-    uint64_t *time_us;
-    guint    cap;
-} HistoryOut;
-
-typedef struct {
-    GtkWidget *root;
-    GtkWidget *range_dd;
-    GtkWidget *summary;
-    GtkWidget *cpu_area;
-    GtkWidget *mem_area;
-    CurveData  cpu_cd;
-    CurveData  mem_cd;
-    guint      timer;
-} HistoryPage;
-
-static double   g_cpu[HIST_POINTS];
-static double   g_cpu_min[HIST_POINTS];
-static double   g_cpu_max[HIST_POINTS];
-static double   g_mem[HIST_POINTS];
-static double   g_mem_min[HIST_POINTS];
-static double   g_mem_max[HIST_POINTS];
-static uint64_t g_time_us[HIST_POINTS];
 
 static void remove_source(gpointer data)
 {
@@ -58,233 +28,128 @@ static void remove_source(gpointer data)
         g_source_remove(id);
 }
 
-static const char *history_path(void)
+static void reset_history_view(HistoryPage *page)
 {
-    static char path[512];
-
-    if (path[0] != '\0')
-        return path;
-
-    /* 本地测试/演示用：允许把历史页指向一个合成 TSV。安装运行时不设置
-     * 该变量，仍然优先读取 /var/db/fmon/history.tsv。 */
-    const char *override = g_getenv("FMON_HISTORY_FILE");
-
-    if (override != NULL && override[0] != '\0') {
-        g_strlcpy(path, override, sizeof(path));
-        return path;
-    }
-
-    if (g_file_test("/var/db/fmon/history.tsv", G_FILE_TEST_EXISTS)) {
-        g_strlcpy(path, "/var/db/fmon/history.tsv", sizeof(path));
-    } else {
-        const char *home = g_get_home_dir();
-
-        g_snprintf(path, sizeof(path), "%s/.local/state/fmon/history.tsv",
-                   (home != NULL) ? home : "/tmp");
-    }
-
-    return path;
+    page->custom        = FALSE;
+    page->view_start_us = 0;
+    page->view_end_us   = 0;
+    page->cpu_cd.view_start_us = 0;
+    page->cpu_cd.view_end_us   = 0;
+    page->mem_cd.view_start_us = 0;
+    page->mem_cd.view_end_us   = 0;
 }
 
-/* 读取 history.tsv，按范围降采样；返回点数（0 表示没有数据）。
- * 每个桶输出平均/最小/最大和桶末时间戳。 */
-static guint load_history(gint64 range_secs, const HistoryOut *out,
-                          gint64 *out_interval_secs, gdouble *avg_cpu,
-                          gdouble *max_cpu, gdouble *avg_mem)
+static void on_history_drag_begin(GtkGestureDrag *gesture, double x, double y,
+                                  gpointer data)
 {
-    if (out == NULL || out->cap == 0)
-        return 0;
+    (void)y;
 
-    gchar *content = NULL;
-    gsize  len     = 0;
+    HistoryPage *page = data;
+    GtkWidget   *area = gtk_event_controller_get_widget(
+        GTK_EVENT_CONTROLLER(gesture));
 
-    if (!g_file_get_contents(history_path(), &content, &len, NULL) ||
-        len == 0) {
-        g_free(content);
-        return 0;
+    gint64 now = g_get_monotonic_time();
+
+    if (now - page->last_press_us < 350000) {
+        reset_history_view(page);
+        gui_chart_selection_set(area, x, x, FALSE);
+        gtk_widget_queue_draw(page->cpu_area);
+        gtk_widget_queue_draw(page->mem_area);
+        history_refresh(page);
+        page->last_press_us = 0;
+        return;
     }
 
-    gchar **lines = g_strsplit(content, "\n", -1);
-    g_free(content);
-
-    gint   total  = (gint)g_strv_length(lines);
-    gint64 cutoff = (gint64)time(NULL) - range_secs;
-
-    /* 先统计范围内的行数 */
-    gint64 n_in = 0;
-
-    for (gint i = 0; i < total; i++) {
-        long long ts;
-        double    v;
-
-        if (sscanf(lines[i], "%lld\t%lf", &ts, &v) == 2 && ts >= cutoff)
-            n_in++;
-    }
-
-    if (n_in <= 0) {
-        g_strfreev(lines);
-        return 0;
-    }
-
-    /* 收集范围内全部原始采样。旧版先按 step 抽掉一批点再做桶平均，
-     * 两轮抽样会漏掉尖峰，且 24h 视图的平均值取决于抽样相位。
-     * 这里只做一次按时间桶聚合，平均/极值都基于原始点计算。 */
-    gint64 *times = g_new0(gint64, (gsize)n_in);
-    double *cpus  = g_new0(double, (gsize)n_in);
-    double *mems  = g_new0(double, (gsize)n_in);
-    gint    got   = 0;
-    double  sumc_raw = 0.0;
-    double  summ_raw = 0.0;
-    double  peak = 0.0;
-
-    for (gint i = 0; i < total && got < (gint)n_in; i++) {
-        long long ts;
-        double    cpu, mem;
-
-        if (sscanf(lines[i], "%lld\t%lf\t%lf", &ts, &cpu, &mem) != 3)
-            continue;
-        if (ts < cutoff)
-            continue;
-        if (!isfinite(cpu) || !isfinite(mem))
-            continue;
-
-        times[got] = (gint64)ts;
-        cpus[got]  = cpu;
-        mems[got]  = mem;
-        sumc_raw += cpu;
-        summ_raw += mem;
-        if (cpu > peak)
-            peak = cpu;
-        got++;
-    }
-
-    g_strfreev(lines);
-
-    if (got <= 0) {
-        g_free(times);
-        g_free(cpus);
-        g_free(mems);
-        return 0;
-    }
-
-    /* 单次桶聚合降到 HIST_POINTS 以内；时间戳取桶内最后一个采样。 */
-    gint bucket = (got + HIST_POINTS - 1) / HIST_POINTS;
-
-    if (bucket < 1)
-        bucket = 1;
-
-    guint n = 0;
-
-    for (gint i = 0; i < got && n < out->cap; i += bucket) {
-        gint   cnt = 0;
-        double sc = 0.0, sm = 0.0;
-        double cmin = 0.0, cmax = 0.0;
-        double mmin = 0.0, mmax = 0.0;
-        gint64 ts_last = 0;
-
-        for (gint j = i; j < got && j < i + bucket; j++) {
-            if (cnt == 0) {
-                cmin = cmax = cpus[j];
-                mmin = mmax = mems[j];
-            } else {
-                if (cpus[j] < cmin)
-                    cmin = cpus[j];
-                if (cpus[j] > cmax)
-                    cmax = cpus[j];
-                if (mems[j] < mmin)
-                    mmin = mems[j];
-                if (mems[j] > mmax)
-                    mmax = mems[j];
-            }
-
-            sc += cpus[j];
-            sm += mems[j];
-            ts_last = times[j];
-            cnt++;
-        }
-
-        if (cnt == 0)
-            continue;
-
-        out->cpu_avg[n] = sc / cnt;
-        out->cpu_min[n] = cmin;
-        out->cpu_max[n] = cmax;
-        out->mem_avg[n] = sm / cnt;
-        out->mem_min[n] = mmin;
-        out->mem_max[n] = mmax;
-        /* 合理范围之外的 TSV 时间戳（损坏/恶意文件）视为无效，
-         * 避免乘以 1e6 溢出，绘图端会退回等间距。 */
-        out->time_us[n] = (ts_last > 0 && ts_last < 10000000000LL)
-                              ? (uint64_t)ts_last * 1000000ULL
-                              : 0;
-        n++;
-    }
-
-    g_free(times);
-    g_free(cpus);
-    g_free(mems);
-
-    *out_interval_secs = (gint64)bucket * 10;   /* 守护进程每 10 秒写一行 */
-    *avg_cpu = (got > 0) ? sumc_raw / got : 0.0;
-    *avg_mem = (got > 0) ? summ_raw / got : 0.0;
-    *max_cpu = peak;
-
-    return n;
+    page->last_press_us = now;
+    page->drag_x0       = x;
+    gui_chart_selection_set(area, x, x, TRUE);
+    gtk_widget_queue_draw(page->cpu_area);
+    gtk_widget_queue_draw(page->mem_area);
 }
 
-static void refresh_history(HistoryPage *page)
+static void on_history_drag_update(GtkGestureDrag *gesture, double dx,
+                                   double dy, gpointer data)
 {
-    guint sel = gtk_drop_down_get_selected(GTK_DROP_DOWN(page->range_dd));
-    gint64 range_secs = (sel == 1) ? 24 * 3600 : 3600;
+    (void)dy;
 
-    HistoryOut out = {
-        .cpu_avg = g_cpu,
-        .cpu_min = g_cpu_min,
-        .cpu_max = g_cpu_max,
-        .mem_avg = g_mem,
-        .mem_min = g_mem_min,
-        .mem_max = g_mem_max,
-        .time_us = g_time_us,
-        .cap     = HIST_POINTS,
-    };
+    HistoryPage *page = data;
+    GtkWidget   *area = gtk_event_controller_get_widget(
+        GTK_EVENT_CONTROLLER(gesture));
 
-    gint64  interval = 10;
-    gdouble avg_cpu = 0.0, max_cpu = 0.0, avg_mem = 0.0;
+    gui_chart_selection_set(area, page->drag_x0, page->drag_x0 + dx, TRUE);
+    gtk_widget_queue_draw(page->cpu_area);
+    gtk_widget_queue_draw(page->mem_area);
+}
 
-    guint n = load_history(range_secs, &out, &interval, &avg_cpu, &max_cpu,
-                           &avg_mem);
+static void on_history_drag_end(GtkGestureDrag *gesture, double dx, double dy,
+                                gpointer data)
+{
+    (void)dy;
 
-    page->cpu_cd.history     = g_cpu;
-    page->cpu_cd.history_min = g_cpu_min;
-    page->cpu_cd.history_max = g_cpu_max;
-    page->cpu_cd.time_us     = g_time_us;
-    page->cpu_cd.count       = n;
-    page->cpu_cd.index       = n;
-    page->cpu_cd.interval_us = (uint64_t)interval * 1000000ULL;
+    HistoryPage *page = data;
+    GtkWidget   *area = gtk_event_controller_get_widget(
+        GTK_EVENT_CONTROLLER(gesture));
 
-    page->mem_cd.history     = g_mem;
-    page->mem_cd.history_min = g_mem_min;
-    page->mem_cd.history_max = g_mem_max;
-    page->mem_cd.time_us     = g_time_us;
-    page->mem_cd.count       = n;
-    page->mem_cd.index       = n;
-    page->mem_cd.interval_us = (uint64_t)interval * 1000000ULL;
-
+    gui_chart_selection_set(area, 0, 0, FALSE);
     gtk_widget_queue_draw(page->cpu_area);
     gtk_widget_queue_draw(page->mem_area);
 
-    if (n == 0) {
-        gtk_label_set_text(GTK_LABEL(page->summary),
-                           "没有历史数据（守护进程运行后每 10 秒记录一次）");
-    } else {
-        gchar *text = g_strdup_printf(
-            "%s：%u 个采样点 · CPU 平均 %.1f%% / 原始峰值 %.1f%% · "
-            "内存平均 %.1f%% · 阴影为桶内最小–最大",
-            (sel == 1) ? "最近 24 小时" : "最近 1 小时", n, avg_cpu, max_cpu,
-            avg_mem);
-        gtk_label_set_text(GTK_LABEL(page->summary), text);
-        g_free(text);
-    }
+    if (fabs(dx) < 5.0 || page->n < 2)
+        return;
+
+    int width = gtk_widget_get_width(area);
+
+    if (width <= 60)
+        return;
+
+    double a = MIN(page->drag_x0, page->drag_x0 + dx) / (double)width;
+    double b = MAX(page->drag_x0, page->drag_x0 + dx) / (double)width;
+
+    if (a < 0.0)
+        a = 0.0;
+    if (b > 1.0)
+        b = 1.0;
+    if (b - a < 0.01)
+        return;
+
+    uint64_t first = g_time_us[0];
+    uint64_t last  = g_time_us[page->n - 1];
+    uint64_t span  = last - first;
+
+    if (span == 0)
+        return;
+
+    page->custom        = TRUE;
+    page->view_start_us = first + (uint64_t)((double)span * a);
+    page->view_end_us   = first + (uint64_t)((double)span * b);
+
+    history_refresh(page);
+
+    char *text = g_strdup_printf(
+        "框选窗口：%u 个点（双击图表恢复完整范围；导出仍按下拉框范围）",
+        page->n);
+    gtk_label_set_text(GTK_LABEL(page->summary), text);
+    g_free(text);
+}
+
+static gboolean on_history_scroll(GtkEventControllerScroll *ctrl, double dx,
+                                  double dy, gpointer data)
+{
+    (void)ctrl;
+    (void)dx;
+
+    HistoryPage *page = data;
+    guint sel = gtk_drop_down_get_selected(GTK_DROP_DOWN(page->range_dd));
+
+    if (dy < 0.0 && sel > 0)
+        sel--;
+    else if (dy > 0.0 && sel < 3)
+        sel++;
+    else
+        return TRUE;
+
+    gtk_drop_down_set_selected(GTK_DROP_DOWN(page->range_dd), sel);
+    return TRUE;
 }
 
 static void on_range_changed(GtkDropDown *dd, GParamSpec *pspec,
@@ -293,13 +158,14 @@ static void on_range_changed(GtkDropDown *dd, GParamSpec *pspec,
     (void)dd;
     (void)pspec;
 
-    refresh_history(data);
+    reset_history_view(data);
+    history_refresh(data);
 }
 
 static void on_refresh_clicked(GtkButton *btn, gpointer data)
 {
     (void)btn;
-    refresh_history(data);
+    history_refresh(data);
 }
 
 static gboolean on_tick(gpointer data)
@@ -309,7 +175,7 @@ static gboolean on_tick(gpointer data)
     if (page->root == NULL || !gtk_widget_get_mapped(page->root))
         return G_SOURCE_CONTINUE;
 
-    refresh_history(page);
+    history_refresh(page);
     return G_SOURCE_CONTINUE;
 }
 
@@ -358,11 +224,17 @@ GtkWidget *gui_history_view_new(void)
     GtkWidget *btn_refresh = gtk_button_new_with_label("刷新");
     gtk_widget_add_css_class(btn_refresh, "suggested-action");
 
-    const char *ranges[] = { "最近 1 小时", "最近 24 小时", NULL };
+    const char *ranges[] = {
+        "最近 5 分钟", "最近 15 分钟", "最近 1 小时", "最近 24 小时", NULL
+    };
     page->range_dd = gtk_drop_down_new_from_strings(ranges);
+    gtk_drop_down_set_selected(GTK_DROP_DOWN(page->range_dd), 2);
+
+    GtkWidget *btn_export = gtk_button_new_with_label(_("导出 CSV"));
 
     gtk_box_append(GTK_BOX(toolbar), btn_refresh);
     gtk_box_append(GTK_BOX(toolbar), page->range_dd);
+    gtk_box_append(GTK_BOX(toolbar), btn_export);
     gtk_box_append(GTK_BOX(vbox), toolbar);
 
     page->summary = gtk_label_new("加载中…");
@@ -390,10 +262,52 @@ GtkWidget *gui_history_view_new(void)
 
     g_signal_connect(btn_refresh, "clicked", G_CALLBACK(on_refresh_clicked),
                      page);
+    g_signal_connect(btn_export, "clicked",
+                     G_CALLBACK(history_export_clicked), page);
     g_signal_connect(page->range_dd, "notify::selected",
                      G_CALLBACK(on_range_changed), page);
 
-    refresh_history(page);
+    GtkEventController *scroll_cpu =
+        gtk_event_controller_scroll_new(GTK_EVENT_CONTROLLER_SCROLL_VERTICAL);
+
+    g_signal_connect(scroll_cpu, "scroll", G_CALLBACK(on_history_scroll),
+                     page);
+    gtk_widget_add_controller(page->cpu_area, scroll_cpu);
+    gtk_widget_set_tooltip_text(page->cpu_area,
+                                _("滚轮切换 5分钟/15分钟/1小时/24小时"));
+
+    GtkEventController *scroll_mem =
+        gtk_event_controller_scroll_new(GTK_EVENT_CONTROLLER_SCROLL_VERTICAL);
+
+    g_signal_connect(scroll_mem, "scroll", G_CALLBACK(on_history_scroll),
+                     page);
+    gtk_widget_add_controller(page->mem_area, scroll_mem);
+    gtk_widget_set_tooltip_text(page->mem_area,
+                                _("滚轮切换 5分钟/15分钟/1小时/24小时"));
+
+    GtkGesture *drag_cpu = gtk_gesture_drag_new();
+
+    gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(drag_cpu), 1);
+    g_signal_connect(drag_cpu, "drag-begin",
+                     G_CALLBACK(on_history_drag_begin), page);
+    g_signal_connect(drag_cpu, "drag-update",
+                     G_CALLBACK(on_history_drag_update), page);
+    g_signal_connect(drag_cpu, "drag-end",
+                     G_CALLBACK(on_history_drag_end), page);
+    gtk_widget_add_controller(page->cpu_area, GTK_EVENT_CONTROLLER(drag_cpu));
+
+    GtkGesture *drag_mem = gtk_gesture_drag_new();
+
+    gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(drag_mem), 1);
+    g_signal_connect(drag_mem, "drag-begin",
+                     G_CALLBACK(on_history_drag_begin), page);
+    g_signal_connect(drag_mem, "drag-update",
+                     G_CALLBACK(on_history_drag_update), page);
+    g_signal_connect(drag_mem, "drag-end",
+                     G_CALLBACK(on_history_drag_end), page);
+    gtk_widget_add_controller(page->mem_area, GTK_EVENT_CONTROLLER(drag_mem));
+
+    history_refresh(page);
 
     page->timer = g_timeout_add_seconds(30, on_tick, page);
     g_object_set_data_full(G_OBJECT(vbox), "history-timer",

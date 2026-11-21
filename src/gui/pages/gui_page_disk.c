@@ -5,10 +5,12 @@
  */
 
 #include "gui_page_disk.h"
+#include "ui_metrics.h"
 
 #include "disk_perf.h"
 #include "fmon_child.h"
 #include "fmon_smart.h"
+#include "alerts.h"
 #include "gui_state.h"
 #include "gui_util.h"
 #include "gui_widgets.h"
@@ -40,7 +42,7 @@ static GtkWidget *disk_line(const char *text, const char *css, gboolean dim)
 
 GtkWidget *gui_disk_details_header(void)
 {
-    s_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
+    s_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_1);
     gtk_widget_set_halign(s_box, GTK_ALIGN_END);
     gtk_widget_set_valign(s_box, GTK_ALIGN_START);
     return s_box;
@@ -52,17 +54,22 @@ static CurveData s_temp_cd = {
     .history = s_temp_hist,
     .time_us = s_temp_time,
     .unit    = "°C",
-    .r = 0.95, .g = 0.35, .b = 0.25,
+    .r = 1.00, .g = 0.00, .b = 0.00,
 };
 
 CurveData *gui_disk_temp_curve(void)
 {
-    s_temp_cd.interval_us = (uint64_t)FMON_SAMPLE_INTERVAL_MS * 1000ULL;
+    s_temp_cd.interval_us    = (uint64_t)FMON_SAMPLE_INTERVAL_MS * 1000ULL;
+    s_temp_cd.alert_settings = alerts_current();
+    s_temp_cd.alert_metric   = 12;   /* 温度阈值 */
     return &s_temp_cd;
 }
 
 void gui_disk_temp_sample(void)
 {
+    if (s_temp_cd.frozen)
+        return;
+
     const FmonShmData *s = gui_state_snapshot();
     const FmonDiskInfo *src = NULL;
 
@@ -98,7 +105,7 @@ GtkWidget *gui_disk_perf_line(void)
     gtk_widget_add_css_class(s_perf_line, "hw-model");
     gtk_label_set_xalign(GTK_LABEL(s_perf_line), 1.0f);
     gtk_widget_set_halign(s_perf_line, GTK_ALIGN_END);
-    gtk_widget_set_margin_top(s_perf_line, 6);
+    gtk_widget_set_margin_top(s_perf_line, FMON_SPACE_2);
     return s_perf_line;
 }
 
@@ -131,7 +138,7 @@ GtkWidget *gui_disk_smart_line(void)
     gtk_widget_add_css_class(s_smart_line, "hw-model");
     gtk_label_set_xalign(GTK_LABEL(s_smart_line), 1.0f);
     gtk_widget_set_halign(s_smart_line, GTK_ALIGN_END);
-    gtk_widget_set_margin_top(s_smart_line, 2);
+    gtk_widget_set_margin_top(s_smart_line, FMON_SPACE_1);
     return s_smart_line;
 }
 
@@ -251,9 +258,9 @@ static void tab_cell(GtkWidget *grid, int row, int col, const char *text,
 
 GtkWidget *gui_disk_table_box(void)
 {
-    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
+    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_1);
 
-    gtk_widget_set_margin_top(box, 10);
+    gtk_widget_set_margin_top(box, FMON_SPACE_3);
 
     GtkWidget *t = gtk_label_new(_("磁盘明细（图表为所有磁盘合计）"));
 
@@ -263,8 +270,8 @@ GtkWidget *gui_disk_table_box(void)
 
     GtkWidget *grid = gtk_grid_new();
 
-    gtk_grid_set_row_spacing(GTK_GRID(grid), 3);
-    gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
+    gtk_grid_set_row_spacing(GTK_GRID(grid), FMON_SPACE_1);
+    gtk_grid_set_column_spacing(GTK_GRID(grid), FMON_SPACE_3);
 
     static const char *const H[] = { "设备", "读取", "写入", "累计读",
                                      "累计写", "温度", "繁忙" };
@@ -373,7 +380,7 @@ void gui_disk_details_update(void)
 {
     const FmonShmData *snap = gui_state_snapshot();
 
-    if (s_box == NULL)
+    if (s_box == NULL || !gtk_widget_get_mapped(s_box))
         return;
 
     GString *sig = g_string_new(NULL);
@@ -517,13 +524,3 @@ void gui_disk_details_update(void)
 /* ===========================================================================
  * 窗口构建
  * ========================================================================= */
-
-
-
-
-
-
-
-
-
-

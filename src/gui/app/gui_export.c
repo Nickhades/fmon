@@ -8,13 +8,17 @@
 
 #include "gui_state.h"
 #include "gui_util.h"
+#include "history/history_provider.h"
+#include "history/long_history.h"
 
 #include <glib/gi18n.h>
 #include <gtk/gtk.h>
 
+#include <errno.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 extern GtkWindow *g_main_window;
 
@@ -31,6 +35,58 @@ static void csv_write_value(FILE *fp, double v, const char *fmt)
      * （旧版本在 de_DE / fr_FR 等 locale 下会导出 "1,23" 破坏 CSV） */
     g_ascii_formatd(buf, sizeof(buf), fmt, v);
     fputs(buf, fp);
+}
+
+static guint write_long_history_csv(FILE *fp)
+{
+    const uint64_t *times = fmon_history_time_us();
+    uint32_t        n = fmon_history_count();
+    const FmonHistorySeries *cpu = fmon_history_series(FMON_HIST_CPU);
+    const FmonHistorySeries *mem = fmon_history_series(FMON_HIST_MEM);
+    const FmonHistorySeries *swap = fmon_history_series(FMON_HIST_SWAP);
+    const FmonHistorySeries *temp = fmon_history_series(FMON_HIST_TEMP);
+    const FmonHistorySeries *dtemp = fmon_history_series(FMON_HIST_DISK_TEMP);
+    const FmonHistorySeries *rx = fmon_history_series(FMON_HIST_NET_RX);
+    const FmonHistorySeries *tx = fmon_history_series(FMON_HIST_NET_TX);
+    const FmonHistorySeries *rd = fmon_history_series(FMON_HIST_DISK_RD);
+    const FmonHistorySeries *wr = fmon_history_series(FMON_HIST_DISK_WR);
+
+    fputs("Time,CPU(%),Memory(%),Swap(%),Temp(C),Disk_Temp(C),"
+          "Net_RX(KB/s),Net_TX(KB/s),Disk_Read(KB/s),Disk_Write(KB/s)\n",
+          fp);
+
+    for (uint32_t i = 0; i < n && times != NULL; i++) {
+        time_t sec = (time_t)(times[i] / 1000000ULL);
+        struct tm tmv;
+
+        if (localtime_r(&sec, &tmv) != NULL) {
+            char tb[32];
+
+            strftime(tb, sizeof(tb), "%Y-%m-%d %H:%M:%S", &tmv);
+            fputs(tb, fp);
+        }
+        fputc(',', fp);
+        csv_write_value(fp, cpu ? cpu->values[i] : NAN, "%.2f");
+        fputc(',', fp);
+        csv_write_value(fp, mem ? mem->values[i] : NAN, "%.2f");
+        fputc(',', fp);
+        csv_write_value(fp, swap ? swap->values[i] : NAN, "%.2f");
+        fputc(',', fp);
+        csv_write_value(fp, temp ? temp->values[i] : NAN, "%.2f");
+        fputc(',', fp);
+        csv_write_value(fp, dtemp ? dtemp->values[i] : NAN, "%.2f");
+        fputc(',', fp);
+        csv_write_value(fp, rx ? rx->values[i] : NAN, "%.2f");
+        fputc(',', fp);
+        csv_write_value(fp, tx ? tx->values[i] : NAN, "%.2f");
+        fputc(',', fp);
+        csv_write_value(fp, rd ? rd->values[i] : NAN, "%.2f");
+        fputc(',', fp);
+        csv_write_value(fp, wr ? wr->values[i] : NAN, "%.2f");
+        fputc('\n', fp);
+    }
+
+    return n;
 }
 
 static void on_save_finished(GObject *source_object, GAsyncResult *result,
@@ -67,6 +123,28 @@ static void on_save_finished(GObject *source_object, GAsyncResult *result,
         char *msg = g_strdup_printf(_("无法写入 %s：%s"), path, g_strerror(errno));
         fmon_gui_show_error(g_main_window, _("导出失败"), msg);
         g_free(msg);
+        g_free(path);
+        g_object_unref(file);
+        return;
+    }
+
+    if (gui_long_history_active()) {
+        guint exported = write_long_history_csv(fp);
+
+        if (ferror(fp) != 0) {
+            char *msg = g_strdup_printf(_("写入 %s 时出错：%s"), path,
+                                        g_strerror(errno));
+            fmon_gui_show_error(g_main_window, _("导出失败"), msg);
+            g_free(msg);
+        } else {
+            char *detail = g_strdup_printf(_("已导出 %u 个长历史采样点到：\n%s"),
+                                           exported, path);
+
+            fmon_gui_show_info(g_main_window, _("导出成功"), detail);
+            g_free(detail);
+        }
+
+        fclose(fp);
         g_free(path);
         g_object_unref(file);
         return;

@@ -5,6 +5,7 @@
  */
 
 #include "gui_page_mem.h"
+#include "ui_metrics.h"
 
 #include "gui_state.h"
 #include "gui_util.h"
@@ -91,16 +92,16 @@ static void setv(GtkWidget *w, const char *text)
 static GtkWidget *mem_section(const char *title, const char *const *keys,
                               int n, GtkWidget **vals)
 {
-    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
+    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_1);
     GtkWidget *t   = gtk_label_new(title);
 
     gtk_widget_add_css_class(t, "detail-title");
     gtk_label_set_xalign(GTK_LABEL(t), 0.0f);
-    gtk_widget_set_margin_bottom(t, 2);
+    gtk_widget_set_margin_bottom(t, FMON_SPACE_1);
     gtk_box_append(GTK_BOX(box), t);
 
     for (int i = 0; i < n; i++) {
-        GtkWidget *row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, FMON_SPACE_2);
 
         GtkWidget *k = gtk_label_new(keys[i]);
 
@@ -126,9 +127,9 @@ static GtkWidget *mem_section(const char *title, const char *const *keys,
 
 GtkWidget *gui_mem_queues_box(void)
 {
-    GtkWidget *card = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+    GtkWidget *card = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_2);
 
-    gtk_widget_set_margin_top(card, 10);
+    gtk_widget_set_margin_top(card, FMON_SPACE_3);
 
     GtkWidget *t = gtk_label_new(_("内存队列"));
     gtk_widget_add_css_class(t, "detail-title");
@@ -137,15 +138,15 @@ GtkWidget *gui_mem_queues_box(void)
 
     s_qbar = gtk_drawing_area_new();
     gtk_widget_set_size_request(s_qbar, -1, 18);
-    gtk_widget_set_margin_top(s_qbar, 4);
+    gtk_widget_set_margin_top(s_qbar, FMON_SPACE_1);
     gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(s_qbar), queue_bar_draw,
                                    NULL, NULL);
     gtk_box_append(GTK_BOX(card), s_qbar);
 
     GtkWidget *grid = gtk_grid_new();
-    gtk_grid_set_row_spacing(GTK_GRID(grid), 4);
-    gtk_grid_set_column_spacing(GTK_GRID(grid), 14);
-    gtk_widget_set_margin_top(grid, 6);
+    gtk_grid_set_row_spacing(GTK_GRID(grid), FMON_SPACE_1);
+    gtk_grid_set_column_spacing(GTK_GRID(grid), FMON_SPACE_4);
+    gtk_widget_set_margin_top(grid, FMON_SPACE_2);
 
     for (int i = 0; i < VM_SEG_COUNT; i++) {
         int col = (i % 2) * 2;
@@ -183,9 +184,9 @@ GtkWidget *gui_mem_queues_box(void)
     };
 
     /* 三栏并排：回收与压力 / ZFS 缓存 / 内核内存，各栏内键左对齐 */
-    GtkWidget *cols = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 48);
+    GtkWidget *cols = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, FMON_SPACE_8);
 
-    gtk_widget_set_margin_top(cols, 10);
+    gtk_widget_set_margin_top(cols, FMON_SPACE_3);
 
     GtkWidget *left   = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     GtkWidget *middle = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
@@ -354,10 +355,10 @@ static GtkWidget *s_totals_swap = NULL;
 
 GtkWidget *gui_mem_totals_box(void)
 {
-    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
+    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_1);
 
     gtk_widget_set_halign(box, GTK_ALIGN_END);
-    gtk_widget_set_margin_top(box, 6);
+    gtk_widget_set_margin_top(box, FMON_SPACE_2);
 
     s_totals_mem = gtk_label_new("");
     gtk_widget_add_css_class(s_totals_mem, "hw-model");
@@ -413,7 +414,7 @@ void gui_mem_totals_update(void)
 
 GtkWidget *gui_mem_modules_header(void)
 {
-    s_mod_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
+    s_mod_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_1);
     gtk_widget_set_halign(s_mod_box, GTK_ALIGN_END);
     gtk_widget_set_valign(s_mod_box, GTK_ALIGN_START);
     return s_mod_box;
@@ -437,7 +438,7 @@ void gui_mem_modules_update(void)
 {
     const FmonShmData *snap = gui_state_snapshot();
 
-    if (s_mod_box == NULL)
+    if (s_mod_box == NULL || !gtk_widget_get_mapped(s_mod_box))
         return;
 
     /* 先算签名：只有插槽/内存条信息变化时才重建这几行 */
@@ -525,5 +526,3 @@ void gui_mem_modules_update(void)
         g_string_free(line, TRUE);
     }
 }
-
-

@@ -23,6 +23,11 @@
 #include <glib/gi18n.h>
 
 #include "process_internal.h"
+#include "process_tree.h"
+#include "process_export.h"
+#include "process_hint.h"
+#include "process_scroll.h"
+#include "process_selection.h"
 
 #include "cpuset_dialog.h"
 #include "gui_ctl.h"
@@ -39,303 +44,8 @@
 
 static ProcPage *g_proc_page;
 
-static void update_hint(ProcPage *page);
-static void proc_scroll_top(ProcPage *page);
-static void on_selection_changed(GtkSelectionModel *sel, guint position,
-                                 guint n_items, gpointer data);
 
 /* 重建模型前记住选中的 pid：手动刷新不应把用户的操作对象弄丢 */
-static guint sel_first_pos(ProcPage *page)
-{
-    GtkBitset *bits = gtk_selection_model_get_selection(
-        GTK_SELECTION_MODEL(page->selection));
-
-    if (gtk_bitset_is_empty(bits)) {
-        gtk_bitset_unref(bits);
-        return GTK_INVALID_LIST_POSITION;
-    }
-
-    guint pos = gtk_bitset_get_nth(bits, 0);
-
-    gtk_bitset_unref(bits);
-    return pos;
-}
-
-static void sel_select_one(ProcPage *page, guint pos)
-{
-    GtkSelectionModel *m = GTK_SELECTION_MODEL(page->selection);
-
-    gtk_selection_model_unselect_all(m);
-
-    if (pos != GTK_INVALID_LIST_POSITION)
-        gtk_selection_model_select_item(m, pos, TRUE);
-}
-
-static guint32 selected_pid(ProcPage *page)
-{
-    guint pos = sel_first_pos(page);
-
-    if (pos == GTK_INVALID_LIST_POSITION)
-        return 0;
-
-    ProcItem *item = g_list_model_get_item(G_LIST_MODEL(page->selection), pos);
-    guint32   pid  = (item != NULL) ? item->pid : 0;
-
-    if (item != NULL)
-        g_object_unref(item);
-    return pid;
-}
-
-/* 按 pid 恢复选中位置；进程已退出（新数据里没有）时返回 FALSE */
-static gboolean restore_selected_pid(ProcPage *page, guint32 pid)
-{
-    guint n = g_list_model_get_n_items(G_LIST_MODEL(page->selection));
-
-    for (guint i = 0; i < n; i++) {
-        ProcItem *item =
-            g_list_model_get_item(G_LIST_MODEL(page->selection), i);
-        gboolean hit;
-
-        if (item == NULL)
-            continue;
-        hit = (item->pid == pid);
-        g_object_unref(item);
-
-        if (hit) {
-            sel_select_one(page, i);
-            return TRUE;
-        }
-    }
-    return FALSE;
-}
-
-/* 重建后恢复选中与滚动位置（在 idle 里做：过滤/排序模型更新完再恢复，
- * 否则可能按旧索引选中错误的行，GTK 还会把视口滚到那一行）。 */
-typedef struct {
-    ProcPage *page;
-    guint32   pid;
-    double    vpos;
-    int       tries;
-} RestoreCtx;
-
-/* 恢复选中行后，GTK 可能把视口滚到选中行（选中项此时也许在视口外）。
- * 列表视图的滚动是延迟到布局阶段才生效的，所以单次 set_value 会被覆盖：
- * 在随后几百毫秒内再钉几次滚动位置，让视口停在用户原来看的地方。 */
-static gboolean enforce_scroll_cb(gpointer data)
-{
-    RestoreCtx    *ctx  = data;
-    GtkAdjustment *vadj = NULL;
-
-    if (ctx->page->scroll != NULL)
-        vadj = gtk_scrolled_window_get_vadjustment(
-            GTK_SCROLLED_WINDOW(ctx->page->scroll));
-
-    if (vadj != NULL)
-        gtk_adjustment_set_value(vadj, ctx->vpos);
-
-    if (++ctx->tries >= 3) {
-        g_free(ctx);
-        return G_SOURCE_REMOVE;
-    }
-    return G_SOURCE_CONTINUE;
-}
-
-static gboolean restore_selection_cb(gpointer data)
-{
-    RestoreCtx    *ctx  = data;
-    GtkAdjustment *vadj = NULL;
-
-    if (ctx->page->scroll != NULL)
-        vadj = gtk_scrolled_window_get_vadjustment(
-            GTK_SCROLLED_WINDOW(ctx->page->scroll));
-
-    if (!restore_selected_pid(ctx->page, ctx->pid))
-        sel_select_one(ctx->page, GTK_INVALID_LIST_POSITION);
-
-    on_selection_changed(GTK_SELECTION_MODEL(ctx->page->selection), 0, 0,
-                         ctx->page);
-
-    if (vadj != NULL) {
-        gtk_adjustment_set_value(vadj, ctx->vpos);
-        g_timeout_add(40, enforce_scroll_cb, ctx);
-        return G_SOURCE_REMOVE;
-    }
-
-    g_free(ctx);
-    return G_SOURCE_REMOVE;
-}
-
-/* 树形视图：按 ppid 深度优先排序，并在命令列缩进 */
-static gint cmp_item_pid(gconstpointer a, gconstpointer b)
-{
-    const ProcItem *x = *(ProcItem *const *)a;
-    const ProcItem *y = *(ProcItem *const *)b;
-
-    return (x->pid > y->pid) - (x->pid < y->pid);
-}
-
-typedef struct {
-    GHashTable *kids;
-    GHashTable *seen;
-    GArray     *flat;
-} TreeCtx;
-
-static void tree_add(ProcItem *it, guint16 depth, TreeCtx *ctx)
-{
-    if (g_hash_table_contains(ctx->seen, GUINT_TO_POINTER(it->pid)))
-        return;
-
-    g_hash_table_add(ctx->seen, GUINT_TO_POINTER(it->pid));
-    it->depth = depth;
-    g_array_append_val(ctx->flat, it);
-
-    GPtrArray *list = g_hash_table_lookup(ctx->kids,
-                                          GUINT_TO_POINTER(it->pid));
-
-    if (list == NULL)
-        return;
-
-    g_ptr_array_sort(list, cmp_item_pid);
-
-    for (guint i = 0; i < list->len; i++)
-        tree_add(g_ptr_array_index(list, i), depth + 1, ctx);
-}
-
-static void proc_tree_sort_items(ProcItem **items, guint n, ProcPage *page)
-{
-    if (n == 0)
-        return;
-
-    GHashTable *by_pid = g_hash_table_new(g_direct_hash, g_direct_equal);
-    GHashTable *kids   = g_hash_table_new(g_direct_hash, g_direct_equal);
-    GPtrArray  *roots  = g_ptr_array_new();
-    GPtrArray  *vis    = g_ptr_array_new();
-
-    for (guint i = 0; i < n; i++) {
-        ProcItem *it = items[i];
-
-        it->depth = 0;
-
-        /* 只在“当前视图可见”的进程之间建父子关系；
-         * 否则被过滤掉的 PID 1 会让所有可见行都变成缩进子节点。 */
-        if (proc_filter_func(it, page))
-            g_ptr_array_add(vis, it);
-    }
-
-    for (guint i = 0; i < vis->len; i++) {
-        ProcItem *it = g_ptr_array_index(vis, i);
-
-        g_hash_table_insert(by_pid, GUINT_TO_POINTER(it->pid), it);
-    }
-
-    for (guint i = 0; i < vis->len; i++) {
-        ProcItem *it = g_ptr_array_index(vis, i);
-
-        if (it->ppid != 0 && it->ppid != it->pid &&
-            g_hash_table_contains(by_pid, GUINT_TO_POINTER(it->ppid))) {
-            GPtrArray *list = g_hash_table_lookup(kids,
-                                                  GUINT_TO_POINTER(it->ppid));
-
-            if (list == NULL) {
-                list = g_ptr_array_new();
-                g_hash_table_insert(kids, GUINT_TO_POINTER(it->ppid), list);
-            }
-            g_ptr_array_add(list, it);
-        } else {
-            g_ptr_array_add(roots, it);
-        }
-    }
-
-    g_ptr_array_sort(roots, cmp_item_pid);
-
-    TreeCtx ctx = {
-        .kids = kids,
-        .seen = g_hash_table_new(g_direct_hash, g_direct_equal),
-        .flat = g_array_new(FALSE, FALSE, sizeof(ProcItem *)),
-    };
-
-    for (guint i = 0; i < roots->len; i++)
-        tree_add(g_ptr_array_index(roots, i), 0, &ctx);
-
-    /* 环/异常 ppid：剩余可见节点按 pid 追加，避免丢失 */
-    for (guint i = 0; i < vis->len; i++)
-        if (!g_hash_table_contains(
-                ctx.seen,
-                GUINT_TO_POINTER(((ProcItem *)g_ptr_array_index(vis, i))->pid)))
-            tree_add(g_ptr_array_index(vis, i), 0, &ctx);
-
-    /* 被过滤的进程追加到末尾（过滤器会隐藏它们） */
-    for (guint i = 0; i < n; i++)
-        if (!proc_filter_func(items[i], page)) {
-            items[i]->depth = 0;
-            g_array_append_val(ctx.flat, items[i]);
-        }
-
-    for (guint i = 0; i < n; i++)
-        items[i] = g_array_index(ctx.flat, ProcItem *, i);
-
-    g_ptr_array_free(vis, TRUE);
-    g_array_free(ctx.flat, TRUE);
-    g_hash_table_destroy(ctx.seen);
-    g_ptr_array_free(roots, TRUE);
-
-    GHashTableIter hi;
-    gpointer       key, val;
-
-    g_hash_table_iter_init(&hi, kids);
-    while (g_hash_table_iter_next(&hi, &key, &val))
-        g_ptr_array_free(val, TRUE);
-
-    g_hash_table_destroy(kids);
-    g_hash_table_destroy(by_pid);
-}
-
-static void on_view_sorter_changed(GtkSorter *sorter, GParamSpec *pspec,
-                                  gpointer data)
-{
-    (void)pspec;
-
-    ProcPage *page = data;
-
-    if (page->tree_mode)
-        return;
-
-    gtk_sort_list_model_set_sorter(page->sort_model, sorter);
-}
-
-static void on_tree_toggled(GtkToggleButton *btn, gpointer data)
-{
-    ProcPage *page = data;
-
-    page->tree_mode = gtk_toggle_button_get_active(btn);
-
-    if (page->tree_mode) {
-        gtk_sort_list_model_set_sorter(page->sort_model, NULL);
-        proc_scroll_top(page);
-
-        guint     n   = g_list_model_get_n_items(G_LIST_MODEL(page->store));
-        ProcItem **arr = g_new0(ProcItem *, n);
-
-        for (guint i = 0; i < n; i++)
-            arr[i] = g_list_model_get_item(G_LIST_MODEL(page->store), i);
-
-        proc_tree_sort_items(arr, n, page);
-
-        g_list_store_remove_all(page->store);
-        g_list_store_splice(page->store, 0, 0, (gpointer *)arr, n);
-
-        for (guint i = 0; i < n; i++)
-            g_object_unref(arr[i]);
-        g_free(arr);
-    } else {
-        GtkCustomSorter *s = gtk_custom_sorter_new(proc_compare,
-                                                   GINT_TO_POINTER(-1), NULL);
-
-        gtk_sort_list_model_set_sorter(page->sort_model, GTK_SORTER(s));
-    }
-}
-
-/* ps 异步完成：解析 → 指纹比较 → 重建 GListStore */
 static void on_ps_done(gpointer user_data, const FmonChildResult *res,
                        gboolean ok)
 {
@@ -348,7 +58,7 @@ static void on_ps_done(gpointer user_data, const FmonChildResult *res,
         guint64    fp   = proc_parse_ps_rows(res->out, rows);
 
         if (fp != page->fingerprint) {
-            guint32 keep_pid  = selected_pid(page);
+            guint32 keep_pid  = proc_selection_selected_pid(page);
             double  keep_vpos = 0.0;
 
             if (page->scroll != NULL)
@@ -420,18 +130,11 @@ static void on_ps_done(gpointer user_data, const FmonChildResult *res,
 
             /* 数据变了要重建；选中行与滚动位置在 idle 里恢复，
              * 避免按旧索引选中错误行、或让视口跳到选中行。 */
-            if (keep_pid != 0) {
-                RestoreCtx *ctx = g_new0(RestoreCtx, 1);
-
-                ctx->page = page;
-                ctx->pid  = keep_pid;
-                ctx->vpos = keep_vpos;
-                g_idle_add(restore_selection_cb, ctx);
-            }
+            proc_selection_schedule_restore(page, keep_pid, keep_vpos);
         }
 
         g_ptr_array_free(rows, TRUE);
-        update_hint(page);
+        proc_page_update_hint(page);
     }
 
     if (page->root != NULL)
@@ -521,69 +224,6 @@ static void on_search_changed(GtkSearchEntry *entry, gpointer data)
     proc_list_apply_filter(page);
 }
 
-static void update_hint(ProcPage *page)
-{
-    gchar *text = NULL;
-
-    if (page->hint == NULL)
-        return;
-
-    if (page->view == PROC_VIEW_SYSTEM) {
-        if (page->is_root)
-            text = g_strdup(_("系统视图：root 与系统账户的进程"));
-        else
-            text = g_strdup(_("系统进程（只读）：可以查看，但普通用户不能结束/调整；"
-                              "操作需以 root 运行 fmon-gui（sudo/doas）"));
-    } else if (!page->is_root) {
-        text = g_strdup_printf(_("普通用户视图：只显示你自己的进程（uid %u）"),
-                               (unsigned)page->uid);
-    } else {
-        text = g_strdup(_("普通用户视图：所有非系统账户的进程"));
-    }
-
-    /* 选中行可能滚出视口（刷新时视口不跟着走），提示里给出 PID，
-     * 用户至少知道“结束任务”当前指向哪个进程。 */
-    GtkBitset *bits = gtk_selection_model_get_selection(
-        GTK_SELECTION_MODEL(page->selection));
-    guint64 nsel = gtk_bitset_get_size(bits);
-    guint   pos  = gtk_bitset_is_empty(bits)
-                       ? GTK_INVALID_LIST_POSITION
-                       : gtk_bitset_get_nth(bits, 0);
-
-    gtk_bitset_unref(bits);
-
-    if (pos != GTK_INVALID_LIST_POSITION) {
-        ProcItem *sel =
-            g_list_model_get_item(G_LIST_MODEL(page->selection), pos);
-
-        if (sel != NULL) {
-            gchar *with_sel;
-
-            if (nsel > 1)
-                with_sel = g_strdup_printf(
-                    _("%s（已选中 %llu 个进程，自动刷新已暂停）"), text,
-                    (unsigned long long)nsel);
-            else
-                with_sel = g_strdup_printf(
-                    _("%s（已选中 PID %u，自动刷新时视口保持不动）"),
-                    text, sel->pid);
-
-            g_free(text);
-            text = with_sel;
-            g_object_unref(sel);
-        }
-    }
-
-    gtk_label_set_text(GTK_LABEL(page->hint), text);
-    gtk_widget_set_visible(page->hint, TRUE);
-    g_free(text);
-}
-
-void proc_page_update_hint(ProcPage *page)
-{
-    update_hint(page);
-}
-
 gboolean gui_process_select_pid(guint32 pid)
 {
     ProcPage *page = g_proc_page;
@@ -604,7 +244,7 @@ gboolean gui_process_select_pid(guint32 pid)
         g_object_unref(it);
 
         if (match) {
-            sel_select_one(page, i);
+            proc_selection_select(page, i);
             return TRUE;
         }
     }
@@ -628,120 +268,17 @@ static void on_view_toggled(GtkToggleButton *btn, gpointer data)
 
     page->view = view;
     proc_list_apply_filter(page);
-    update_hint(page);
+    proc_page_update_hint(page);
 
     /* 切换视图后立刻按新数据源刷新一次（ps 参数不同） */
     start_refresh(page);
-    proc_scroll_top(page);
+    proc_view_scroll_top(page);
 }
 
 
 /* ===========================================================================
  * 导出进程列表
  * ========================================================================= */
-static void on_export_done(GObject *source_object, GAsyncResult *result,
-                           gpointer user_data)
-{
-    GtkFilterListModel *filter_model = user_data;
-    GError   *error = NULL;
-
-    GFile *file = gtk_file_dialog_save_finish(GTK_FILE_DIALOG(source_object),
-                                              result, &error);
-
-    if (file == NULL) {
-        if (error != NULL) {
-            if (!g_error_matches(error, GTK_DIALOG_ERROR,
-                                 GTK_DIALOG_ERROR_DISMISSED))
-                fmon_gui_show_error(fmon_gui_main_window(), _("无法保存文件"),
-                                    error->message);
-            g_error_free(error);
-        }
-        g_object_unref(filter_model);
-        return;
-    }
-
-    gchar *path = g_file_get_path(file);
-
-    if (path == NULL) {
-        fmon_gui_show_error(fmon_gui_main_window(), _("导出失败"), _("请选择本地文件系统上的位置。"));
-        g_object_unref(file);
-        return;
-    }
-
-    FILE *fp = fopen(path, "wb");
-
-    if (fp == NULL) {
-        gchar *msg = g_strdup_printf(_("无法写入 %s：%s"), path,
-                                     g_strerror(errno));
-        fmon_gui_show_error(fmon_gui_main_window(), _("导出失败"), msg);
-        g_free(msg);
-        g_free(path);
-        g_object_unref(file);
-        g_object_unref(filter_model);
-        return;
-    }
-
-    fputs("PID,User,System,State,CPU(%),MEM(RSS KB),MEM(%),Command\n", fp);
-
-    guint n = g_list_model_get_n_items(G_LIST_MODEL(filter_model));
-
-    for (guint i = 0; i < n; i++) {
-        ProcItem *p = g_list_model_get_item(G_LIST_MODEL(filter_model), i);
-
-        if (p == NULL)
-            continue;
-
-        gchar cpu[G_ASCII_DTOSTR_BUF_SIZE];
-        gchar mem[G_ASCII_DTOSTR_BUF_SIZE];
-
-        g_ascii_formatd(cpu, sizeof(cpu), "%.2f", p->cpu);
-        g_ascii_formatd(mem, sizeof(mem), "%.1f", p->mem);
-
-        fprintf(fp, "%u,%s,%s,%c,%s,%llu,%s,", p->pid,
-                (p->user != NULL) ? p->user : "",
-                p->is_system ? "system" : "user", p->state, cpu,
-                (unsigned long long)p->rss_kb, mem);
-
-        /* 命令行里可能包含逗号和双引号，按 CSV 规则转义 */
-        const gchar *cmd = (p->comm != NULL) ? p->comm : "";
-        fputc('"', fp);
-        for (const gchar *c = cmd; *c != '\0'; c++) {
-            if (*c == '"')
-                fputc('"', fp);
-            fputc(*c, fp);
-        }
-        fputs("\"\n", fp);
-
-        g_object_unref(p);
-    }
-
-    fclose(fp);
-
-    gchar *detail = g_strdup_printf(_("已导出 %u 行到：\n%s"), n, path);
-    fmon_gui_show_info(fmon_gui_main_window(), "导出成功", detail);
-    g_free(detail);
-    g_free(path);
-    g_object_unref(file);
-    g_object_unref(filter_model);
-}
-
-static void on_export_clicked(GtkButton *btn, gpointer data)
-{
-    (void)btn;
-
-    GtkFileDialog *dialog = gtk_file_dialog_new();
-    gtk_file_dialog_set_title(dialog, "保存进程列表 CSV");
-    gtk_file_dialog_set_initial_name(dialog, "fmon_processes.csv");
-    gtk_file_dialog_set_accept_label(dialog, "保存");
-
-    ProcPage *page = data;
-
-    g_object_ref(dialog);
-    gtk_file_dialog_save(dialog, fmon_gui_main_window(), NULL, on_export_done,
-                         g_object_ref(page->filter_model));
-    g_object_unref(dialog);
-}
-
 /* ===========================================================================
  * 定时刷新
  * ========================================================================= */
@@ -769,34 +306,6 @@ static gboolean on_refresh_tick(gpointer data)
 }
 
 /* 切换页面/视图后把列表滚回顶部，避免切进来先看到下半截 */
-static gboolean proc_scroll_top_cb(gpointer data)
-{
-    ProcPage *page = data;
-
-    if (page->scroll != NULL && page->root != NULL &&
-        gtk_widget_get_mapped(page->root))
-        gtk_adjustment_set_value(
-            gtk_scrolled_window_get_vadjustment(
-                GTK_SCROLLED_WINDOW(page->scroll)),
-            0.0);
-
-    return G_SOURCE_REMOVE;
-}
-
-static void proc_scroll_top(ProcPage *page)
-{
-    if (page->scroll == NULL)
-        return;
-
-    /* 布局完成后 GtkListView 还会调整一次位置，延迟再补一次 */
-    gtk_adjustment_set_value(
-        gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(page->scroll)),
-        0.0);
-    g_timeout_add(60, proc_scroll_top_cb, page);
-}
-
-/* 切回本页时立刻刷新一次：隐藏页面的定时器不工作（见 on_refresh_tick），
- * 若不补一次，切回来可能先看到最多 3 秒前的旧数据。 */
 static void on_page_mapped(GtkWidget *widget, gpointer data)
 {
     (void)widget;
@@ -804,7 +313,7 @@ static void on_page_mapped(GtkWidget *widget, gpointer data)
     ProcPage *page = data;
 
     start_refresh(page);
-    proc_scroll_top(page);
+    proc_view_scroll_top(page);
 }
 
 static void on_refresh_clicked(GtkButton *btn, gpointer data)
@@ -832,59 +341,12 @@ static void proc_page_free(gpointer data)
     g_free(page);
 }
 
-/* 底部操作栏用的辅助：取当前选中项 */
-static ProcItem *get_selected_item(ProcPage *page)
-{
-    guint pos = sel_first_pos(page);
-
-    if (pos == GTK_INVALID_LIST_POSITION)
-        return NULL;
-
-    return g_list_model_get_item(G_LIST_MODEL(page->selection), pos);
-}
-
-static void on_selection_changed(GtkSelectionModel *sel, guint position,
-                                 guint n_items, gpointer data)
-{
-    (void)sel;
-    (void)position;
-    (void)n_items;
-
-    ProcPage *page = data;
-    gboolean  has  = sel_first_pos(page) !=
-                    GTK_INVALID_LIST_POSITION;
-
-    /* 普通用户只能操作自己的进程；root 进程只读。 */
-    gboolean can_operate = has;
-
-    if (has && geteuid() != 0) {
-        ProcItem *item = get_selected_item(page);
-
-        if (item != NULL) {
-            can_operate = (item->uid == (guint32)getuid());
-            g_object_unref(item);
-        }
-    }
-
-    if (page->btn_end != NULL) {
-        gtk_widget_set_sensitive(page->btn_end, can_operate);
-        gtk_widget_set_tooltip_text(
-            page->btn_end,
-            can_operate ? _("结束选中的进程（SIGTERM）")
-                        : _("普通用户不能操作其他用户的进程；需以 root 运行 fmon-gui"));
-    }
-    if (page->btn_details != NULL)
-        gtk_widget_set_sensitive(page->btn_details, has);
-
-    update_hint(page);
-}
-
 static void on_end_task_clicked(GtkButton *btn, gpointer data)
 {
     (void)btn;
 
     ProcPage *page = data;
-    ProcItem *item = get_selected_item(page);
+    ProcItem *item = proc_selection_get_item(page);
 
     if (item == NULL)
         return;
@@ -905,7 +367,7 @@ static void on_details_clicked(GtkButton *btn, gpointer data)
 {
     (void)btn;
 
-    ProcItem *item = get_selected_item(data);
+    ProcItem *item = proc_selection_get_item(data);
 
     if (item == NULL)
         return;
@@ -940,7 +402,7 @@ GtkWidget *gui_process_view_new(void)
 
     gtk_widget_set_tooltip_text(btn_tree,
                                 _("按父子关系缩进显示；关闭后恢复扁平列表"));
-    g_signal_connect(btn_tree, "toggled", G_CALLBACK(on_tree_toggled), page);
+    g_signal_connect(btn_tree, "toggled", G_CALLBACK(proc_tree_toggled), page);
     gtk_box_append(GTK_BOX(toolbar), btn_tree);
 
     /* 两个视图按钮：普通用户 / 系统(root)。只有以 root 运行界面时才能看系统进程。 */
@@ -1005,7 +467,7 @@ GtkWidget *gui_process_view_new(void)
 
     if (view_sorter != NULL)
         g_signal_connect(view_sorter, "changed",
-                         G_CALLBACK(on_view_sorter_changed), page);
+                         G_CALLBACK(proc_tree_sorter_changed), page);
 
     GtkWidget *scroll = gtk_scrolled_window_new();
     gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scroll), view);
@@ -1033,7 +495,7 @@ GtkWidget *gui_process_view_new(void)
     gtk_box_append(GTK_BOX(vbox), action_bar);
 
     g_signal_connect(page->selection, "selection-changed",
-                     G_CALLBACK(on_selection_changed), page);
+                     G_CALLBACK(proc_selection_changed), page);
     g_signal_connect(page->btn_end, "clicked",
                      G_CALLBACK(on_end_task_clicked), page);
     g_signal_connect(page->btn_details, "clicked",
@@ -1041,13 +503,13 @@ GtkWidget *gui_process_view_new(void)
 
     g_object_set_data_full(G_OBJECT(vbox), "proc-page", page,
                            proc_page_free);
-    update_hint(page);
+    proc_page_update_hint(page);
 
     g_signal_connect(btn_refresh, "clicked", G_CALLBACK(on_refresh_clicked),
                      page);
     g_signal_connect(page->search, "search-changed",
                      G_CALLBACK(on_search_changed), page);
-    g_signal_connect(item_export, "clicked", G_CALLBACK(on_export_clicked),
+    g_signal_connect(item_export, "clicked", G_CALLBACK(proc_export_clicked),
                      page);
     g_signal_connect(page->btn_user, "toggled", G_CALLBACK(on_view_toggled),
                      page);

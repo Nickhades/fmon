@@ -42,7 +42,7 @@ extern "C" {
 
 /* 头部校验值："FMON" 的大端 ASCII。 */
 /* 版本号：安装脚本与 --version 使用 */
-#define FMON_VERSION_STRING  "1.2.0"
+#define FMON_VERSION_STRING  "1.3.0"
 
 #define FMON_SHM_MAGIC       0x464D4F4DU
 #define FMON_ABI_VERSION     23U  /* 23: 探测有效位 + 磁盘元数据来源 */
@@ -503,8 +503,3 @@ static inline bool fmon_shm_is_online(const FmonShmData *shm, uint64_t now_us,
 #endif
 
 #endif /* FMON_SHM_H */
-
-
-
-
-

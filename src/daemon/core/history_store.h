@@ -7,6 +7,13 @@
  * 路径：
  *   root  : /var/db/fmon/history.tsv
  *   普通用户（本地调试）: $HOME/.local/state/fmon/history.tsv
+ *
+ * 同时维护多分辨率层：
+ *   history_1m.tsv   1 分钟：CPU/内存/温度 avg/min/max + 全部指标 avg
+ *                    其中磁盘温度为所有 SMART 磁盘的最高值
+ *   history_5m.tsv   5 分钟：由 1 分钟层聚合
+ *   history_1h.tsv   1 小时：由 1 分钟层聚合
+ * 主界面 1h/24h 读取 1 分钟层；5m/1h 为后续 7d/30d 预留。
  */
 
 #ifndef HISTORY_STORE_H

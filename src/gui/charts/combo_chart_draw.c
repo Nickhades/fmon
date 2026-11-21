@@ -26,7 +26,7 @@ void draw_grid(cairo_t *cr, const ComboGeom *g, int series_count)
     double line[4];
 
     for (int i = 0; i < 4; i++) {
-        double x = g->left + pw * (double)i / 3.0;
+        double x = floor(g->left + pw * (double)i / 3.0) + 0.5;
 
         fmon_theme_grid_color(line, FALSE);
         cairo_set_source_rgba(cr, line[0], line[1], line[2], line[3]);
@@ -36,7 +36,8 @@ void draw_grid(cairo_t *cr, const ComboGeom *g, int series_count)
     }
 
     for (int s = 1; s < series_count; s++) {
-        double y = g->top + ph * (double)s / (double)series_count;
+        double y = floor(g->top + ph * (double)s /
+                         (double)series_count) + 0.5;
 
         fmon_theme_grid_color(line, TRUE);
         cairo_set_source_rgba(cr, line[0], line[1], line[2], line[3]);
@@ -60,12 +61,20 @@ void draw_axis_labels(cairo_t *cr, const ComboGeom *g,
         return;
 
     uint64_t t0 = 0, t1 = 0;
-    bool has_time = fmon_chart_time_range(cd0->time_us, COMBO_MAX_POINTS, n,
-                                          cd0->index, &t0, &t1);
+    bool has_time = gui_chart_view_range(cd0, n, &t0, &t1);
     double span_sec = has_time
                           ? (double)(t1 - t0) / 1000000.0
                           : (double)(n - 1) * (double)cd0->interval_us /
                                 1000000.0;
+
+    uint64_t data_t0 = 0, data_t1 = 0;
+    double offset = 0.0;
+
+    if (has_time &&
+        fmon_chart_time_range(cd0->time_us, COMBO_MAX_POINTS, n, cd0->index,
+                              &data_t0, &data_t1) &&
+        data_t1 > t1)
+        offset = (double)(data_t1 - t1) / 1000000.0;
 
     set_font(cr, 10.0);
 
@@ -73,11 +82,9 @@ void draw_axis_labels(cairo_t *cr, const ComboGeom *g,
         double x = g->left + g->plot_w * (double)i / 3.0;
         char   buf[32];
 
-        if (i == 3)
-            gui_chart_format_time_label(buf, sizeof(buf), 0.0);
-        else
-            gui_chart_format_time_label(buf, sizeof(buf),
-                                        span_sec * (1.0 - (double)i / 3.0));
+        gui_chart_format_time_label(
+            buf, sizeof(buf),
+            span_sec * (1.0 - (double)i / 3.0) + offset);
 
         double axis[4];
 
@@ -144,6 +151,59 @@ void draw_band_label(cairo_t *cr, const ComboGeom *g,
         cairo_move_to(cr, g->left + 8.0, b->top + 38.0);
         cairo_show_text(cr, series->extra);
     }
+
+    /* 第三行：窗口内 min / avg / max；与曲线使用同一批原始采样。 */
+    if (n >= 2) {
+        uint64_t t0 = 0, t1 = 0;
+        bool window = gui_chart_view_range(cd, n, &t0, &t1) &&
+                      gui_chart_window_us() > 0;
+        double mn = INFINITY, mx = -INFINITY, sum = 0.0, last = NAN;
+        uint32_t valid = 0;
+
+        for (uint32_t i = 0; i < n; i++) {
+            if (window) {
+                uint64_t ti;
+
+                if (!fmon_chart_history_time(cd->time_us, COMBO_MAX_POINTS,
+                                             n, cd->index, i, &ti))
+                    continue;
+                if (ti < t0 || ti > t1)
+                    continue;
+            }
+
+            double v = series_value(cd, i);
+
+            if (!isfinite(v))
+                continue;
+            if (v < mn)
+                mn = v;
+            if (v > mx)
+                mx = v;
+            sum += v;
+            last = v;
+            valid++;
+        }
+
+        if (valid > 0) {
+            char mn_txt[32], av_txt[32], mx_txt[32], last_txt[32];
+            char line[220];
+
+            format_value_text(mn_txt, sizeof(mn_txt), mn, cd->unit);
+            format_value_text(av_txt, sizeof(av_txt), sum / (double)valid,
+                              cd->unit);
+            format_value_text(mx_txt, sizeof(mx_txt), mx, cd->unit);
+            format_value_text(last_txt, sizeof(last_txt), last, cd->unit);
+            g_snprintf(line, sizeof(line),
+                       "min %s · avg %s · max %s · last %s", mn_txt, av_txt,
+                       mx_txt, last_txt);
+
+            set_font(cr, 10.0);
+            cairo_set_source_rgba(cr, tr, tg, tb, 0.62);
+            cairo_move_to(cr, g->left + 8.0,
+                          b->top + (series->extra[0] != '\0' ? 54.0 : 38.0));
+            cairo_show_text(cr, line);
+        }
+    }
 }
 
 void draw_band_ticks(cairo_t *cr, const ComboGeom *g, const BandGeom *b,
@@ -183,51 +243,92 @@ void draw_band_ticks(cairo_t *cr, const ComboGeom *g, const BandGeom *b,
     }
 }
 
-void draw_series_fill(cairo_t *cr, const ComboGeom *g,
-                      const BandGeom *b, const CurveData *cd,
-                      const FmonChartScale *sc)
+static double combo_snap_1px(double v)
 {
-    if (cd->count < 2 || cd->bars || sc == NULL)
+    return floor(v) + 0.5;
+}
+
+static void draw_combo_threshold_markers(cairo_t *cr, const ComboGeom *g,
+                                           const BandGeom *b,
+                                           const CurveData *cd,
+                                           const FmonChartScale *sc,
+                                           const FmonChartPoint *pts,
+                                           size_t n)
+{
+    double value;
+    char   label[64];
+
+    if (!gui_chart_curve_threshold(cd, &value, label, sizeof(label)))
+        return;
+    if (sc == NULL || sc->hi <= sc->lo || value < sc->lo || value > sc->hi)
         return;
 
-    size_t cap = (size_t)((cd->count > COMBO_MAX_POINTS) ? COMBO_MAX_POINTS
-                                                         : cd->count) +
-                 4;
-    FmonChartPoint *pts = g_new0(FmonChartPoint, cap);
+    double ty = band_y(b, value, sc->lo, sc->hi);
 
-    uint64_t t0 = 0, t1 = 0;
-    fmon_chart_time_range(cd->time_us, COMBO_MAX_POINTS, cd->count, cd->index,
-                          &t0, &t1);
-    uint64_t gap_us = cd->interval_us * 5u / 2u;
+    (void)g;
 
-    size_t n = fmon_chart_polyline_at(
-        cd->history, cd->time_us, COMBO_MAX_POINTS, cd->count, cd->index, t0,
-        t1, g->left, g->plot_w, b->plot_top, b->plot_h, sc->lo, sc->hi,
-        (uint32_t)g->plot_w, gap_us, pts, cap);
+    for (size_t i = 1; i < n; i++) {
+        if (pts[i - 1].gap || pts[i].gap)
+            continue;
 
-    if (n == 0) {
-        g_free(pts);
-        return;
+        double y0 = pts[i - 1].y;
+        double y1 = pts[i].y;
+
+        if ((y0 - ty) * (y1 - ty) > 0.0 || y0 == y1)
+            continue;
+
+        double t = (ty - y0) / (y1 - y0);
+        double x = pts[i - 1].x + t * (pts[i].x - pts[i - 1].x);
+
+        cairo_set_source_rgba(cr, 0.86, 0.18, 0.16, 0.95);
+        cairo_move_to(cr, x, ty - 3.5);
+        cairo_line_to(cr, x - 3.0, ty + 2.0);
+        cairo_line_to(cr, x + 3.0, ty + 2.0);
+        cairo_close_path(cr);
+        cairo_fill(cr);
     }
+}
 
-    double plot_bottom = b->plot_top + b->plot_h;
+static void draw_combo_threshold(cairo_t *cr, const ComboGeom *g,
+                                 const BandGeom *b, const CurveData *cd,
+                                 const FmonChartScale *sc)
+{
+    double value;
+    char   label[64];
 
-    cairo_pattern_t *grad = cairo_pattern_create_linear(0.0, b->plot_top, 0.0,
-                                                        plot_bottom);
-    cairo_pattern_add_color_stop_rgba(grad, 0.0, cd->r, cd->g, cd->b, 0.30);
-    cairo_pattern_add_color_stop_rgba(grad, 1.0, cd->r, cd->g, cd->b, 0.02);
+    if (!gui_chart_curve_threshold(cd, &value, label, sizeof(label)))
+        return;
+    if (sc == NULL || sc->hi <= sc->lo || value < sc->lo || value > sc->hi)
+        return;
 
-    fmon_chart_cairo_fill(cr, pts, n, plot_bottom);
-    cairo_set_source(cr, grad);
-    cairo_fill(cr);
-    cairo_pattern_destroy(grad);
+    double y = combo_snap_1px(band_y(b, value, sc->lo, sc->hi));
 
-    g_free(pts);
+    cairo_save(cr);
+    cairo_set_source_rgba(cr, 0.86, 0.18, 0.16, 0.80);
+    cairo_set_line_width(cr, 1.0);
+    double dash[] = { 5.0, 4.0 };
+    cairo_set_dash(cr, dash, 2, 0.0);
+    cairo_move_to(cr, g->left, y);
+    cairo_line_to(cr, g->left + g->plot_w, y);
+    cairo_stroke(cr);
+    cairo_set_dash(cr, NULL, 0, 0.0);
+
+    set_font(cr, 9.0);
+    cairo_text_extents_t ext;
+    cairo_text_extents(cr, label, &ext);
+    double lx = g->left + g->plot_w - ext.width - 8.0;
+    double ly = (y - 3.0 > b->plot_top + 10.0) ? y - 3.0
+                                                : y + ext.height + 3.0;
+    cairo_set_source_rgba(cr, 0.86, 0.18, 0.16, 0.90);
+    cairo_move_to(cr, lx, ly);
+    cairo_show_text(cr, label);
+    cairo_restore(cr);
 }
 
 void draw_series_line(cairo_t *cr, const ComboGeom *g,
                       const BandGeom *b, const CurveData *cd,
-                      const FmonChartScale *sc)
+                      const FmonChartScale *sc, const FmonChartPoint *pts,
+                      size_t n)
 {
     if (cd->count < 2 || sc == NULL)
         return;
@@ -292,244 +393,18 @@ void draw_series_line(cairo_t *cr, const ComboGeom *g,
         return;
     }
 
-    size_t cap = (size_t)((cd->count > COMBO_MAX_POINTS) ? COMBO_MAX_POINTS
-                                                         : cd->count) +
-                 4;
-    FmonChartPoint *pts = g_new0(FmonChartPoint, cap);
-
-    uint64_t t0 = 0, t1 = 0;
-    fmon_chart_time_range(cd->time_us, COMBO_MAX_POINTS, cd->count, cd->index,
-                          &t0, &t1);
-    uint64_t gap_us = cd->interval_us * 5u / 2u;
-
-    size_t n = fmon_chart_polyline_at(
-        cd->history, cd->time_us, COMBO_MAX_POINTS, cd->count, cd->index, t0,
-        t1, g->left, g->plot_w, b->plot_top, b->plot_h, sc->lo, sc->hi,
-        (uint32_t)g->plot_w, gap_us, pts, cap);
-
-    if (n == 0) {
-        g_free(pts);
+    if (pts == NULL || n == 0)
         return;
-    }
 
     cairo_set_antialias(cr, CAIRO_ANTIALIAS_BEST);
-    cairo_set_source_rgba(cr, cd->r, cd->g, cd->b, 0.95);
-    cairo_set_line_width(cr, 1.35);
+    cairo_set_source_rgb(cr, cd->r, cd->g, cd->b);
+    cairo_set_line_width(cr, 1.2);
     cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT);
     cairo_set_line_join(cr, CAIRO_LINE_JOIN_MITER);
 
-    fmon_chart_cairo_path(cr, pts, n);
+    fmon_chart_cairo_step_path(cr, pts, n);
     cairo_stroke(cr);
 
-    g_free(pts);
-}
-
-void draw_hover_line(cairo_t *cr, const ComboGeom *g, double x)
-{
-    double c[4];
-
-    fmon_theme_hover_line(c);
-    cairo_set_source_rgba(cr, c[0], c[1], c[2], c[3]);
-    cairo_set_line_width(cr, 1.0);
-    cairo_move_to(cr, x, g->top);
-    cairo_line_to(cr, x, g->top + g->plot_h);
-    cairo_stroke(cr);
-}
-
-void draw_hover_dots(cairo_t *cr, const ComboGeom *g,
-                     const ComboChart *c, uint32_t idx, double x)
-{
-    int nseries = (c->n > COMBO_MAX_SERIES) ? COMBO_MAX_SERIES : c->n;
-
-    if (nseries < 0)
-        nseries = 0;
-
-    for (int s = 0; s < nseries; s++) {
-        const CurveData *cd = c->series[s].cd;
-
-        if (cd->count < 2 || idx >= cd->count)
-            continue;
-
-        double v = series_value(cd, idx);
-
-        if (!isfinite(v))
-            continue;
-
-        FmonChartScale sc;
-
-        if (!series_scale(cd, &sc))
-            continue;
-
-        BandGeom b;
-
-        band_layout(g, c->n, s, &b);
-
-        cairo_arc(cr, x, band_y(&b, v, sc.lo, sc.hi), 3.5, 0.0, COMBO_TAU);
-        cairo_set_source_rgba(cr, cd->r, cd->g, cd->b, 1.0);
-        cairo_fill(cr);
-    }
-}
-
-void draw_hover_box(cairo_t *cr, const ComboGeom *g,
-                    const ComboChart *c, uint32_t idx)
-{
-    set_font(cr, 12.5);
-
-    char  lines[COMBO_MAX_SERIES][128];
-    double maxw = 0.0;
-    int    nlines = (c->n < COMBO_MAX_SERIES) ? c->n : COMBO_MAX_SERIES;
-
-    if (nlines < 0)
-        nlines = 0;
-
-    for (int s = 0; s < nlines; s++) {
-        const CurveData *cd = c->series[s].cd;
-        char             val_txt[64];
-
-        double v = (idx < cd->count) ? series_value(cd, idx) : NAN;
-
-        format_value_text(val_txt, sizeof(val_txt), v, cd->unit);
-        g_snprintf(lines[s], sizeof(lines[s]), "%s  %s",
-                   c->series[s].name, val_txt);
-
-        cairo_text_extents_t ext;
-
-        cairo_text_extents(cr, lines[s], &ext);
-        if (ext.width > maxw)
-            maxw = ext.width;
-    }
-
-    double bw = maxw + 24.0;
-    double bh = 18.0 + 19.0 * (double)nlines;
-
-    if (bw < 180.0)
-        bw = 180.0;
-
-    double bx = c->hover_x + 16.0;
-    double by = (c->hover_y > 0.0) ? c->hover_y + 14.0 : g->top + 8.0;
-
-    if (bx + bw > g->left + g->plot_w)
-        bx = c->hover_x - 16.0 - bw;
-    if (bx < g->left)
-        bx = g->left;
-    if (bx + bw > g->left + g->plot_w)
-        bw = g->left + g->plot_w - bx;
-
-    if (by + bh > g->top + g->plot_h)
-        by = c->hover_y - 14.0 - bh;
-    if (by < g->top)
-        by = g->top;
-
-    double hb[4];
-
-    fmon_theme_hover_bg(hb);
-    cairo_set_source_rgba(cr, hb[0], hb[1], hb[2], hb[3]);
-    cairo_rectangle(cr, bx, by, bw, bh);
-    cairo_fill(cr);
-
-    double border[4];
-
-    fmon_theme_grid_color(border, TRUE);
-    cairo_set_source_rgba(cr, border[0], border[1], border[2], 0.85);
-    cairo_set_line_width(cr, 1.0);
-    cairo_rectangle(cr, bx, by, bw, bh);
-    cairo_stroke(cr);
-
-    for (int s = 0; s < nlines; s++) {
-        double tr, tg, tb;
-
-        series_text_color(c->series[s].cd, &tr, &tg, &tb);
-        cairo_set_source_rgba(cr, tr, tg, tb, 1.0);
-        cairo_move_to(cr, bx + 12.0, by + 21.0 + 19.0 * (double)s);
-        cairo_show_text(cr, lines[s]);
-    }
-}
-
-static bool combo_nearest_by_time(const CurveData *cd, uint32_t n,
-                                  uint64_t wanted, uint32_t *out_idx,
-                                  uint64_t *out_time)
-{
-    uint64_t best   = UINT64_MAX;
-    uint32_t best_i = 0;
-    uint64_t best_t = 0;
-
-    for (uint32_t i = 0; i < n; i++) {
-        uint64_t ti;
-        double   v;
-
-        if (!fmon_chart_history_time(cd->time_us, COMBO_MAX_POINTS, n,
-                                     cd->index, i, &ti))
-            continue;
-        if (!fmon_chart_history_value(cd->history, COMBO_MAX_POINTS, n,
-                                      cd->index, i, &v))
-            continue;
-
-        uint64_t d = (ti > wanted) ? ti - wanted : wanted - ti;
-
-        if (d < best) {
-            best   = d;
-            best_i = i;
-            best_t = ti;
-        }
-    }
-
-    if (best == UINT64_MAX)
-        return false;
-
-    *out_idx  = best_i;
-    *out_time = best_t;
-    return true;
-}
-
-void draw_hover(cairo_t *cr, const ComboGeom *g, const ComboChart *c)
-{
-    if (!c->hovering || c->n <= 0)
-        return;
-
-    if (c->hover_x < g->left || c->hover_x > g->left + g->plot_w)
-        return;
-
-    const CurveData *cd0 = c->series[0].cd;
-    uint32_t n = (cd0->count > COMBO_MAX_POINTS) ? COMBO_MAX_POINTS
-                                                 : cd0->count;
-
-    if (n <= 1)
-        return;
-
-    double t = (c->hover_x - g->left) / g->plot_w;
-
-    if (t < 0.0)
-        t = 0.0;
-    if (t > 1.0)
-        t = 1.0;
-
-    uint32_t idx = 0;
-    double   x;
-    uint64_t t0 = 0, t1 = 0;
-    bool has_time = fmon_chart_time_range(cd0->time_us, COMBO_MAX_POINTS, n,
-                                          cd0->index, &t0, &t1);
-
-    if (has_time) {
-        uint64_t wanted = t0 + (uint64_t)(t * (double)(t1 - t0));
-        uint64_t ti = 0;
-
-        if (!combo_nearest_by_time(cd0, n, wanted, &idx, &ti)) {
-            idx = (uint32_t)floor(t * (double)(n - 1) + 0.5);
-            ti  = t0;
-        }
-
-        x = fmon_chart_time_x(ti, t0, t1, g->left, g->plot_w);
-    } else {
-        idx = (uint32_t)floor(t * (double)(n - 1) + 0.5);
-
-        if (idx >= n)
-            idx = n - 1;
-
-        x = g->left + g->plot_w * (double)idx / (double)(n - 1);
-    }
-
-    /* 十字线吸附到真实采样点：读数与点的位置严格一致，不对读数做插值。 */
-    draw_hover_line(cr, g, x);
-    draw_hover_dots(cr, g, c, idx, x);
-    draw_hover_box(cr, g, c, idx);
+    draw_combo_threshold(cr, g, b, cd, sc);
+    draw_combo_threshold_markers(cr, g, b, cd, sc, pts, n);
 }

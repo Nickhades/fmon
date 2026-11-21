@@ -33,6 +33,7 @@ typedef struct {
 CurveData *gui_metric_curve(int idx);
 void gui_metric_curves_sync(const FmonShmData *snap);
 void gui_metric_curves_bind(const FmonShmData *snap);
+void gui_metric_curves_apply_theme(void);
 
 void gui_upd_zpool(MetricPage *p);
 void gui_upd_arc(MetricPage *p);

@@ -83,6 +83,7 @@ static int sample_pool_capacity(FmonShmData *s)
         !fmon_child_ok(&res) || res.out == NULL) {
         fmon_child_result_free(&res);
         s->probe_valid &= ~FMON_PROBE_POOLS;
+        s->pool_count = 0;
         return -1;
     }
 

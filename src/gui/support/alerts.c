@@ -32,6 +32,13 @@ static gboolean g_notify_checked   = FALSE;
 /* ===========================================================================
  * 设置读写
  * =========================================================================== */
+static const AlertSettings *g_current;
+
+const AlertSettings *alerts_current(void)
+{
+    return g_current;
+}
+
 static gchar *settings_path(void)
 {
     return g_build_filename(g_get_user_config_dir(), "fmon", "alerts.ini", NULL);
@@ -84,6 +91,8 @@ void alerts_load(AlertSettings *settings)
 
     g_key_file_free(kf);
     g_free(path);
+
+    g_current = settings;
 }
 
 void alerts_save(const AlertSettings *settings)

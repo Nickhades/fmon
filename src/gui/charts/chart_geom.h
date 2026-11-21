@@ -102,9 +102,15 @@ size_t fmon_chart_polyline_at(const double *history, const uint64_t *time_us,
 /* 把折线点画进当前 Cairo 路径（遇到 gap 自动 move_to）。 */
 void fmon_chart_cairo_path(cairo_t *cr, const FmonChartPoint *pts, size_t n);
 
+/* 直角阶跃：先水平后垂直。用于错误/回收等离散计数，不用于连续传感器。 */
+void fmon_chart_cairo_step_path(cairo_t *cr, const FmonChartPoint *pts,
+                                size_t n);
+
 /* 构造面积填充路径：每个连续有效段单独闭合到 baseline，不跨缺口。 */
 void fmon_chart_cairo_fill(cairo_t *cr, const FmonChartPoint *pts, size_t n,
                            double baseline);
+void fmon_chart_cairo_step_fill(cairo_t *cr, const FmonChartPoint *pts,
+                                size_t n, double baseline);
 
 /* 构造 min/max 包络带：upper 正向走、lower 反向走，形成闭合带。
  * 两个点集必须共享 x/gap 语义；任一侧出现 gap 即断开。 */

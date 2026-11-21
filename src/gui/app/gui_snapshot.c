@@ -163,5 +163,3 @@ void gui_runtime_shutdown(void)
     g_free(g_alert_summary);
     g_alert_summary = NULL;
 }
-
-

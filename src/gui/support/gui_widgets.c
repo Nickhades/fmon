@@ -109,4 +109,3 @@ GtkWidget *gui_make_cell(const char *text, const char *css)
     gtk_label_set_selectable(GTK_LABEL(l), FALSE);
     return l;
 }
-

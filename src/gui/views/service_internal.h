@@ -88,6 +88,10 @@ void svc_actions_batch_stop(GtkButton *btn, gpointer data);
 void svc_actions_enable(GtkButton *btn, gpointer data);
 void svc_actions_show_detail(GtkButton *btn, gpointer data);
 
+/* service_detail.c：状态/日志文本窗口 */
+void svc_detail_status(GtkButton *btn, gpointer data);
+void svc_detail_logs(GtkButton *btn, gpointer data);
+
 /* service_list.c：行构建、列表重建、过滤 */
 void svc_list_rebuild(ServicePage *page);
 void svc_list_apply_filter(ServicePage *page);
@@ -95,6 +99,16 @@ void svc_list_setup_filters(ServicePage *page);
 
 /* service_view.c：操作完成后刷新页面 */
 void svc_page_refresh(GtkWidget *notebook);
+
+/* service_actions.c：脚本文本元数据（detail 窗口复用） */
+gchar *svc_find_script_path(const char *name);
+gchar *svc_find_config_paths(const char *name);
+gchar *svc_read_script_rcvar(const char *name);
+gchar *svc_read_script_description(const char *name);
+void   svc_read_script_deps(const char *name, char **require, char **before);
+void   svc_dep_tree_build(GString *out, const char *name, int depth,
+                          GHashTable *seen);
+void   svc_show_text_window(const char *title, const char *text);
 
 #ifdef __cplusplus
 }

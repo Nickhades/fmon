@@ -17,6 +17,7 @@
 
 #include "font_setup.h"
 #include "gui_window.h"
+#include "language.h"
 
 /* 崩溃诊断：设置 FMON_TRACE_SIGNAL=1 时，SIGBUS/SIGSEGV/SIGABRT 打印
  * 调用栈后退出（用于定位 GTK 内部崩溃）。 */
@@ -62,17 +63,23 @@ int main(int argc, char **argv)
 {
     fmon_trace_init();
     fmon_malloc_tune();
+    fmon_gui_set_executable_path(argv[0]);
     /* 字体渲染设置必须在 GTK 初始化之前（强制 CPU 渲染 + 固定抗锯齿） */
     fmon_font_setup();
 
-    /* 国际化：语言包缺失时 gettext 原样返回中文，不影响使用 */
+    /* 语言必须在 setlocale 前确定；英文语言包缺失时 gettext 会回退 msgid。
+     * FMON_LOCALEDIR 仅用于未安装时的本地测试。 */
+    fmon_language_init();
     setlocale(LC_ALL, "");
-    bindtextdomain(GETTEXT_PACKAGE, LOCALEDIR);
+
+    const char *locale_dir = g_getenv("FMON_LOCALEDIR");
+    bindtextdomain(GETTEXT_PACKAGE,
+                   (locale_dir != NULL && *locale_dir != '\0')
+                       ? locale_dir : LOCALEDIR);
     bind_textdomain_codeset(GETTEXT_PACKAGE, "UTF-8");
     textdomain(GETTEXT_PACKAGE);
 
     /* LC_NUMERIC 必须保持 "C"，否则 printf("%f") 会输出逗号小数点 */
-    setlocale(LC_ALL, "");
     setlocale(LC_NUMERIC, "C");
 
     /* 部分输入法在 GTK4 下需要简单上下文 */
@@ -108,6 +115,3 @@ int main(int argc, char **argv)
     g_object_unref(app);
     return status;
 }
-
-
-

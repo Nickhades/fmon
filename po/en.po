@@ -1,0 +1,3613 @@
+# English translation for fmon.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the fmon package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: fmon\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-21 21:17+0800\n"
+"PO-Revision-Date: 2026-11-21 21:20+0800\n"
+"Last-Translator: fmon translation\n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: src/gui/app/gui_export.c:105 src/gui/views/process_view.c:676
+msgid "无法保存文件"
+msgstr "Unable to save file"
+
+#: src/gui/app/gui_export.c:116 src/gui/app/gui_export.c:124
+#: src/gui/app/gui_export.c:137 src/gui/app/gui_export.c:190
+#: src/gui/views/process_view.c:687 src/gui/views/process_view.c:697
+msgid "导出失败"
+msgstr "Export failed"
+
+#: src/gui/app/gui_export.c:116 src/gui/views/process_view.c:687
+msgid "请选择本地文件系统上的位置。"
+msgstr "Please choose a location on the local file system."
+
+#: src/gui/app/gui_export.c:123 src/gui/views/process_view.c:695
+#, c-format
+msgid "无法写入 %s：%s"
+msgstr "Cannot write %s: %s"
+
+#: src/gui/app/gui_export.c:135 src/gui/app/gui_export.c:189
+#, c-format
+msgid "写入 %s 时出错：%s"
+msgstr "Error writing %s: %s"
+
+#: src/gui/app/gui_export.c:140
+#, c-format
+msgid ""
+"已导出 %u 个长历史采样点到：\n"
+"%s"
+msgstr ""
+"Exported %u long-history samples to:\n"
+"%s"
+
+#: src/gui/app/gui_export.c:143
+msgid "导出成功"
+msgstr "Export successful"
+
+#: src/gui/app/gui_export.c:193
+#, c-format
+msgid ""
+"已导出 %u 个采样点到：\n"
+"%s"
+msgstr ""
+"Exported %u samples to:\n"
+"%s"
+
+#: src/gui/app/gui_export.c:209
+msgid "无法导出"
+msgstr "Unable to export"
+
+#: src/gui/app/gui_export.c:209
+msgid "尚未连接到 fmon-daemon，没有可导出的数据。"
+msgstr "Not connected to fmon-daemon; there is no data to export."
+
+#: src/gui/app/gui_runtime.c:49
+#, c-format
+msgid "未连接到 fmon-daemon：%s"
+msgstr "Not connected to fmon-daemon: %s"
+
+#: src/gui/app/gui_runtime.c:52
+msgid "fmon-daemon 已停止运行，下面显示的是最后一次采集的数据。"
+msgstr "fmon-daemon has stopped; the data shown below is from the last sample."
+
+#: src/gui/app/gui_runtime.c:63
+msgid "正在等待守护进程发布第一份数据…"
+msgstr "Waiting for the daemon to publish its first data…"
+
+#: src/gui/app/gui_runtime.c:82
+msgid "等待守护进程…请确认 fmon-daemon 已启动"
+msgstr "Waiting for the daemon… please make sure fmon-daemon is running"
+
+#: src/gui/app/gui_runtime.c:90
+#, c-format
+msgid "%s · %s · 运行 %s · %u 个进程 · 更新 %s"
+msgstr "%s · %s · up %s · %u processes · updated %s"
+
+#: src/gui/app/gui_theme_ui.c:257
+msgid "浅色"
+msgstr "Light"
+
+#: src/gui/app/gui_theme_ui.c:263
+msgid "深色"
+msgstr "Dark"
+
+#: src/gui/app/gui_window.c:160
+msgid "无法切换语言"
+msgstr "Cannot switch language"
+
+#: src/gui/app/gui_window.c:161
+msgid "找不到 fmon-gui 可执行文件。"
+msgstr "The fmon-gui executable could not be found."
+
+#: src/gui/app/gui_window.c:181
+#, c-format
+msgid "无法重启 fmon-gui：%s"
+msgstr "Cannot restart fmon-gui: %s"
+
+#: src/gui/app/gui_window.c:184
+msgid "语言切换失败"
+msgstr "Language switch failed"
+
+#: src/gui/app/gui_window.c:318
+msgid "长历史不可用"
+msgstr "Long history unavailable"
+
+#: src/gui/app/gui_window.c:319
+msgid "没有可用的历史金字塔文件。"
+msgstr "No history pyramid files are available."
+
+#: src/gui/app/gui_window.c:504
+msgid "FreeBSD 监控中心"
+msgstr "FreeBSD Monitoring Center"
+
+#: src/gui/app/gui_window.c:555
+msgid "界面语言（切换后自动重启）"
+msgstr "Interface language (restarts automatically after switching)"
+
+#: src/gui/app/gui_window.c:605
+msgid "⚠ 告警"
+msgstr "⚠ Alerts"
+
+#: src/gui/app/gui_window.c:614
+msgid "1 分钟"
+msgstr "1 minute"
+
+#: src/gui/app/gui_window.c:614
+msgid "5 分钟"
+msgstr "5 minutes"
+
+#: src/gui/app/gui_window.c:614
+msgid "15 分钟"
+msgstr "15 minutes"
+
+#: src/gui/app/gui_window.c:614
+msgid "20 分钟"
+msgstr "20 minutes"
+
+#: src/gui/app/gui_window.c:615
+msgid "1 小时"
+msgstr "1 hour"
+
+#: src/gui/app/gui_window.c:615
+msgid "24 小时"
+msgstr "24 hours"
+
+#: src/gui/app/gui_window.c:615
+msgid "7 天"
+msgstr "7 days"
+
+#: src/gui/app/gui_window.c:615
+msgid "30 天"
+msgstr "30 days"
+
+#: src/gui/app/gui_window.c:615
+msgid "自定义"
+msgstr "Custom"
+
+#: src/gui/app/gui_window.c:624
+msgid "实时图 20 分钟内；1 小时/24 小时使用 1 分钟金字塔"
+msgstr ""
+"Real-time charts up to 20 minutes; 1-hour/24-hour views use the 1-minute "
+"pyramid"
+
+#. 导出：主按钮（蓝色）
+#: src/gui/app/gui_window.c:634
+msgid "导出数据"
+msgstr "Export Data"
+
+#. 关于 / 告警 / 自动量程直接放在工具栏，不再收进 “...” 下拉。
+#: src/gui/app/gui_window.c:642
+msgid "关于"
+msgstr "About"
+
+#: src/gui/app/gui_window.c:646
+msgid "关于 fmon"
+msgstr "About fmon"
+
+#: src/gui/app/gui_window.c:655
+msgid "告警"
+msgstr "Alerts"
+
+#: src/gui/app/gui_window.c:656 src/gui/support/alerts.c:459
+#: src/gui/support/alerts.c:547
+msgid "告警设置"
+msgstr "Alert Settings"
+
+#: src/gui/app/gui_window.c:659
+msgid "自动量程"
+msgstr "Auto"
+
+#: src/gui/app/gui_window.c:665
+msgid "百分比图表默认 0–100%；打开后按当前窗口数据缩放，轴标签仍显示真实范围"
+msgstr ""
+"Percentage charts default to 0–100%; when enabled, scale to the data in the "
+"current window; axis labels still show the real range"
+
+#: src/gui/app/gui_window.c:693
+msgid ""
+"长历史模式（ZFS/GPU 部分聚合）：CPU / 内存 / 网络 / 磁盘读写/温度、ZFS 池使用"
+"率/ARC 命中率/L2ARC/ZFS IO、GPU 利用率/温度/显存使用；ZFS 容量构成等仍为实"
+"时。"
+msgstr ""
+"Long-history mode (ZFS/GPU partially aggregated): CPU / memory / network / "
+"disk read/write and temperature, ZFS pool usage/ARC hit rate/L2ARC/ZFS IO, "
+"GPU utilization/temperature/VRAM usage; ZFS capacity breakdown and similar "
+"remain real-time."
+
+#: src/gui/pages/gui_coreview.c:182
+#, c-format
+msgid "CPU %d 总使用率"
+msgstr "CPU %d total usage"
+
+#: src/gui/pages/gui_coreview.c:232
+#, c-format
+msgid "%d 核 · %u 线程 · 总使用率 %.1f %%"
+msgstr "%d cores · %u threads · total usage %.1f %%"
+
+#: src/gui/pages/gui_coreview.c:235
+#, c-format
+msgid "%u 线程 · 总使用率 %.1f %%"
+msgstr "%u threads · total usage %.1f %%"
+
+#: src/gui/pages/gui_page_batt.c:109
+msgid "打开电池页后开始记录（约 20 分钟窗口）"
+msgstr ""
+"Recording starts when the battery page is opened (about a 20-minute window)"
+
+#: src/gui/pages/gui_page_batt.c:214
+msgid "蓝：电量（0-100%） 绿/红：充电/放电功率"
+msgstr "Blue: charge level (0-100%)  Green/Red: charging/discharging power"
+
+#: src/gui/pages/gui_page_batt.c:320
+msgid "电池健康与供电"
+msgstr "Battery Health and Power"
+
+#: src/gui/pages/gui_page_batt.c:365
+msgid "设计容量"
+msgstr "Design capacity"
+
+#: src/gui/pages/gui_page_batt.c:365
+msgid "满充容量"
+msgstr "Full charge capacity"
+
+#: src/gui/pages/gui_page_batt.c:366
+msgid "健康度"
+msgstr "Health"
+
+#: src/gui/pages/gui_page_batt.c:366
+msgid "循环次数"
+msgstr "Cycle count"
+
+#: src/gui/pages/gui_page_batt.c:367
+msgid "电压"
+msgstr "Voltage"
+
+#: src/gui/pages/gui_page_batt.c:367
+msgid "电流 / 功率"
+msgstr "Current / Power"
+
+#: src/gui/pages/gui_page_batt.c:368
+msgid "剩余时间"
+msgstr "Time remaining"
+
+#: src/gui/pages/gui_page_batt.c:368
+msgid "电池温度"
+msgstr "Battery temperature"
+
+#: src/gui/pages/gui_page_batt.c:369
+msgid "型号 / OEM"
+msgstr "Model / OEM"
+
+#: src/gui/pages/gui_page_batt.c:369
+msgid "充电阈值"
+msgstr "Charge threshold"
+
+#: src/gui/pages/gui_page_batt.c:415 src/gui/pages/gui_page_batt.c:495
+msgid "不可用（ACPI 未暴露）"
+msgstr "Unavailable (not exposed by ACPI)"
+
+#: src/gui/pages/gui_page_batt.c:441
+#, c-format
+msgid "%.1f %%（损耗 %.1f %%）"
+msgstr "%.1f %% (wear %.1f %%)"
+
+#: src/gui/pages/gui_page_batt.c:457
+#, c-format
+msgid "%d 次"
+msgstr "%d cycles"
+
+#: src/gui/pages/gui_page_batt.c:459
+msgid "不可用"
+msgstr "Unavailable"
+
+#: src/gui/pages/gui_page_batt.c:477
+#, c-format
+msgid "%.2f W（充电中）"
+msgstr "%.2f W (charging)"
+
+#: src/gui/pages/gui_page_batt.c:480
+#, c-format
+msgid "%.2f W（放电中）"
+msgstr "%.2f W (discharging)"
+
+#: src/gui/pages/gui_page_batt.c:483
+msgid "已充满"
+msgstr "Fully charged"
+
+#: src/gui/pages/gui_page_batt.c:492
+msgid "未知（ACPI 未报告）"
+msgstr "Unknown (not reported by ACPI)"
+
+#: src/gui/pages/gui_page_batt.c:505
+msgid "未设置 / 不支持"
+msgstr "Not set / not supported"
+
+#: src/gui/pages/gui_page_cpu.c:164
+msgid "CPU 时间分布"
+msgstr "CPU Time Breakdown"
+
+#. 状态：4 列（键、值、键、值），行距统一
+#: src/gui/pages/gui_page_cpu.c:206
+msgid "状态与调度"
+msgstr "Status and Scheduling"
+
+#: src/gui/pages/gui_page_cpu.c:462
+msgid "CPU 使用率"
+msgstr "CPU Usage"
+
+#: src/gui/pages/gui_page_cpu.c:468
+msgid "当前值 · 历史平均 · 1/5/15 分钟负载"
+msgstr "Current value · historical average · 1/5/15-minute load"
+
+#: src/gui/pages/gui_page_cpu.c:484
+msgid "设备正常"
+msgstr "Device OK"
+
+#: src/gui/pages/gui_page_cpu.c:1333
+msgid "CPU 负载与温度"
+msgstr "CPU Load and Temperature"
+
+#: src/gui/pages/gui_page_cpu.c:1341
+msgid "左：CPU 使用率的 1/5/10 分钟平均值（%）· 右：温度曲线 + CPU 温度计"
+msgstr ""
+"Left: 1/5/10-minute averages of CPU usage (%) · Right: temperature curve + "
+"CPU thermometer"
+
+#: src/gui/pages/gui_page_cpu.c:1459
+#, c-format
+msgid "基准频率 %.2f GHz"
+msgstr "Base frequency %.2f GHz"
+
+#: src/gui/pages/gui_page_cpu.c:1465
+msgid "该平台按封装调频，仅 CPU0 暴露频率"
+msgstr ""
+"This platform scales frequency per package; only CPU0 exposes frequency"
+
+#: src/gui/pages/gui_page_disk.c:120
+msgid "性能：采集中…"
+msgstr "Performance: sampling…"
+
+#: src/gui/pages/gui_page_disk.c:125
+#, c-format
+msgid "IOPS 读 %.0f / 写 %.0f · 延迟 %.2f ms · 繁忙 %.0f%% · 队列 %.1f"
+msgstr ""
+"IOPS read %.0f / write %.0f · latency %.2f ms · busy %.0f%% · queue %.1f"
+
+#: src/gui/pages/gui_page_disk.c:175
+#, c-format
+msgid "寿命已用 %d%% · 备用空间 %d%% · 累计 读 %s / 写 %s"
+msgstr "Life used %d%% · spare space %d%% · total read %s / write %s"
+
+#: src/gui/pages/gui_page_disk.c:178
+#, c-format
+msgid "累计 读 %s / 写 %s"
+msgstr "Total read %s / write %s"
+
+#: src/gui/pages/gui_page_disk.c:231 src/gui/pages/gui_page_disk.c:467
+msgid "NVMe"
+msgstr "NVMe"
+
+#: src/gui/pages/gui_page_disk.c:233 src/gui/pages/gui_page_disk.c:469
+msgid "SATA"
+msgstr "SATA"
+
+#: src/gui/pages/gui_page_disk.c:235
+msgid "USB"
+msgstr "USB"
+
+#: src/gui/pages/gui_page_disk.c:237 src/gui/pages/gui_page_disk.c:481
+msgid "SCSI/SAS"
+msgstr "SCSI/SAS"
+
+#: src/gui/pages/gui_page_disk.c:239
+msgid "未知接口"
+msgstr "Unknown interface"
+
+#: src/gui/pages/gui_page_disk.c:265
+msgid "磁盘明细（图表为所有磁盘合计）"
+msgstr "Disk details (chart totals all disks)"
+
+#: src/gui/pages/gui_page_disk.c:412
+msgid "未检测到磁盘"
+msgstr "No disks detected"
+
+#: src/gui/pages/gui_page_disk.c:423
+msgid "元数据不可用"
+msgstr "Metadata unavailable"
+
+#: src/gui/pages/gui_page_disk.c:427
+msgid "未知型号"
+msgstr "Unknown model"
+
+#: src/gui/pages/gui_page_disk.c:437
+msgid " · 机械硬盘"
+msgstr " · HDD"
+
+#: src/gui/pages/gui_page_disk.c:439
+msgid " · 固态硬盘"
+msgstr " · SSD"
+
+#: src/gui/pages/gui_page_disk.c:441
+msgid " · 移动闪存盘"
+msgstr " · USB flash drive"
+
+#: src/gui/pages/gui_page_disk.c:443
+msgid " · 外置硬盘"
+msgstr " · External drive"
+
+#: src/gui/pages/gui_page_disk.c:445
+msgid " · 类型未知"
+msgstr " · Unknown type"
+
+#: src/gui/pages/gui_page_disk.c:451
+#, c-format
+msgid "SN %s"
+msgstr "SN %s"
+
+#: src/gui/pages/gui_page_disk.c:474
+msgid "USB 链路 3.0（5 Gbps）"
+msgstr "USB link 3.0 (5 Gbps)"
+
+#: src/gui/pages/gui_page_disk.c:476
+msgid "USB 链路 2.0（480 Mbps）"
+msgstr "USB link 2.0 (480 Mbps)"
+
+#: src/gui/pages/gui_page_disk.c:478
+msgid "USB 链路"
+msgstr "USB link"
+
+#: src/gui/pages/gui_page_disk.c:487
+msgid "SATA 6 Gb/s"
+msgstr "SATA 6 Gb/s"
+
+#: src/gui/pages/gui_page_disk.c:489
+msgid "SATA 3 Gb/s"
+msgstr "SATA 3 Gb/s"
+
+#: src/gui/pages/gui_page_disk.c:491
+msgid "SATA 1.5 Gb/s"
+msgstr "SATA 1.5 Gb/s"
+
+#: src/gui/pages/gui_page_disk.c:493
+msgid "PCIe/NVMe"
+msgstr "PCIe/NVMe"
+
+#: src/gui/pages/gui_page_disk.c:497
+#, c-format
+msgid "接口 %s"
+msgstr "Interface %s"
+
+#: src/gui/pages/gui_page_disk.c:503
+#, c-format
+msgid " · 磁盘 %s"
+msgstr " · disk %s"
+
+#: src/gui/pages/gui_page_disk.c:506
+#, c-format
+msgid " · 扇区 %u B"
+msgstr " · sector %u B"
+
+#: src/gui/pages/gui_page_disk.c:512
+msgid ""
+"USB 链路速率是设备与主机实际协商的结果。若设备或线材是\n"
+"USB 2.0，即使插在 USB 3.0 接口上也只能协商到 480 Mbps；\n"
+"物理接口版本无法由软件直接读取。\n"
+"磁盘一行显示硬盘本身的 SATA/NVMe 接口能力。"
+msgstr ""
+"USB link speed is the actual negotiated result between the device and the "
+"host. If the device or cable is\n"
+"USB 2.0, it can only negotiate 480 Mbps even when plugged into a USB 3.0 "
+"port;\n"
+"the physical port version cannot be read directly by software.\n"
+"the disk row shows the drive's own SATA/NVMe interface capability."
+
+#. 详情并入同一张大卡片（与 CPU 页一致），不再单独占一张卡
+#: src/gui/pages/gui_page_gpu.c:458
+msgid "显卡详情"
+msgstr "GPU Details"
+
+#: src/gui/pages/gui_page_l2arc.c:147
+msgid "L2ARC"
+msgstr "L2ARC"
+
+#: src/gui/pages/gui_page_l2arc.c:151
+msgid "二级读缓存（SSD 上的 ARC 扩展）"
+msgstr "Second-level read cache (ARC extension on SSD)"
+
+#: src/gui/pages/gui_page_l2arc.c:155
+msgid ""
+"未配置 L2ARC：当前系统没有 L2ARC 设备（vfs.zfs.l2arc_* / 缓存盘），以下指标为"
+"空。"
+msgstr ""
+"L2ARC not configured: this system has no L2ARC device (vfs.zfs.l2arc_* / "
+"cache disk), so the metrics below are empty."
+
+#: src/gui/pages/gui_page_l2arc.c:163
+msgid "L2ARC 明细"
+msgstr "L2ARC Details"
+
+#: src/gui/pages/gui_page_l2arc.c:180
+msgid "L2 缓存大小"
+msgstr "L2 cache size"
+
+#: src/gui/pages/gui_page_l2arc.c:183
+msgid "L2 命中率"
+msgstr "L2 hit rate"
+
+#: src/gui/pages/gui_page_mem.c:134
+msgid "内存队列"
+msgstr "Memory Queues"
+
+#: src/gui/pages/gui_page_mem.c:203
+msgid "回收与压力"
+msgstr "Reclaim and Pressure"
+
+#: src/gui/pages/gui_page_mem.c:205
+msgid "ZFS 缓存"
+msgstr "ZFS Cache"
+
+#: src/gui/pages/gui_page_mem.c:207
+msgid "内核内存（UMA）"
+msgstr "Kernel memory (UMA)"
+
+#: src/gui/pages/gui_page_mem.c:390
+#, c-format
+msgid "内存 %s · 已用 %s · 可用 %s"
+msgstr "Memory %s · used %s · available %s"
+
+#: src/gui/pages/gui_page_mem.c:402
+msgid "Swap：不可用"
+msgstr "Swap: unavailable"
+
+#: src/gui/pages/gui_page_mem.c:407
+#, c-format
+msgid "Swap 总 %.2f GB · 已用 %.2f GB"
+msgstr "Swap total %.2f GB · used %.2f GB"
+
+#: src/gui/pages/gui_page_mem.c:474
+msgid "内存条信息不可用（dmidecode 未安装或探测失败）"
+msgstr ""
+"Memory module information unavailable (dmidecode not installed or probing "
+"failed)"
+
+#: src/gui/pages/gui_page_mem.c:481
+msgid "未检测到已安装的内存条"
+msgstr "No installed memory modules detected"
+
+#: src/gui/pages/gui_page_mem.c:522
+msgid "内存条"
+msgstr "Memory modules"
+
+#: src/gui/pages/gui_page_net.c:115
+msgid "未检测到网卡硬件"
+msgstr "No network hardware detected"
+
+#: src/gui/pages/gui_page_net.c:147
+msgid "链路与错误"
+msgstr "Link and Errors"
+
+#: src/gui/pages/gui_page_net.c:162
+msgid "TCP 健康度"
+msgstr "TCP Health"
+
+#: src/gui/pages/gui_page_net.c:296
+#, c-format
+msgid ""
+"重传率 %.2f%%（重传 %llu / 发送 %llu） · 监听队列溢出 %llu · 连接尝试 %llu / "
+"关闭 %llu"
+msgstr ""
+"Retransmit rate %.2f%% (retransmitted %llu / sent %llu) · listen queue "
+"overflows %llu · connection attempts %llu / closed %llu"
+
+#: src/gui/pages/gui_page_net.c:310
+msgid "网络接口详情"
+msgstr "Network Interface Details"
+
+#: src/gui/pages/gui_page_zfs.c:111
+msgid "池详情"
+msgstr "Pool Details"
+
+#: src/gui/pages/gui_page_zfs.c:143
+msgid "延迟（读）"
+msgstr "Latency (read)"
+
+#: src/gui/pages/gui_page_zfs.c:144
+msgid "延迟（写）"
+msgstr "Latency (write)"
+
+#: src/gui/pages/gui_page_zfs.c:145
+msgid "队列"
+msgstr "Queue"
+
+#: src/gui/pages/gui_page_zfs.c:146
+msgid "已用（物理 / 逻辑）"
+msgstr "Used (physical / logical)"
+
+#: src/gui/pages/gui_page_zfs.c:147
+msgid "近 1 分钟变化"
+msgstr "Change over the last minute"
+
+#: src/gui/pages/gui_page_zfs.c:148 src/gui/views/network_view.c:929
+msgid "错误"
+msgstr "Errors"
+
+#: src/gui/pages/gui_page_zfs.c:149
+msgid "慢 I/O"
+msgstr "Slow I/O"
+
+#: src/gui/pages/gui_page_zfs.c:152
+msgid "TXG"
+msgstr "TXG"
+
+#: src/gui/pages/gui_page_zfs.c:153
+msgid "脏数据延迟"
+msgstr "Dirty data delay"
+
+#: src/gui/pages/gui_page_zfs.c:154
+msgid "ZIL / SLOG"
+msgstr "ZIL / SLOG"
+
+#: src/gui/pages/gui_page_zfs.c:157
+msgid "vdev"
+msgstr "vdev"
+
+#: src/gui/pages/gui_page_zfs.c:159
+msgid "最近 scrub"
+msgstr "Last scrub"
+
+#: src/gui/pages/gui_page_zfs.c:182
+msgid "没有 vdev 数据"
+msgstr "No vdev data"
+
+#: src/gui/pages/gui_page_zfs.c:230
+#, c-format
+msgid "已用 %s / 总量 %s"
+msgstr "Used %s / total %s"
+
+#: src/gui/pages/gui_page_zfs.c:231
+#, c-format
+msgid "使用率 %.1f %% · 空闲 %s"
+msgstr "Usage %.1f %% · free %s"
+
+#: src/gui/pages/gui_page_zfs.c:246
+msgid "zpool 不可用"
+msgstr "zpool unavailable"
+
+#: src/gui/pages/gui_page_zfs.c:247
+msgid "无可用池"
+msgstr "No pools available"
+
+#: src/gui/pages/gui_page_zfs.c:257 src/gui/pages/gui_page_zfs.c:258
+#: src/gui/pages/gui_page_zfs.c:379
+msgid "采集中…"
+msgstr "Sampling…"
+
+#: src/gui/pages/gui_page_zfs.c:262 src/gui/pages/gui_page_zfs.c:346
+msgid "碎片率 —"
+msgstr "Fragmentation —"
+
+#: src/gui/pages/gui_page_zfs.c:271 src/gui/pages/gui_page_zfs.c:273
+#, c-format
+msgid "total %.2f ms · disk %.2f ms"
+msgstr "total %.2f ms · disk %.2f ms"
+
+#: src/gui/pages/gui_page_zfs.c:285
+#, c-format
+msgid "pend %.0f / activ %.0f"
+msgstr "pend %.0f / activ %.0f"
+
+#: src/gui/pages/gui_page_zfs.c:320
+#, c-format
+msgid "%+.2f MB（%+.4f%%）"
+msgstr "%+.2f MB (%+.4f%%)"
+
+#: src/gui/pages/gui_page_zfs.c:326
+msgid "采样中…"
+msgstr "Sampling…"
+
+#: src/gui/pages/gui_page_zfs.c:330
+#, c-format
+msgid "读 %llu / 写 %llu / CKSUM %llu"
+msgstr "Read %llu / write %llu / CKSUM %llu"
+
+#: src/gui/pages/gui_page_zfs.c:338
+#, c-format
+msgid "%llu 次"
+msgstr "%llu times"
+
+#: src/gui/pages/gui_page_zfs.c:345
+#, c-format
+msgid "碎片率 %d %%"
+msgstr "Fragmentation %d %%"
+
+#: src/gui/pages/gui_page_zfs.c:356
+#, c-format
+msgid "txg %llu · stime %.2f s（近 %d 次均值 %.2f s）%s"
+msgstr "txg %llu · stime %.2f s (avg of last %d samples: %.2f s)%s"
+
+#: src/gui/pages/gui_page_zfs.c:359 src/gui/pages/gui_page_zfs.c:365
+msgid " · 疑似脏数据节流（同步尖峰）"
+msgstr " · suspected dirty-data throttling (sync spike)"
+
+#: src/gui/pages/gui_page_zfs.c:362
+#, c-format
+msgid "txg %llu · stime %.1f ms（近 %d 次均值 %.1f ms）%s"
+msgstr "txg %llu · stime %.1f ms (avg of last %d samples: %.1f ms)%s"
+
+#: src/gui/pages/gui_page_zfs.c:369
+#, c-format
+msgid "%s · qtime %.1f ms · wtime %.1f ms（流水线）"
+msgstr "%s · qtime %.1f ms · wtime %.1f ms (pipeline)"
+
+#: src/gui/pages/gui_page_zfs.c:384
+#, c-format
+msgid "dirty_delay %llu · throttle %llu · wrlog_delay %llu"
+msgstr "dirty_delay %llu · throttle %llu · wrlog_delay %llu"
+
+#: src/gui/pages/gui_page_zfs.c:399
+#, c-format
+msgid "ARC 命中率 %.2f %%"
+msgstr "ARC hit rate %.2f %%"
+
+#: src/gui/pages/gui_page_zfs.c:402
+msgid "ARC 命中率 —"
+msgstr "ARC hit rate —"
+
+#: src/gui/pages/gui_page_zfs.c:411
+msgid "已配置（SLOG）"
+msgstr "Configured (SLOG)"
+
+#: src/gui/pages/gui_page_zfs.c:412
+msgid "未配置（ZIL 在池内）"
+msgstr "Not configured (ZIL in pool)"
+
+#: src/gui/pages/gui_page_zfs.c:415
+#, c-format
+msgid "扫描中 %s%% · 剩余 %s"
+msgstr "Scanning %s%% · remaining %s"
+
+#: src/gui/pages/gui_page_zfs.c:422
+msgid "没有 scrub 记录"
+msgstr "No scrub records"
+
+#: src/gui/pages/gui_page_zfs.c:469
+msgid "ARC 明细"
+msgstr "ARC Details"
+
+#: src/gui/pages/gui_page_zfs.c:664
+msgid "命中率明细"
+msgstr "Hit Rate Details"
+
+#: src/gui/pages/gui_page_zfs.c:810
+msgid "带宽明细"
+msgstr "Bandwidth Details"
+
+#: src/gui/pages/gui_page_zfs.c:940
+#, c-format
+msgid "—（当前写入过低）"
+msgstr "— (current write load too low)"
+
+#. 延迟直方图：只显示计数 > 0 的桶，避免一行太长
+#: src/gui/pages/gui_page_zfs.c:947 src/gui/pages/gui_page_zfs.c:959
+msgid "延迟直方图  "
+msgstr "Latency histogram  "
+
+#: src/gui/pages/gui_page_zfs.c:960
+msgid "无数据（空闲）"
+msgstr "No data (idle)"
+
+#: src/gui/pages/gui_page_zfs.c:998
+#, c-format
+msgid "%s  延迟 读 %.2f / 写 %.2f ms · disk 读 %.2f / 写 %.2f ms"
+msgstr "%s  latency read %.2f / write %.2f ms · disk read %.2f / write %.2f ms"
+
+#: src/gui/pages/gui_page_zfs.c:1008
+msgid "vdev 延迟：采集中…"
+msgstr "vdev latency: sampling…"
+
+#: src/gui/pages/gui_page_zfs.c:1017
+#, c-format
+msgid "写请求大小  ≤4K %.0f · 8–64K %.0f · ≥128K %.0f"
+msgstr "Write request size  ≤4K %.0f · 8–64K %.0f · ≥128K %.0f"
+
+#: src/gui/pages/gui_page_zfs.c:1049
+msgid "回收明细"
+msgstr "Reclaim Details"
+
+#: src/gui/pages/gui_page_zfs.c:1085
+msgid ""
+"说明：ARC Prune 是事件累计计数；无内存压力、没有 ARC 驱逐时保持 0 属于正常，"
+"不需要配置。"
+msgstr ""
+"Note: ARC prune is a cumulative event count; it stays at 0 when there is no "
+"memory pressure and no ARC eviction, which is normal and requires no "
+"configuration."
+
+#: src/gui/pages/gui_page_zfs.c:1168
+msgid "无 ZFS 数据"
+msgstr "No ZFS data"
+
+#: src/gui/pages/gui_page_zfs.c:1240
+#, c-format
+msgid "状态：内存压力回收（prune %.1f/s · skip %.1f/s · 节流 +%llu）"
+msgstr ""
+"Status: memory-pressure reclaim (prune %.1f/s · skip %.1f/s · throttled +"
+"%llu)"
+
+#: src/gui/pages/gui_page_zfs.c:1243
+#, c-format
+msgid "状态：正常回收（prune %.1f/s · skip %.1f/s）"
+msgstr "Status: normal reclaim (prune %.1f/s · skip %.1f/s)"
+
+#: src/gui/pages/gui_page_zfs.c:1246
+#, c-format
+msgid "状态：空闲（无回收活动）"
+msgstr "Status: idle (no reclaim activity)"
+
+#: src/gui/pages/gui_page_zfs.c:1253
+#, c-format
+msgid "L2ARC 淘汰跳过 %llu · 淘汰读 %llu · free_on_write %llu · 写错误 %llu"
+msgstr ""
+"L2ARC eviction skipped %llu · eviction reads %llu · free_on_write %llu · "
+"write errors %llu"
+
+#: src/gui/pages/gui_page_zfs.c:1259
+#, c-format
+msgid "L2ARC：未配置"
+msgstr "L2ARC: not configured"
+
+#: src/gui/pages/gui_pages_layout.c:301
+msgid "构成趋势（数据缓冲 / 元数据）"
+msgstr "Composition trend (data buffers / metadata)"
+
+#: src/gui/pages/gui_pages_layout.c:320
+msgid "近 60 秒命中率"
+msgstr "Hit rate over the last 60 seconds"
+
+#: src/gui/pages/gui_pages_layout.c:344
+msgid "幽灵缓存趋势（MRU / MFU）"
+msgstr "Ghost cache trend (MRU / MFU)"
+
+#: src/gui/pages/mem_summary.c:41
+#, c-format
+msgid "缓冲（Buf）%.2f GB"
+msgstr "Buffers (Buf) %.2f GB"
+
+#: src/gui/pages/mem_summary.c:43
+#, c-format
+msgid "缓冲（Buf）%.1f MB"
+msgstr "Buffers (Buf) %.1f MB"
+
+#: src/gui/pages/mem_summary.c:65
+#, c-format
+msgid "已用 %.2f GB（其中 ZFS ARC %.2f GB 可回收）｜ 实际可用约 %.2f GB"
+msgstr ""
+"Used %.2f GB (of which ZFS ARC %.2f GB is reclaimable) | actually available: "
+"about %.2f GB"
+
+#: src/gui/support/about.c:123
+msgid "关于 FreeBSD 监控中心"
+msgstr "About FreeBSD Monitoring Center"
+
+#: src/gui/support/about.c:139
+#, c-format
+msgid "版本 %s · 共享内存 ABI %u"
+msgstr "Version %s · shared memory ABI %u"
+
+#: src/gui/support/about.c:157
+msgid "本软件（BSD 2-Clause）"
+msgstr "This software (BSD 2-Clause)"
+
+#: src/gui/support/about.c:162
+msgid "第三方组件"
+msgstr "Third-party components"
+
+#: src/gui/support/about.c:167 src/gui/views/log_view.c:502
+#: src/gui/views/service_actions.c:471 src/gui/views/service_actions.c:1276
+msgid "关闭"
+msgstr "Close"
+
+#: src/gui/support/alerts.c:157
+msgid "无法发送桌面通知"
+msgstr "Cannot send desktop notification"
+
+#: src/gui/support/alerts.c:157
+msgid "未找到 notify-send 命令，请安装 libnotify（pkg install libnotify）。"
+msgstr ""
+"The notify-send command was not found; please install libnotify (pkg install "
+"libnotify)."
+
+#: src/gui/support/alerts.c:287
+#, c-format
+msgid "CPU 使用率 %.1f%%（阈值 %.0f%%）"
+msgstr "CPU usage %.1f%% (threshold %.0f%%)"
+
+#: src/gui/support/alerts.c:300
+#, c-format
+msgid "内存使用率 %.1f%%（阈值 %.0f%%，已扣除可回收的 ARC/缓存）"
+msgstr ""
+"Memory usage %.1f%% (threshold %.0f%%, excluding reclaimable ARC/cache)"
+
+#: src/gui/support/alerts.c:309
+#, c-format
+msgid "Swap 使用率 %.1f%%（阈值 %.0f%%）"
+msgstr "Swap usage %.1f%% (threshold %.0f%%)"
+
+#: src/gui/support/alerts.c:318
+#, c-format
+msgid "ZFS 池 %s 使用率 %.1f%%（阈值 %.0f%%）"
+msgstr "ZFS pool %s usage %.1f%% (threshold %.0f%%)"
+
+#: src/gui/support/alerts.c:329
+#, c-format
+msgid "CPU 温度 %.1f℃（阈值 %.0f℃）"
+msgstr "CPU temperature %.1f℃ (threshold %.0f℃)"
+
+#: src/gui/support/alerts.c:339
+#, c-format
+msgid "电池电量仅 %.0f%%（阈值 %.0f%%）"
+msgstr "Battery level only %.0f%% (threshold %.0f%%)"
+
+#: src/gui/support/alerts.c:470
+msgid "启用阈值告警（桌面通知）"
+msgstr "Enable threshold alerts (desktop notifications)"
+
+#: src/gui/support/alerts.c:498
+msgid "同一指标 10 分钟内只通知一次；超过阈值的项目会显示在窗口右上角。"
+msgstr ""
+"Each metric is notified at most once every 10 minutes; items over the "
+"threshold are shown in the top-right corner of the window."
+
+#: src/gui/support/alerts.c:507
+msgid "测试通知"
+msgstr "Test notification"
+
+#: src/gui/support/alerts.c:508 src/gui/views/service_actions.c:777
+msgid "取消"
+msgstr "Cancel"
+
+#: src/gui/support/alerts.c:509
+msgid "保存"
+msgstr "Save"
+
+#: src/gui/support/cpuset_dialog.c:140
+msgid "至少选择一个 CPU"
+msgstr "Select at least one CPU"
+
+#: src/gui/support/cpuset_dialog.c:202
+msgid "CPU 绑定"
+msgstr "CPU Affinity"
+
+#: src/gui/support/cpuset_dialog.c:230
+msgid "允许运行的 CPU（勾选）："
+msgstr "CPUs allowed to run on (check):"
+
+#: src/gui/support/disk_history.c:467
+msgid "暂无明细数据（运行 1 分钟后开始记录）"
+msgstr "No detail data yet (recording starts after 1 minute)"
+
+#: src/gui/support/disk_history.c:520
+#, c-format
+msgid "最新 %.2f %s · 最小 %.2f · 最大 %.2f · 平均 %.2f · %u 个采样点"
+msgstr "Latest %.2f %s · min %.2f · max %.2f · avg %.2f · %u samples"
+
+#: src/gui/support/disk_history.c:765
+#, c-format
+msgid "历史明细 · %s"
+msgstr "History details · %s"
+
+#: src/gui/support/disk_history.c:846
+#, c-format
+msgid "设备历史 · %s"
+msgstr "Device history · %s"
+
+#: src/gui/support/disk_history.c:860 src/gui/views/storage_view.c:620
+msgid "设备"
+msgstr "Device"
+
+#: src/gui/support/disk_history.c:891
+msgid "指标"
+msgstr "Metric"
+
+#: src/gui/support/disk_history.c:900
+msgid "完整列表"
+msgstr "Full list"
+
+#: src/gui/support/disk_history.c:901
+msgid "导出 CSV"
+msgstr "Export CSV"
+
+#: src/gui/views/log_view.c:332 src/gui/views/log_view.c:352
+#, c-format
+msgid "（重复 %u 次）"
+msgstr "(repeated %u times)"
+
+#: src/gui/views/log_view.c:364
+msgid "（没有匹配的日志行）\n"
+msgstr "(no matching log lines)\n"
+
+#: src/gui/views/log_view.c:494
+msgid "日志上下文（前后 5 行）"
+msgstr "Log context (5 lines before/after)"
+
+#: src/gui/views/log_view.c:507
+msgid "（未找到上下文）"
+msgstr "(no context found)"
+
+#: src/gui/views/log_view.c:667
+msgid "（重复 "
+msgstr "(repeated "
+
+#: src/gui/views/log_view.c:912
+#, c-format
+msgid "日志源：%s"
+msgstr "Log source: %s"
+
+#: src/gui/views/log_view.c:1085
+msgid "导出当前日志"
+msgstr "Export current log"
+
+#: src/gui/views/log_view.c:1299 src/gui/views/process_view.c:966
+#: src/gui/views/service_view.c:154 src/gui/views/storage_view.c:591
+msgid "刷新"
+msgstr "Refresh"
+
+#: src/gui/views/log_view.c:1303
+msgid "打开文件…"
+msgstr "Open file…"
+
+#: src/gui/views/log_view.c:1316
+msgid "自定义…"
+msgstr "Custom…"
+
+#: src/gui/views/log_view.c:1349
+msgid "搜索（支持 -排除词）"
+msgstr "Search (supports -word to exclude)"
+
+#: src/gui/views/log_view.c:1355
+msgid "排除关键词"
+msgstr "Exclude keywords"
+
+#: src/gui/views/log_view.c:1360
+msgid "按正则表达式匹配"
+msgstr "Match by regular expression"
+
+#: src/gui/views/log_view.c:1363
+msgid "折叠重复"
+msgstr "Collapse duplicates"
+
+#: src/gui/views/log_view.c:1366
+msgid "暂停"
+msgstr "Pause"
+
+#: src/gui/views/log_view.c:1370
+msgid "导出"
+msgstr "Export"
+
+#: src/gui/views/log_view.c:1377
+msgid "日志文件：/var/log/messages"
+msgstr "Log file: /var/log/messages"
+
+#: src/gui/views/network_view.c:845
+msgid "刷新连接"
+msgstr "Refresh connections"
+
+#: src/gui/views/network_view.c:851
+msgid "按进程、PID、地址或协议过滤"
+msgstr "Filter by process, PID, address, or protocol"
+
+#: src/gui/views/network_view.c:874 src/gui/views/process_list.c:302
+msgid "用户"
+msgstr "User"
+
+#: src/gui/views/network_view.c:874
+msgid "UID"
+msgstr "UID"
+
+#: src/gui/views/network_view.c:874 src/gui/views/process_list.c:304
+msgid "命令"
+msgstr "Command"
+
+#: src/gui/views/network_view.c:875
+msgid "协议"
+msgstr "Protocol"
+
+#: src/gui/views/network_view.c:875 src/gui/views/network_view.c:929
+#: src/gui/views/process_list.c:302 src/gui/views/storage_view.c:620
+msgid "状态"
+msgstr "Status"
+
+#: src/gui/views/network_view.c:875
+msgid "服务"
+msgstr "Service"
+
+#: src/gui/views/network_view.c:875
+msgid "本地地址"
+msgstr "Local address"
+
+#: src/gui/views/network_view.c:876
+msgid "远端地址"
+msgstr "Remote address"
+
+#: src/gui/views/network_view.c:876 src/gui/views/network_view.c:929
+msgid "接口"
+msgstr "Interface"
+
+#: src/gui/views/network_view.c:876
+msgid "持续"
+msgstr "Duration"
+
+#: src/gui/views/network_view.c:913
+msgid "接口数据来自 getifaddrs(2)，速率按真实采样间隔计算"
+msgstr ""
+"Interface data comes from getifaddrs(2); rates are calculated over the "
+"actual sampling interval"
+
+#: src/gui/views/network_view.c:929
+msgid "地址"
+msgstr "Address"
+
+#: src/gui/views/network_view.c:929
+msgid "接收"
+msgstr "Receive"
+
+#: src/gui/views/network_view.c:929
+msgid "发送"
+msgstr "Send"
+
+#: src/gui/views/process_actions.c:37
+#, c-format
+msgid "无法向进程 %u (%s) 发送信号。"
+msgstr "Cannot send a signal to process %u (%s)."
+
+#: src/gui/views/process_actions.c:44
+msgid "权限不足，或进程已经退出。"
+msgstr "Insufficient permissions, or the process has already exited."
+
+#: src/gui/views/process_actions.c:76
+#, c-format
+msgid "无法操作进程 %u：它属于用户 uid %u。"
+msgstr "Cannot operate on process %u: it belongs to user uid %u."
+
+#: src/gui/views/process_actions.c:80
+msgid ""
+"普通用户可以查看其他用户的进程，但不能结束或调整它们。\n"
+"请以 root 运行 fmon-gui（sudo fmon-gui / doas fmon-gui）后再操作。"
+msgstr ""
+"Regular users can view other users' processes but cannot terminate or adjust "
+"them.\n"
+"Run fmon-gui as root (sudo fmon-gui / doas fmon-gui) and try again."
+
+#: src/gui/views/process_actions.c:124
+#, c-format
+msgid "无法把进程 %u 的优先级调整为 %d。"
+msgstr "Cannot set the priority of process %u to %d."
+
+#: src/gui/views/process_actions.c:251
+#, c-format
+msgid "强制结束进程树 %u（%s）及其 %u 个子进程？"
+msgstr "Force-kill process tree %u (%s) and its %u child processes?"
+
+#: src/gui/views/process_actions.c:252
+#, c-format
+msgid "结束进程树 %u（%s）及其 %u 个子进程？"
+msgstr "Terminate process tree %u (%s) and its %u child processes?"
+
+#: src/gui/views/process_actions.c:258
+msgid "SIGKILL 无法被捕获，整棵进程树会立即终止。"
+msgstr ""
+"SIGKILL cannot be caught; the entire process tree will terminate immediately."
+
+#: src/gui/views/process_actions.c:259
+msgid "将向整棵进程树发送 SIGTERM，子进程先退出。"
+msgstr ""
+"SIGTERM will be sent to the entire process tree; child processes exit first."
+
+#: src/gui/views/process_actions.c:260
+msgid "强制结束进程树"
+msgstr "Force-kill process tree"
+
+#: src/gui/views/process_actions.c:260
+msgid "结束进程树"
+msgstr "Terminate process tree"
+
+#: src/gui/views/process_actions.c:372
+#, c-format
+msgid "强制结束选中的 %u 个进程？"
+msgstr "Force-kill the %u selected processes?"
+
+#: src/gui/views/process_actions.c:373
+#, c-format
+msgid "结束选中的 %u 个进程？"
+msgstr "Terminate the %u selected processes?"
+
+#: src/gui/views/process_actions.c:378
+msgid "SIGKILL 无法被捕获，选中进程会立即终止。"
+msgstr ""
+"SIGKILL cannot be caught; the selected processes will terminate immediately."
+
+#: src/gui/views/process_actions.c:379
+msgid "将向选中进程发送 SIGTERM。"
+msgstr "SIGTERM will be sent to the selected processes."
+
+#: src/gui/views/process_actions.c:380
+msgid "强制结束"
+msgstr "Force kill"
+
+#: src/gui/views/process_actions.c:380
+msgid "结束进程"
+msgstr "Terminate process"
+
+#: src/gui/views/process_actions.c:440
+msgid "父进程不在当前视图"
+msgstr "Parent process is not in the current view"
+
+#: src/gui/views/process_actions.c:441
+msgid "它可能已被过滤（属于系统进程/其他用户），或已经退出。"
+msgstr ""
+"It may have been filtered out (system process or another user), or it may "
+"have already exited."
+
+#: src/gui/views/process_actions.c:461
+#, c-format
+msgid "把进程 %u（%s）的 nice 提高到 0？"
+msgstr "Raise the nice value of process %u (%s) to 0?"
+
+#: src/gui/views/process_actions.c:466
+msgid "降低 nice 值需要权限；普通用户只能提高 nice。"
+msgstr ""
+"Lowering the nice value requires privileges; regular users can only raise it."
+
+#: src/gui/views/process_actions.c:467
+msgid "提高优先级"
+msgstr "Raise priority"
+
+#: src/gui/views/process_actions.c:580 src/gui/views/process_view.c:924
+#, c-format
+msgid "结束进程 %u（%s）？"
+msgstr "Terminate process %u (%s)?"
+
+#: src/gui/views/process_actions.c:600
+#, c-format
+msgid "强制杀死进程 %u（%s）？"
+msgstr "Force-kill process %u (%s)?"
+
+#: src/gui/views/process_actions.c:793 src/gui/views/process_actions.c:839
+msgid "需要进程属主或 root 权限"
+msgstr "Requires process owner or root privileges"
+
+#: src/gui/views/process_actions.c:798
+msgid "进程已暂停"
+msgstr "Process paused"
+
+#: src/gui/views/process_actions.c:803
+msgid "进程未暂停"
+msgstr "Process not paused"
+
+#: src/gui/views/process_actions.c:822
+msgid "结束进程树 (SIGTERM)"
+msgstr "Terminate process tree (SIGTERM)"
+
+#: src/gui/views/process_actions.c:828
+msgid "强制结束进程树 (SIGKILL)"
+msgstr "Force-kill process tree (SIGKILL)"
+
+#: src/gui/views/process_actions.c:855
+#, c-format
+msgid "结束选中的 %llu 个进程"
+msgstr "Terminate the selected %llu processes"
+
+#: src/gui/views/process_actions.c:864 src/gui/views/process_actions.c:877
+msgid "选中的进程包含其他用户，需 root"
+msgstr "Selection includes other users' processes; root required"
+
+#: src/gui/views/process_actions.c:868
+#, c-format
+msgid "强制结束选中的 %llu 个进程"
+msgstr "Force-kill the selected %llu processes"
+
+#: src/gui/views/process_list.c:118
+msgid "R - 运行中 / 可运行"
+msgstr "R - Running / runnable"
+
+#: src/gui/views/process_list.c:119
+msgid "S - 可中断睡眠"
+msgstr "S - Interruptible sleep"
+
+#: src/gui/views/process_list.c:120
+msgid "I - 空闲（内核线程）"
+msgstr "I - Idle (kernel thread)"
+
+#: src/gui/views/process_list.c:121
+msgid "D - 不可中断睡眠（多在等磁盘 I/O）"
+msgstr "D - Uninterruptible sleep (usually waiting on disk I/O)"
+
+#: src/gui/views/process_list.c:122
+msgid "T - 已暂停 / 被跟踪"
+msgstr "T - Stopped / traced"
+
+#: src/gui/views/process_list.c:123
+msgid "Z - 僵尸进程"
+msgstr "Z - Zombie process"
+
+#: src/gui/views/process_list.c:124
+msgid "W - 换出等待"
+msgstr "W - Waiting to swap out"
+
+#: src/gui/views/process_list.c:125
+msgid "未知状态"
+msgstr "Unknown state"
+
+#: src/gui/views/process_list.c:171
+msgid ""
+"FreeBSD 不提供每进程当前 swap；这里显示上次换出前的 RSS（ki_swrss），常为 0"
+msgstr ""
+"FreeBSD does not provide per-process current swap; this shows the RSS before "
+"the last swap-out (ki_swrss), which is often 0"
+
+#: src/gui/views/process_list.c:302 src/gui/views/storage_view.c:620
+msgid "类型"
+msgstr "Type"
+
+#: src/gui/views/process_list.c:303
+msgid "内存"
+msgstr "Memory"
+
+#: src/gui/views/process_list.c:303
+msgid "CPU 时间"
+msgstr "CPU time"
+
+#: src/gui/views/process_list.c:303
+msgid "Swap"
+msgstr "Swap"
+
+#: src/gui/views/process_list.c:304
+msgid "线程"
+msgstr "Threads"
+
+#: src/gui/views/process_view.c:554
+msgid "系统视图：root 与系统账户的进程"
+msgstr "System view: processes owned by root and system accounts"
+
+#: src/gui/views/process_view.c:556
+msgid ""
+"系统进程（只读）：可以查看，但普通用户不能结束/调整；操作需以 root 运行 fmon-"
+"gui（sudo/doas）"
+msgstr ""
+"System processes (read-only): you can view them, but regular users cannot "
+"terminate/adjust them; operating on them requires running fmon-gui as root "
+"(sudo/doas)"
+
+#: src/gui/views/process_view.c:559
+#, c-format
+msgid "普通用户视图：只显示你自己的进程（uid %u）"
+msgstr "Regular user view: shows only your own processes (uid %u)"
+
+#: src/gui/views/process_view.c:562
+msgid "普通用户视图：所有非系统账户的进程"
+msgstr "Regular user view: processes of all non-system accounts"
+
+#: src/gui/views/process_view.c:585
+#, c-format
+msgid "%s（已选中 %llu 个进程，自动刷新已暂停）"
+msgstr "%s (%llu processes selected; auto-refresh paused)"
+
+#: src/gui/views/process_view.c:589
+#, c-format
+msgid "%s（已选中 PID %u，自动刷新时视口保持不动）"
+msgstr "%s (PID %u selected; viewport stays fixed during auto-refresh)"
+
+#: src/gui/views/process_view.c:741
+#, c-format
+msgid ""
+"已导出 %u 行到：\n"
+"%s"
+msgstr ""
+"Exported %u rows to:\n"
+"%s"
+
+#: src/gui/views/process_view.c:904
+msgid "结束选中的进程（SIGTERM）"
+msgstr "Terminate selected processes (SIGTERM)"
+
+#: src/gui/views/process_view.c:905
+msgid "普通用户不能操作其他用户的进程；需以 root 运行 fmon-gui"
+msgstr ""
+"Regular users cannot operate on other users' processes; run fmon-gui as root"
+
+#: src/gui/views/process_view.c:970
+msgid "进程树"
+msgstr "Process tree"
+
+#: src/gui/views/process_view.c:973
+msgid "按父子关系缩进显示；关闭后恢复扁平列表"
+msgstr "Indent children under parents; turn off to restore a flat list"
+
+#: src/gui/views/process_view.c:981
+msgid "普通用户"
+msgstr "Regular user"
+
+#: src/gui/views/process_view.c:982
+msgid "系统 (root)"
+msgstr "System (root)"
+
+#: src/gui/views/process_view.c:995
+msgid "查看系统进程（只读）；操作 root 进程需以 root 运行 fmon-gui"
+msgstr ""
+"View system processes (read-only); operating on root processes requires "
+"running fmon-gui as root"
+
+#: src/gui/views/process_view.c:1000
+msgid "按进程名、PID、用户名过滤"
+msgstr "Filter by process name, PID, or user name"
+
+#: src/gui/views/process_view.c:1007
+msgid "更多操作"
+msgstr "More actions"
+
+#: src/gui/views/process_view.c:1011
+msgid "导出列表"
+msgstr "Export list"
+
+#: src/gui/views/process_view.c:1054
+msgid "详细信息"
+msgstr "Details"
+
+#: src/gui/views/process_view.c:1055
+msgid "结束任务"
+msgstr "End task"
+
+#: src/gui/views/process_windows.c:98
+msgid "进程详细信息"
+msgstr "Process details"
+
+#: src/gui/views/process_windows.c:106
+msgid "进程详细信息（加载中…）"
+msgstr "Process details (loading…)"
+
+#: src/gui/views/process_windows.c:111
+msgid "正在读取进程信息…"
+msgstr "Reading process information…"
+
+#: src/gui/views/process_windows.c:221
+msgid "正在读取…"
+msgstr "Loading…"
+
+#: src/gui/views/service_actions.c:71
+#, c-format
+msgid "服务操作“%s”失败"
+msgstr "Service operation “%s” failed"
+
+#: src/gui/views/service_actions.c:76
+msgid "命令执行失败"
+msgstr "Command execution failed"
+
+#: src/gui/views/service_actions.c:148
+#, c-format
+msgid "服务 “%s” 当前未运行"
+msgstr "Service “%s” is not currently running"
+
+#: src/gui/views/service_actions.c:151
+msgid "请先点“启动”，再执行重启或重载。"
+msgstr "Click “Start” first, then restart or reload."
+
+#: src/gui/views/service_actions.c:182
+msgid "控制通道权限不足，且系统没有 pkexec。"
+msgstr ""
+"Insufficient permissions on the control channel, and pkexec is not available."
+
+#: src/gui/views/service_actions.c:185
+#, c-format
+msgid "无法执行服务操作“%s”。"
+msgstr "Cannot perform service operation “%s”."
+
+#: src/gui/views/service_actions.c:191
+msgid "控制通道不可用：请确认 fmon-daemon 正在运行。"
+msgstr "Control channel unavailable: please make sure fmon-daemon is running."
+
+#: src/gui/views/service_actions.c:195
+msgid ""
+"\n"
+"守护进程版本过旧：请执行 sudo ./install.sh 更新并重启 daemon。"
+msgstr ""
+"\n"
+"The daemon version is too old: run sudo ./install.sh to update, then restart "
+"the daemon."
+
+#: src/gui/views/service_actions.c:198
+msgid ""
+"\n"
+"当前以 root 运行，请检查服务脚本与 daemon 状态。"
+msgstr ""
+"\n"
+"Running as root; check the service script and daemon status."
+
+#: src/gui/views/service_actions.c:250
+#, c-format
+msgid "停止服务 “%s”？"
+msgstr "Stop service “%s”?"
+
+#: src/gui/views/service_actions.c:355
+msgid "未自动找到（可在脚本中查看配置路径）"
+msgstr "Not found automatically (check the configuration path in the script)"
+
+#: src/gui/views/service_actions.c:416
+#, c-format
+msgid "进程 %u 不在当前进程视图"
+msgstr "Process %u is not in the current process view"
+
+#: src/gui/views/service_actions.c:420
+msgid "它可能属于其他用户（切换到系统视图）、是内核线程，或已经退出。"
+msgstr ""
+"It may belong to another user (switch to the system view), be a kernel "
+"thread, or have already exited."
+
+#: src/gui/views/service_actions.c:438
+msgid ""
+"REQUIRE 依赖树（最多 4 层）\n"
+"\n"
+msgstr ""
+"REQUIRE dependency tree (up to 4 levels)\n"
+"\n"
+
+#: src/gui/views/service_actions.c:441
+#, c-format
+msgid "依赖树 · %s"
+msgstr "Dependency tree · %s"
+
+#: src/gui/views/service_actions.c:507
+#, c-format
+msgid ""
+"服务：%s\n"
+"\n"
+msgstr ""
+"Service: %s\n"
+"\n"
+
+#: src/gui/views/service_actions.c:518
+msgid ""
+"\n"
+"当前状态：已停止（status 返回非零是正常的）"
+msgstr ""
+"\n"
+"Current state: stopped (a non-zero status return is normal)"
+
+#: src/gui/views/service_actions.c:520
+msgid ""
+"\n"
+"当前状态：运行中"
+msgstr ""
+"\n"
+"Current state: running"
+
+#: src/gui/views/service_actions.c:525
+msgid ""
+"\n"
+"当前状态：无法读取 pidfile（普通用户权限不足，可尝试以 root 运行或检查文件权"
+"限）"
+msgstr ""
+"\n"
+"Current state: cannot read pidfile (insufficient permissions for a regular "
+"user; try running as root or check file permissions)"
+
+#: src/gui/views/service_actions.c:528
+msgid ""
+"\n"
+"当前状态：查询失败，请查看上面的原始输出"
+msgstr ""
+"\n"
+"Current state: query failed; see the raw output above"
+
+#: src/gui/views/service_actions.c:547
+#, c-format
+msgid "服务状态 · %s"
+msgstr "Service status · %s"
+
+#: src/gui/views/service_actions.c:562
+#, c-format
+msgid ""
+"服务：%s（最近 500 行 messages）\n"
+"\n"
+msgstr ""
+"Service: %s (last 500 lines of messages)\n"
+"\n"
+
+#: src/gui/views/service_actions.c:568
+msgid "没有匹配的日志。\n"
+msgstr "No matching log entries.\n"
+
+#: src/gui/views/service_actions.c:588
+#, c-format
+msgid "服务日志 · %s"
+msgstr "Service log · %s"
+
+#: src/gui/views/service_actions.c:676
+msgid "控制通道不可用"
+msgstr "Control channel unavailable"
+
+#: src/gui/views/service_actions.c:723
+#, c-format
+msgid "%d 个服务操作失败"
+msgstr "%d service operations failed"
+
+#: src/gui/views/service_actions.c:731
+#, c-format
+msgid "批量操作已取消：完成 %d / %u"
+msgstr "Batch operation canceled: completed %d / %u"
+
+#: src/gui/views/service_actions.c:734
+msgid "已取消"
+msgstr "Canceled"
+
+#: src/gui/views/service_actions.c:750
+msgid "批量服务操作"
+msgstr "Batch service operation"
+
+#: src/gui/views/service_actions.c:764
+#, c-format
+msgid "正在处理 %u 个服务…"
+msgstr "Processing %u services…"
+
+#: src/gui/views/service_actions.c:810
+msgid "没有选中服务"
+msgstr "No services selected"
+
+#: src/gui/views/service_actions.c:811
+msgid "勾选左侧服务后再执行批量操作。"
+msgstr "Check services on the left before running a batch operation."
+
+#: src/gui/views/service_actions.c:840
+#, c-format
+msgid "对选中的 %u 个服务执行 %s？"
+msgstr "For %u selected services, perform %s?"
+
+#: src/gui/views/service_actions.c:841
+msgid "启动"
+msgstr "Start"
+
+#: src/gui/views/service_actions.c:841
+msgid "停止"
+msgstr "Stop"
+
+#: src/gui/views/service_actions.c:844
+msgid "操作会通过 root 守护进程执行。"
+msgstr "The operation runs through the root daemon."
+
+#: src/gui/views/service_actions.c:845
+msgid "执行"
+msgstr "Run"
+
+#: src/gui/views/service_actions.c:881
+#, c-format
+msgid "服务 “%s” 未运行，将启动它？"
+msgstr "Service “%s” is not running. Start it?"
+
+#: src/gui/views/service_actions.c:884
+msgid "对已停止的服务，重启等价于启动。"
+msgstr "For a stopped service, restart is equivalent to start."
+
+#: src/gui/views/service_actions.c:885
+msgid "启动服务"
+msgstr "Start service"
+
+#: src/gui/views/service_actions.c:891
+#, c-format
+msgid "重启服务 “%s”？"
+msgstr "Restart service “%s”?"
+
+#: src/gui/views/service_actions.c:894
+msgid "正在使用的连接会短暂中断，服务会停止后重新启动。"
+msgstr ""
+"Active connections will be briefly interrupted; the service will stop and "
+"then start again."
+
+#: src/gui/views/service_actions.c:895
+msgid "重启服务"
+msgstr "Restart service"
+
+#: src/gui/views/service_actions.c:910
+#, c-format
+msgid "服务 “%s” 没有定义 reload 动作"
+msgstr "Service “%s” does not define a reload action"
+
+#: src/gui/views/service_actions.c:914
+msgid ""
+"脚本里没有 reload_cmd / extra_commands；请先在该 rc.d 脚本中实现 reload，或改"
+"用重启。"
+msgstr ""
+"The script has no reload_cmd / extra_commands; implement reload in the rc.d "
+"script first, or use restart instead."
+
+#: src/gui/views/service_actions.c:939
+#, c-format
+msgid "禁用服务 “%s” 的开机自启？"
+msgstr "Disable automatic startup for service “%s”?"
+
+#: src/gui/views/service_actions.c:1109
+msgid "（未找到服务脚本）"
+msgstr "(service script not found)"
+
+#: src/gui/views/service_actions.c:1220
+msgid "宿主机（非 Jail）"
+msgstr "Host (not a jail)"
+
+#: src/gui/views/service_actions.c:1247
+msgid "在进程管理中查看"
+msgstr "View in process manager"
+
+#: src/gui/views/service_actions.c:1256
+msgid "查看依赖树"
+msgstr "View dependency tree"
+
+#: src/gui/views/service_actions.c:1287
+msgid "服务详细信息"
+msgstr "Service details"
+
+#: src/gui/views/service_actions.c:1302
+msgid "服务详细信息（加载中…）"
+msgstr "Service details (loading…)"
+
+#: src/gui/views/service_actions.c:1307
+msgid "正在查询服务状态…"
+msgstr "Querying service status…"
+
+#: src/gui/views/service_list.c:136
+msgid "操作"
+msgstr "Action"
+
+#: src/gui/views/service_list.c:142
+msgid "详情"
+msgstr "Details"
+
+#: src/gui/views/service_list.c:149
+msgid "查询状态"
+msgstr "Query status"
+
+#: src/gui/views/service_list.c:156
+msgid "查看日志"
+msgstr "View log"
+
+#: src/gui/views/service_list.c:164
+msgid "重启"
+msgstr "Restart"
+
+#: src/gui/views/service_list.c:168
+msgid "重载配置"
+msgstr "Reload configuration"
+
+#: src/gui/views/service_list.c:174
+msgid "该服务脚本没有定义 reload_cmd，无法平滑重载"
+msgstr ""
+"This service script does not define reload_cmd; graceful reload is "
+"unavailable"
+
+#: src/gui/views/service_list.c:277 src/gui/views/service_list.c:313
+#, c-format
+msgid "正在运行 (%u 可见 / 共 %u)"
+msgstr "Running (%u shown / %u total)"
+
+#: src/gui/views/service_list.c:283 src/gui/views/service_list.c:319
+#, c-format
+msgid "已停止 (%u 可见 / 共 %u)"
+msgstr "Stopped (%u shown / %u total)"
+
+#: src/gui/views/service_view.c:158
+msgid "启动所选"
+msgstr "Start selected"
+
+#: src/gui/views/service_view.c:159
+msgid "停止所选"
+msgstr "Stop selected"
+
+#: src/gui/views/service_view.c:170
+msgid "搜索服务名"
+msgstr "Search service name"
+
+#: src/gui/views/service_view.c:173
+msgid "隐藏系统内部脚本"
+msgstr "Hide internal system scripts"
+
+#: src/gui/views/service_view.c:195
+msgid "已停止"
+msgstr "Stopped"
+
+#: src/gui/views/service_view.c:202
+msgid "正在运行"
+msgstr "Running"
+
+#: src/gui/views/storage_view.c:204
+msgid "只读"
+msgstr "Read-only"
+
+#: src/gui/views/storage_view.c:204
+msgid "读写"
+msgstr "Read/write"
+
+#: src/gui/views/storage_view.c:224
+msgid "容量使用率：≥85% 黄色，≥95% 红色；ZFS ≥80% 即黄色"
+msgstr "Capacity usage: ≥85% yellow, ≥95% red; ZFS turns yellow at ≥80%"
+
+#: src/gui/views/storage_view.c:260
+#, c-format
+msgid ""
+"总容量 %s\n"
+"已用 %s\n"
+"可用 %s\n"
+"使用率 %.1f%%"
+msgstr ""
+"Total capacity %s\n"
+"Used %s\n"
+"Available %s\n"
+"Usage %.1f%%"
+
+#: src/gui/views/storage_view.c:284
+msgid "挂载点信息不可用（daemon 采集失败）"
+msgstr "Mount point information unavailable (daemon collection failed)"
+
+#: src/gui/views/storage_view.c:504
+msgid "历史"
+msgstr "History"
+
+#: src/gui/views/storage_view.c:509
+msgid "查看该设备 24 小时延迟 / 吞吐 / 温度"
+msgstr "View 24-hour latency / throughput / temperature for this device"
+
+#: src/gui/views/storage_view.c:595
+msgid "容量统计来自 statfs(2)，与 df 的 Use% 口径一致"
+msgstr "Capacity figures come from statfs(2) and match df's Use% metric"
+
+#: src/gui/views/storage_view.c:620
+msgid "挂载点"
+msgstr "Mount point"
+
+#: src/gui/views/storage_view.c:620
+msgid "总容量"
+msgstr "Total capacity"
+
+#: src/gui/views/storage_view.c:620
+msgid "已用"
+msgstr "Used"
+
+#: src/gui/views/storage_view.c:620
+msgid "可用"
+msgstr "Available"
+
+#: src/gui/views/storage_view.c:620
+msgid "使用率"
+msgstr "Usage"
+
+#: src/gui/views/storage_view.c:620
+msgid "Inode"
+msgstr "Inode"
+
+msgid " · %u MT/s（实际 %u）"
+msgstr "  · %u MT/s (actual %u)"
+
+msgid " · 专用显存 %.1f%%"
+msgstr "  · Dedicated VRAM %.1f%%"
+
+msgid " · 信号 %d dBm"
+msgstr "  · Signal %d dBm"
+
+msgid " · 信道 %u"
+msgstr "  · Channel %u"
+
+msgid " · 共享内存 %.1f%%"
+msgstr "  · Shared memory %.1f%%"
+
+msgid " · 已连接"
+msgstr "  · Connected"
+
+msgid " · 未连接"
+msgstr "  · Disconnected"
+
+msgid " 分"
+msgstr " min"
+
+msgid " 天 %"
+msgstr " days %"
+
+msgid " 小时 %"
+msgstr " hours %"
+
+msgid " 秒未更新，守护进程可能被挂起。"
+msgstr " s stale; the daemon may be hung."
+
+msgid "##命中率"
+msgstr "##Hit rate"
+
+msgid "##池空间"
+msgstr "##Pool space"
+
+msgid "%.0f / %.0f MB（专用）"
+msgstr "%.0f / %.0f MB (dedicated)"
+
+msgid "%.0f / %.0f MB（共享系统内存）"
+msgstr "%.0f / %.0f MB (shared system memory)"
+
+msgid "%.0f / %.0f MB（空闲 %.0f MB）"
+msgstr "%.0f / %.0f MB (%.0f MB free)"
+
+msgid "%.0f 分钟前"
+msgstr "%.0f minutes ago"
+
+msgid "%.0f 小时前"
+msgstr "%.0f hours ago"
+
+msgid "%.0f 次"
+msgstr "%.0f times"
+
+msgid "%.0f 次/s"
+msgstr "%.0f ops/s"
+
+msgid "%.0f 次/秒"
+msgstr "%.0f ops/s"
+
+msgid "%.0f 页/s"
+msgstr "%.0f pages/s"
+
+msgid "%.1f 次/秒"
+msgstr "%.1f ops/s"
+
+msgid "%.2f V / 设计 %.2f V"
+msgstr "%.2f V / design %.2f V"
+
+msgid "%.2f W / 上限 %.2f W"
+msgstr "%.2f W / limit %.2f W"
+
+msgid "%.2f W（未报告上限）"
+msgstr "%.2f W (limit not reported)"
+
+msgid "%llu 块"
+msgstr "%llu blocks"
+
+msgid ""
+"%s  读 %s/s · 写 %s/s · IOPS %.0f / %.0f · 延迟 读 %.2f / 写 %.2f ms · syncq "
+"%.2f / %.2f ms"
+msgstr ""
+"%s  read %s/s · write %s/s · IOPS %.0f / %.0f · latency read %.2f / write "
+"%.2f ms · syncq %.2f / %.2f ms"
+
+msgid "%s · vmm 已加载"
+msgstr "%s · vmm loaded"
+
+msgid "%s · vmm 未加载"
+msgstr "%s · vmm not loaded"
+
+msgid "%s · 使用率 %.0f%% · 负载 %.2f · %.0f°C"
+msgstr "%s · usage %.0f%% · load %.2f · %.0f°C"
+
+msgid "%s 客户机"
+msgstr "%s guest"
+
+msgid "%s%s%s · IOMMU %s · bhyve %s · 运行中 VM %s · 裸机"
+msgstr "%s%s%s · IOMMU %s · bhyve %s · running VMs: %s · bare metal"
+
+msgid "%s%s%s · vmm 模块已加载 · /dev/vmm 不可用 · IOMMU %s · bhyve %s · 裸机"
+msgstr ""
+"%s%s%s · vmm module loaded · /dev/vmm unavailable · IOMMU %s · bhyve %s · "
+"bare metal"
+
+msgid "%s%s%s · vmm.ko %s · bhyve %s · 裸机 · 启用宿主虚拟化需 kldload vmm"
+msgstr ""
+"%s%s%s · vmm.ko %s · bhyve %s · bare metal · host virtualization requires "
+"kldload vmm"
+
+msgid "%s显存 %.0f MHz"
+msgstr "%s VRAM %.0f MHz"
+
+msgid "%s视频 %.0f MHz"
+msgstr "%s video %.0f MHz"
+
+msgid "%s（单比特 %llu / 双比特 %llu）"
+msgstr "%s (single-bit %llu / double-bit %llu)"
+
+msgid ""
+"%s：%u 个采样点%s · CPU 平均 %.1f%% / 原始峰值 %.1f%% · 内存平均 %.1f%% · 阴"
+"影为桶内最小–最大"
+msgstr ""
+"%s: %u samples%s · CPU avg %.1f%% / raw peak %.1f%% · memory avg %.1f%% · "
+"shade = per-bucket min–max"
+
+msgid "%s：SSID %s · 信道 %u · %s"
+msgstr "%s: SSID %s · channel %u · %s"
+
+msgid "%u 个插槽 / %u 条已安装"
+msgstr "%u slots / %u installed"
+
+msgid "%u 台"
+msgstr "%u"
+
+msgid ""
+"/share/licenses/<包名>/COPYING\n"
+"FreeBSD 基础系统的许可证位于 /usr/share/ 与源码树中。\n"
+"\n"
+"本程序自身的许可证（BSD 2-Clause）见「本软件」页签，\n"
+"安装后也位于 "
+msgstr ""
+"/share/licenses/<package>/COPYING\n"
+"FreeBSD base system licenses are in /usr/share/ and the source tree.\n"
+"\n"
+"This program's own license (BSD 2-Clause) is on the 'This software' tab,\n"
+"and after installation is also at  "
+
+msgid "0 %（核显无独立风扇，整机风扇由 EC 控制）"
+msgstr ""
+"0 % (integrated GPU has no dedicated fan; system fan is controlled by the EC)"
+
+msgid "0.00 W（核显通常不单独计量）"
+msgstr "0.00 W (integrated GPUs are usually not measured separately)"
+
+msgid "1 / 5 / 15 分钟（任务数）"
+msgstr "1 / 5 / 15 min (task count)"
+
+msgid "1 分钟 / 5 分钟 / 15 分钟（单位：任务数；每线程 <1 不排队）"
+msgstr ""
+"1 min / 5 min / 15 min (unit: task count; per-thread <1 means no queueing)"
+
+msgid "10 分钟"
+msgstr "10 minutes"
+
+msgid "24 小时前"
+msgstr "24 hours ago"
+
+msgid "6 小时"
+msgstr "6 hours"
+
+msgid "<span foreground=\"#2e7d32\">已连接</span>"
+msgstr "<span foreground=\"#2e7d32\">Connected</span>"
+
+msgid "<span foreground=\"#c62828\">未连接</span>"
+msgstr "<span foreground=\"#c62828\">Disconnected</span>"
+
+msgid "AMD (无 SVM)"
+msgstr "AMD (no SVM)"
+
+msgid "ARC 上限"
+msgstr "ARC limit"
+
+msgid "ARC 回收次数"
+msgstr "ARC evictions"
+
+msgid "ARC 大小"
+msgstr "ARC size"
+
+msgid "ARC 大小与占比"
+msgstr "ARC size and share"
+
+msgid "BAR1 显存映射"
+msgstr "BAR1 VRAM mapping"
+
+msgid "CPU 使用率超过 (%)"
+msgstr "CPU usage above (%)"
+
+msgid "CPU 占用"
+msgstr "CPU usage"
+
+msgid "CPU 历史 · 平均 + 极值带"
+msgstr "CPU history · average + extremes"
+
+msgid "CPU 平均使用率（1 / 5 / 10 分钟滑动平均）"
+msgstr "Average CPU usage (1 / 5 / 10 minute moving average)"
+
+msgid "CPU 未使用"
+msgstr "CPU idle"
+
+msgid "CPU 温度"
+msgstr "CPU temperature"
+
+msgid "CPU 温度超过 (℃)"
+msgstr "CPU temperature above (℃)"
+
+msgid "CPU 绑定…"
+msgstr "CPU affinity…"
+
+msgid "CPUID 未暴露 VMX/SVM；vmm %s；bhyve %s；裸机"
+msgstr "CPUID does not expose VMX/SVM; vmm %s; bhyve %s; bare metal"
+
+msgid "ECC 错误"
+msgstr "ECC errors"
+
+msgid "FreeBSD 监控中心 · fmon"
+msgstr "FreeBSD Monitoring Center · fmon"
+
+msgid ""
+"GPU %.1f%% · 显存 %.1f%% · 编码 %.1f%% · 解码 %.1f%% · JPEG %.1f%% · OFA "
+"%.1f%%"
+msgstr ""
+"GPU %.1f%% · VRAM %.1f%% · encode %.1f%% · decode %.1f%% · JPEG %.1f%% · OFA "
+"%.1f%%"
+
+msgid "GPU 温度"
+msgstr "GPU temperature"
+
+msgid "Gen%u × %u · 吞吐 收 %.1f / 发 %.1f MB/s"
+msgstr "Gen%u × %u · throughput rx %.1f / tx %.1f MB/s"
+
+msgid "Intel (无 VT-x)"
+msgstr "Intel (no VT-x)"
+
+msgid "L2 写速率"
+msgstr "L2 write rate"
+
+msgid "L2 命中 / 未命中"
+msgstr "L2 hits / misses"
+
+msgid "L2 设备"
+msgstr "L2 device"
+
+msgid "L2 读速率"
+msgstr "L2 read rate"
+
+msgid "MFU 幽灵"
+msgstr "MFU ghost"
+
+msgid "MFU 幽灵/秒"
+msgstr "MFU ghosts/s"
+
+msgid "MRU 幽灵"
+msgstr "MRU ghost"
+
+msgid "MRU 幽灵/秒"
+msgstr "MRU ghosts/s"
+
+msgid "NVMe 已用寿命百分比（SMART）"
+msgstr "NVMe life used percentage (SMART)"
+
+msgid "NVMe 温度（SMART）；≥60°C 黄、≥70°C 红"
+msgstr "NVMe temperature (SMART); ≥60°C yellow, ≥70°C red"
+
+msgid "P%u · 计算核心 %u"
+msgstr "P%u · compute units %u"
+
+msgid "RACCT/RCTL 未启用：需要内核启用 RACCT/RCTL"
+msgstr "RACCT/RCTL not enabled: the kernel must have RACCT/RCTL enabled"
+
+msgid ""
+"SIGKILL 无法被捕获，进程会立即终止，未保存的数据会丢失。\n"
+"若进程属于其他用户，将弹出管理员认证窗口。"
+msgstr ""
+"SIGKILL cannot be caught; the process terminates immediately and unsaved "
+"data will be lost.\n"
+"If the process belongs to another user, an administrator authentication "
+"dialog will appear."
+
+msgid "SMART 来源：%s"
+msgstr "SMART source: %s"
+
+msgid "Swap 使用率"
+msgstr "Swap usage"
+
+msgid "Swap 使用率超过 (%)"
+msgstr "Swap usage above (%)"
+
+msgid "UMA 合计"
+msgstr "UMA total"
+
+msgid "USB 共享"
+msgstr "USB shared"
+
+msgid "ZFS 事件（zpool events -v）"
+msgstr "ZFS events (zpool events -v)"
+
+msgid "ZFS 命中率"
+msgstr "ZFS hit rate"
+
+msgid "ZFS 带宽"
+msgstr "ZFS bandwidth"
+
+msgid "ZFS 总览"
+msgstr "ZFS overview"
+
+msgid "ZFS 池使用率超过 (%)"
+msgstr "ZFS pool usage above (%)"
+
+msgid "ZFS 池空间"
+msgstr "ZFS pool space"
+
+msgid "direct 回收/秒"
+msgstr "direct reclaim/s"
+
+msgid "feeds %llu · 读写冲突 %llu"
+msgstr "feeds %llu · read/write conflicts %llu"
+
+msgid "fmon 严重告警"
+msgstr "fmon critical alert"
+
+msgid "fmon 告警"
+msgstr "fmon alert"
+
+msgid "fmon 测试通知"
+msgstr "fmon test notification"
+
+msgid "fmon-gui %s (共享内存 ABI %u)\n"
+msgstr ""
+"fmon-gui %s (shared memory ABI %u)\n"
+"\n"
+
+msgid "nvmecontrol 回退"
+msgstr "nvmecontrol fallback"
+
+msgid "prune/秒"
+msgstr "prune/s"
+
+msgid "rc.conf 变量"
+msgstr "rc.conf variable"
+
+msgid "rc.conf 当前值"
+msgstr "rc.conf current value"
+
+msgid "rctl 资源规则管理"
+msgstr "rctl resource rule management"
+
+msgid "smartctl 回退"
+msgstr "smartctl fallback"
+
+msgid "subject 和数值不能为空"
+msgstr "subject and value cannot be empty"
+
+msgid "zpool 写带宽"
+msgstr "zpool write bandwidth"
+
+msgid "zpool 读带宽"
+msgstr "zpool read bandwidth"
+
+msgid "—（尚无访问）"
+msgstr "— (no access yet)"
+
+msgid "—（无 L2）"
+msgstr "— (no L2)"
+
+msgid "【严重】"
+msgstr "[Critical]"
+
+msgid "上下文切换"
+msgstr "Context switches"
+
+msgid "上限"
+msgstr "Limit"
+
+msgid "不允许的动作"
+msgstr "Action not allowed"
+
+msgid "不可用（没有转速传感器）"
+msgstr "Unavailable (no tachometer)"
+
+msgid "不可用（驱动未暴露）"
+msgstr "Unavailable (not exposed by driver)"
+
+msgid "不存在"
+msgstr "Does not exist"
+
+msgid "不支持硬件虚拟化"
+msgstr "Hardware virtualization not supported"
+
+msgid "专用显存 (VRAM)"
+msgstr "Dedicated VRAM"
+
+msgid "丢包"
+msgstr "Packet drops"
+
+msgid "严重"
+msgstr "Critical"
+
+msgid "中文"
+msgstr "Chinese"
+
+msgid "中断"
+msgstr "Interrupts"
+
+msgid "主 PID"
+msgstr "Main PID"
+
+msgid "主机名"
+msgstr "Hostname"
+
+msgid "二级读缓存明细"
+msgstr "L2ARC details"
+
+msgid "交换区使用"
+msgstr "Swap usage"
+
+msgid "以太网"
+msgstr "Ethernet"
+
+msgid "传感器可用"
+msgstr "Sensors available"
+
+msgid "低优先级进程"
+msgstr "Low-priority processes"
+
+msgid "低优先级（nice > 0）用户进程占用"
+msgstr "Used by low-priority (nice > 0) user processes"
+
+msgid "低内存中止"
+msgstr "Low-memory aborts"
+
+msgid "低电量"
+msgstr "Low battery"
+
+msgid "使用率、负载与温度"
+msgstr "Usage, load and temperature"
+
+msgid "使用率与错误趋势（颜色区分）"
+msgstr "Usage and error trends (color-coded)"
+
+msgid "使用电池"
+msgstr "On battery"
+
+msgid "依赖 (REQUIRE)"
+msgstr "Dependencies (REQUIRE)"
+
+msgid "保存历史数据 CSV"
+msgstr "Save history CSV"
+
+msgid "保存监控数据 CSV"
+msgstr "Save monitoring data CSV"
+
+msgid "保存进程列表 CSV"
+msgstr "Save process list CSV"
+
+msgid "信息"
+msgstr "Info"
+
+msgid ""
+"修改其他用户的进程需要 root；如果 fmon-daemon 正在运行，会通过控制通道执行。"
+msgstr ""
+"Modifying another user's process requires root; if fmon-daemon is running, "
+"it is done through the control channel."
+
+msgid "停止服务"
+msgstr "Stop service"
+
+msgid "元数据"
+msgstr "Metadata"
+
+msgid "元数据命中率"
+msgstr "Metadata hit rate"
+
+msgid "充电中"
+msgstr "Charging"
+
+msgid "全部 /var/log/all.log"
+msgstr "All /var/log/all.log"
+
+msgid "全部时间"
+msgstr "All time"
+
+msgid "全部级别"
+msgstr "All levels"
+
+msgid "共享内存 (GTT)"
+msgstr "Shared memory (GTT)"
+
+msgid "其他"
+msgstr "Other"
+
+msgid "内存 (RSS)"
+msgstr "Memory (RSS)"
+
+msgid "内存使用率"
+msgstr "Memory usage"
+
+msgid "内存使用率（扣除可回收）超过 (%)"
+msgstr "Memory usage (excluding reclaimable) above (%)"
+
+msgid "内存历史 · 平均 + 极值带"
+msgstr "Memory history · average + extremes"
+
+msgid "内存节流"
+msgstr "Memory throttling"
+
+msgid "内核 dmesg（kern.msgbuf）"
+msgstr "Kernel dmesg (kern.msgbuf)"
+
+msgid "内核与系统调用"
+msgstr "Kernel and system calls"
+
+msgid "内核态时间：系统调用、驱动、内核线程"
+msgstr "Kernel time: system calls, drivers, kernel threads"
+
+msgid "写"
+msgstr "Write"
+
+msgid "写 %llu · IO %llu · 校验 %llu"
+msgstr "writes %llu · IO %llu · checksum %llu"
+
+msgid "写入"
+msgstr "Write"
+
+msgid "写入完成"
+msgstr "Writes completed"
+
+msgid "写入操作"
+msgstr "Write operations"
+
+msgid "写入累计"
+msgstr "Total write"
+
+msgid "写放大"
+msgstr "Write amplification"
+
+msgid "写次"
+msgstr "Writes"
+
+msgid "写速率"
+msgstr "Write rate"
+
+msgid "写速率与累计"
+msgstr "Write rate and total"
+
+msgid "分类型命中率与淘汰压力"
+msgstr "Hit rates by type and eviction pressure"
+
+msgid "删除 ~/.local/state/fmon/alerts.log"
+msgstr "Delete ~/.local/state/fmon/alerts.log"
+
+msgid "删除回收"
+msgstr "Deletion reclaims"
+
+msgid "删除选中"
+msgstr "Delete selected"
+
+msgid "利用率细分"
+msgstr "Utilization breakdown"
+
+msgid "前置 (BEFORE)"
+msgstr "Before (BEFORE)"
+
+msgid "功耗"
+msgstr "Power draw"
+
+msgid "加载中…"
+msgstr "Loading…"
+
+msgid ""
+"半圆：当前 CPU 使用率；内侧为最近 5 分钟的平均使用率，\n"
+"不足 5 分钟时按已有数据计算。\n"
+"右侧：系统平均负载 = 过去 1/5/15 分钟内平均可运行（运行中或\n"
+"等待 CPU）的任务数；除以线程数得到每线程负载：<1 不排队，\n"
+">1 有排队，>2 明显拥堵。"
+msgstr ""
+"Semicircle: current CPU usage; the inner arc is the 5-minute average,\n"
+"computed from available data if less than 5 minutes.\n"
+"Right: system load average = mean runnable tasks (running or\n"
+"waiting for CPU) over 1/5/15 minutes; divide by thread count for per-thread "
+"load:\n"
+"<1 no queueing, >1 queueing, >2 clearly congested."
+
+msgid "占上限"
+msgstr "Share of limit"
+
+msgid "占内存"
+msgstr "Share of memory"
+
+msgid "历史已清空"
+msgstr "History cleared"
+
+msgid ""
+"历史数据由守护进程每 10 秒写入 /var/db/fmon/history.tsv（普通用户调试时为 "
+"~/.local/state/fmon/history.tsv）。"
+msgstr ""
+"The daemon writes history every 10 seconds to /var/db/fmon/history.tsv (for "
+"unprivileged debugging: ~/.local/state/fmon/history.tsv)."
+
+msgid "历史记录"
+msgstr "History"
+
+msgid "压缩比"
+msgstr "Compression ratio"
+
+msgid "发送请求失败"
+msgstr "Failed to send request"
+
+msgid "只能调整自己的进程；操作 root 进程需以 root 运行"
+msgstr ""
+"You can only adjust your own processes; operating on root processes requires "
+"running as root"
+
+msgid "可回收比例"
+msgstr "Reclaimable share"
+
+msgid "名称"
+msgstr "Name"
+
+msgid "吞吐 (KB/s)"
+msgstr "Throughput (KB/s)"
+
+msgid "否 (NO)"
+msgstr "No (NO)"
+
+msgid "启动时打开的显卡序号（从 0 开始）"
+msgstr "GPU index to open at startup (0-based)"
+
+msgid "启动时显示的页面（如 cpu/mem/disk/gpu1/proc/...）"
+msgstr "Page to show at startup (e.g. cpu/mem/disk/gpu1/proc/...)"
+
+msgid "告警与资源规则"
+msgstr "Alerts and resource rules"
+
+msgid "告警与限制"
+msgstr "Alerts and limits"
+
+msgid "告警历史"
+msgstr "Alert history"
+
+msgid "告警记录与静默"
+msgstr "Alert log and muting"
+
+msgid "命中 / 未命中"
+msgstr "Hits / misses"
+
+msgid "命中/秒"
+msgstr "hits/s"
+
+msgid "命中率"
+msgstr "Hit rate"
+
+msgid "命中率与幽灵命中"
+msgstr "Hit rate and ghost hits"
+
+msgid "哈希元素"
+msgstr "Hash elements"
+
+msgid "哈希冲突"
+msgstr "Hash collisions"
+
+msgid "哈希碰撞"
+msgstr "Hash collisions"
+
+msgid "回收不足/秒"
+msgstr "reclaim shortfall/s"
+
+msgid "回环"
+msgstr "Loopback"
+
+msgid "固件 (VBIOS)"
+msgstr "Firmware (VBIOS)"
+
+msgid "图形 %.0f MHz"
+msgstr "Graphics %.0f MHz"
+
+msgid "图形 %.0f MHz · SM %.0f MHz · 显存 %.0f MHz · 视频 %.0f MHz"
+msgstr "Graphics %.0f MHz · SM %.0f MHz · VRAM %.0f MHz · Video %.0f MHz"
+
+msgid "图形时钟"
+msgstr "Graphics clock"
+
+msgid "在 /boot/loader.conf 中加入 kern.racct.enable=1 并重启后可用。"
+msgstr ""
+"Available after adding kern.racct.enable=1 to /boot/loader.conf and "
+"rebooting."
+
+msgid "地址、状态与收发速率"
+msgstr "Address, state and throughput"
+
+msgid "块大小"
+msgstr "Block size"
+
+msgid "处理硬件/软件中断的时间"
+msgstr "Time spent handling hardware/software interrupts"
+
+msgid "复制 PID"
+msgstr "Copy PID"
+
+msgid "大小"
+msgstr "Size"
+
+msgid "头部开销"
+msgstr "Header overhead"
+
+msgid "如果你看到这条消息，说明桌面通知工作正常。"
+msgstr "If you can see this message, desktop notifications are working."
+
+msgid "存储"
+msgstr "Storage"
+
+msgid "存储空间"
+msgstr "Storage space"
+
+msgid "存在"
+msgstr "Present"
+
+msgid "守护进程没有响应"
+msgstr "The daemon is not responding"
+
+msgid "安全 /var/log/security"
+msgstr "Security /var/log/security"
+
+msgid "完整信息"
+msgstr "Full information"
+
+msgid "定时任务 /var/log/cron"
+msgstr "Cron /var/log/cron"
+
+msgid "实际分配"
+msgstr "Allocated"
+
+msgid "容量与使用率"
+msgstr "Capacity and usage"
+
+msgid "对象（例如 process:1234 或 user:zxy）"
+msgstr "Subject (e.g. process:1234 or user:zxy)"
+
+msgid "寿命"
+msgstr "Life used"
+
+msgid ""
+"将先发送 SIGTERM 让进程正常退出。未保存的数据可能丢失。\n"
+"若进程属于其他用户，将弹出管理员认证窗口。"
+msgstr ""
+"SIGTERM will be sent first so the process can exit normally. Unsaved data "
+"may be lost.\n"
+"If the process belongs to another user, an administrator authentication "
+"dialog will appear."
+
+msgid "峰值 %s"
+msgstr "Peak %s"
+
+msgid "已停止 (stopped)"
+msgstr "Stopped (stopped)"
+
+msgid "已关闭"
+msgstr "Off"
+
+msgid "已加载"
+msgstr "Loaded"
+
+msgid "已启用"
+msgstr "Enabled"
+
+msgid "已应用"
+msgstr "Applied"
+
+msgid "已应用（控制通道）"
+msgstr "Applied (control channel)"
+
+msgid "已开启"
+msgstr "On"
+
+msgid "已接通外部电源"
+msgstr "External power connected"
+
+msgid "已用 %.0f / 总 %.0f MB（空闲 %.0f MB）"
+msgstr "Used %.0f / total %.0f MB (%.0f MB free)"
+
+msgid "已用 / 总量"
+msgstr "Used / total"
+
+msgid "常驻"
+msgstr "Wired"
+
+msgid "平均 %s  [%s – %s]  %s"
+msgstr "Average %s  [%s – %s]  %s"
+
+msgid "平均 I/O 延迟（devstat，毫秒）"
+msgstr "Average I/O latency (devstat, ms)"
+
+msgid "平均负载 1/5/15"
+msgstr "Load average 1/5/15"
+
+msgid "幽灵占比"
+msgstr "Ghost share"
+
+msgid "幽灵命中"
+msgstr "Ghost hits"
+
+msgid "序列号"
+msgstr "Serial number"
+
+msgid "应用"
+msgstr "Apply"
+
+msgid "应用进程"
+msgstr "User processes"
+
+msgid "延迟"
+msgstr "Latency"
+
+msgid "延迟 (ms)"
+msgstr "Latency (ms)"
+
+msgid "开始采集后显示近 60 秒命中率"
+msgstr "Hit rate for the last 60 seconds appears after collection starts"
+
+msgid "开机自启"
+msgstr "Start at boot"
+
+msgid "开机自启: 否"
+msgstr "Start at boot: No"
+
+msgid "开机自启: 是"
+msgstr "Start at boot: Yes"
+
+msgid "异常：CPU 温度过高"
+msgstr "Abnormal: CPU temperature too high"
+
+msgid "异常：CPU 长期满载"
+msgstr "Abnormal: CPU continuously saturated"
+
+msgid "异常：系统负载过高"
+msgstr "Abnormal: system load too high"
+
+msgid "强制结束 (SIGKILL)"
+msgstr "Force kill (SIGKILL)"
+
+msgid "当前 I/O 队列长度（排队请求数）"
+msgstr "Current I/O queue length (queued requests)"
+
+msgid "当前 TCP/UDP 连接"
+msgstr "Current TCP/UDP connections"
+
+msgid "当前写入速率"
+msgstr "Current write rate"
+
+msgid "当前写速率"
+msgstr "Current write rate"
+
+msgid "当前没有任何 rctl 规则。"
+msgstr "There are currently no rctl rules."
+
+msgid "当前温度"
+msgstr "Current temperature"
+
+msgid "当前绑定："
+msgstr "Current affinity:"
+
+msgid "当前范围没有历史数据。"
+msgstr "No history data in the current range."
+
+msgid "当前读取速率"
+msgstr "Current read rate"
+
+msgid "当前读速率"
+msgstr "Current read rate"
+
+msgid "当前运行在 %s 客户机中；CPU 暴露 %s；vmm %s；bhyve %s；VM 数 %u"
+msgstr "Running in a %s guest; CPU exposes %s; vmm %s; bhyve %s; VMs %u"
+
+msgid "当前频率"
+msgstr "Current frequency"
+
+msgid "待回收"
+msgstr "Laundry"
+
+msgid "待机"
+msgstr "Idle"
+
+msgid "总命中率"
+msgstr "Overall hit rate"
+
+msgid "恢复 (SIGCONT)"
+msgstr "Resume (SIGCONT)"
+
+msgid "成功 %llu 次 · %s（IO 错误 %llu）"
+msgstr "succeeded %llu · %s (IO errors %llu)"
+
+msgid "打开日志文件"
+msgstr "Open log file"
+
+msgid "打开的文件"
+msgstr "Open files"
+
+msgid "打开的文件 (lsof)"
+msgstr "Open files (lsof)"
+
+msgid "扫描"
+msgstr "Scanned"
+
+msgid "拒绝"
+msgstr "Deny"
+
+msgid "挂载点容量与磁盘速率"
+msgstr "Mount point capacity and disk rates"
+
+msgid "按指标查看性能"
+msgstr "View performance by metric"
+
+msgid "换入"
+msgstr "Page ins"
+
+msgid "换出"
+msgstr "Page outs"
+
+msgid "接口 %u 个 · 累计 收 %s / 发 %s"
+msgstr "%u interfaces · total rx %s / tx %s"
+
+msgid "接收 / 发送（颜色区分，实时速率）"
+msgstr "Receive / send (color-coded, real-time rate)"
+
+msgid "控制通道不可用（fmon-daemon 未运行？）"
+msgstr "Control channel unavailable (is fmon-daemon running?)"
+
+msgid "控制通道不可用：请确认 fmon-daemon 正在运行"
+msgstr "Control channel unavailable: make sure fmon-daemon is running"
+
+msgid "提高优先级 (nice 0)"
+msgstr "Raise priority (nice 0)"
+
+msgid "插槽"
+msgstr "Slots"
+
+msgid "收发速率、链路错误与 TCP 健康度"
+msgstr "Throughput, link errors and TCP health"
+
+msgid "放电中"
+msgstr "Discharging"
+
+msgid "放电功率"
+msgstr "Discharge power"
+
+msgid "数值（memoryuse 可用 K/M/G 后缀）"
+msgstr "Value (memoryuse accepts K/M/G suffixes)"
+
+msgid "数据命中率"
+msgstr "Data hit rate"
+
+msgid "数据已 %"
+msgstr "Data is %"
+
+msgid "数据缓冲"
+msgstr "Data buffers"
+
+msgid "数未知"
+msgstr "Unknown"
+
+msgid "新增错误"
+msgstr "New errors"
+
+msgid "无 L2"
+msgstr "No L2"
+
+msgid "无传感器"
+msgstr "No sensors"
+
+msgid "无法获取（进程可能已退出）"
+msgstr "Unavailable (process may have exited)"
+
+msgid "无电池或探测不可用"
+msgstr "No battery or detection unavailable"
+
+msgid "无电池（台式机）"
+msgstr "No battery (desktop)"
+
+msgid "无线"
+msgstr "Wireless"
+
+msgid "时钟频率"
+msgstr "Clock frequency"
+
+msgid "是 (YES)"
+msgstr "Yes (YES)"
+
+msgid "显卡明细"
+msgstr "GPU details"
+
+msgid "显存 (VRAM)"
+msgstr "VRAM"
+
+msgid "显存使用"
+msgstr "VRAM usage"
+
+msgid "显存时钟"
+msgstr "VRAM clock"
+
+msgid "显示最近 %d 条 · %s"
+msgstr "Showing last %d entries · %s"
+
+msgid "显示版本信息并退出"
+msgstr "Show version information and exit"
+
+msgid ""
+"普通用户无法直接读取：请启动 fmon-daemon（控制通道）后重试，或以 root 运行 "
+"fmon-gui。"
+msgstr ""
+"A regular user cannot read this directly: start fmon-daemon (control "
+"channel) and retry, or run fmon-gui as root."
+
+msgid "暂停 (SIGSTOP)"
+msgstr "Suspend (SIGSTOP)"
+
+msgid "暂无历史数据（运行 1 分钟后开始记录）"
+msgstr "No history yet (recording starts after 1 minute)"
+
+msgid "暂无告警记录"
+msgstr "No alerts yet"
+
+msgid "暂无有效采样"
+msgstr "No valid samples yet"
+
+msgid "曲线：ARC 大小占上限百分比（与“占上限”一致）"
+msgstr ""
+"Curve: ARC size as a percentage of the limit (matches 'share of limit')"
+
+msgid "最近 1 小时"
+msgstr "Last 1 hour"
+
+msgid "最近 1 小时 / 24 小时曲线"
+msgstr "Last 1 hour / 24 hour curve"
+
+msgid "最近 15 分钟"
+msgstr "Last 15 minutes"
+
+msgid "最近 24 小时"
+msgstr "Last 24 hours"
+
+msgid "最近 5 分钟"
+msgstr "Last 5 minutes"
+
+msgid "最高档"
+msgstr "Maximum"
+
+msgid "服务名称"
+msgstr "Service name"
+
+msgid "服务启停与开机自启"
+msgstr "Service start/stop and boot startup"
+
+msgid "服务描述"
+msgstr "Service description"
+
+msgid "服务管理"
+msgstr "Service management"
+
+msgid "未加载"
+msgstr "Not loaded"
+
+msgid "未启用"
+msgstr "Not enabled"
+
+msgid "未命中/秒"
+msgstr "misses/s"
+
+msgid "未检测到 GPU"
+msgstr "No GPU detected"
+
+msgid "未检测到网络接口"
+msgstr "No network interfaces detected"
+
+msgid "未检测到该显卡"
+msgstr "GPU not detected"
+
+msgid "未知"
+msgstr "Unknown"
+
+msgid "未知 x86 厂商"
+msgstr "Unknown x86 vendor"
+
+msgid "未知原因"
+msgstr "Unknown reason"
+
+msgid "未设置（默认 NO）"
+msgstr "Not set (default NO)"
+
+msgid "未运行"
+msgstr "Not running"
+
+msgid ""
+"本程序使用了以下第三方组件，其版权归各自作者所有。\n"
+"本程序只动态链接它们，不重新分发这些库的源码。\n"
+"\n"
+"── 界面 ─────────────────────────────────────────────\n"
+"GTK %d.%d.%d — LGPL-2.1-or-later\n"
+"  Copyright (C) The GTK Team\n"
+"  https://www.gtk.org\n"
+"\n"
+"GLib %u.%u.%u — LGPL-2.1-or-later\n"
+"  Copyright (C) GNOME Foundation\n"
+"  https://www.gtk.org\n"
+"\n"
+"Pango — LGPL-2.1-or-later（GTK 的文本排版依赖）\n"
+"  Copyright (C) Owen Taylor, Red Hat, Inc.\n"
+"\n"
+"cairo %s — LGPL-2.1 或 MPL-1.1（二选一）\n"
+"  Copyright (C) Carl Worth 及贡献者\n"
+"  https://www.cairographics.org\n"
+"\n"
+"── 采集 ─────────────────────────────────────────────\n"
+"libkvm / libdevstat（FreeBSD 基础系统）— BSD-2-Clause\n"
+"  Copyright (C) The FreeBSD Project\n"
+"\n"
+"libdrm / libdrm_amdgpu（AMD 显卡传感器，可选）— MIT\n"
+"  Copyright (C) the libdrm authors\n"
+"  https://gitlab.freedesktop.org/mesa/drm\n"
+"\n"
+"── 运行时调用的外部命令 ─────────────────────────────\n"
+"ps、sockstat、zpool、sysrc、service 等来自 FreeBSD 基础系统（BSD）；\n"
+"nvidia-smi 来自 NVIDIA 驱动（专有软件）。\n"
+"这些程序由系统提供，本程序只调用、不重新分发。\n"
+"\n"
+"各软件包的完整许可证文本通常位于：\n"
+"  "
+msgstr ""
+"This program uses the following third-party components, whose copyrights "
+"belong to their respective authors.\n"
+"This program links to them dynamically only and does not redistribute their "
+"source code.\n"
+"\n"
+"── Interface ─────────────────────────────────────────\n"
+"GTK %d.%d.%d — LGPL-2.1-or-later\n"
+"  Copyright (C) The GTK Team\n"
+"  https://www.gtk.org\n"
+"\n"
+"GLib %u.%u.%u — LGPL-2.1-or-later\n"
+"  Copyright (C) GNOME Foundation\n"
+"  https://www.gtk.org\n"
+"\n"
+"Pango — LGPL-2.1-or-later (GTK's text layout dependency)\n"
+"  Copyright (C) Owen Taylor, Red Hat, Inc.\n"
+"\n"
+"cairo %s — LGPL-2.1 or MPL-1.1 (either one)\n"
+"  Copyright (C) Carl Worth and contributors\n"
+"  https://www.cairographics.org\n"
+"\n"
+"── Collection ────────────────────────────────────────\n"
+"libkvm / libdevstat (FreeBSD base system) — BSD-2-Clause\n"
+"  Copyright (C) The FreeBSD Project\n"
+"\n"
+"libdrm / libdrm_amdgpu (AMD GPU sensors, optional) — MIT\n"
+"  Copyright (C) the libdrm authors\n"
+"  https://gitlab.freedesktop.org/mesa/drm\n"
+"\n"
+"── External commands invoked at runtime ─────────────\n"
+"ps, sockstat, zpool, sysrc, service, etc. come from the FreeBSD base system "
+"(BSD);\n"
+"nvidia-smi comes from the NVIDIA driver (proprietary software).\n"
+"These programs are provided by the system; this program only invokes them "
+"and does not redistribute them.\n"
+"\n"
+"Full license texts for each package are usually located at:\n"
+"  "
+
+msgid "权限"
+msgstr "Permission"
+
+msgid "权限不足或 CPU 列表无效"
+msgstr "Insufficient permission or invalid CPU list"
+
+msgid "构成（MFU/MRU/预取）"
+msgstr "Composition (MFU/MRU/prefetch)"
+
+msgid "查看、过滤与结束进程"
+msgstr "View, filter and terminate processes"
+
+msgid "查看详情"
+msgstr "View details"
+
+msgid "核显"
+msgstr "Integrated GPU"
+
+msgid "框选窗口：%u 个点（双击图表恢复完整范围；导出仍按下拉框范围）"
+msgstr ""
+"Selection: %u points (double-click the chart to restore the full range; "
+"export still uses the dropdown range)"
+
+msgid "框选窗口：%u 个采样点（双击图表恢复 %s 完整范围；CSV 导出当前框选范围）"
+msgstr ""
+"Selection: %u samples (double-click the chart to restore the full %s range; "
+"CSV export uses the current selection)"
+
+msgid "桌面"
+msgstr "Desktop"
+
+msgid "概览"
+msgstr "Overview"
+
+msgid "概览与连接"
+msgstr "Overview and connections"
+
+msgid "次"
+msgstr "times"
+
+msgid "正在检测 RACCT/RCTL…"
+msgstr "Detecting RACCT/RCTL…"
+
+msgid "正在运行 (running)"
+msgstr "Running (running)"
+
+msgid "正在采集…"
+msgstr "Collecting…"
+
+msgid "每分钟平均 · 保留 7 天"
+msgstr "Per-minute average · kept for 7 days"
+
+msgid "池"
+msgstr "Pool"
+
+msgid "池名"
+msgstr "Pool name"
+
+msgid "池容量与使用率"
+msgstr "Pool capacity and usage"
+
+msgid "池空间"
+msgstr "Pool space"
+
+msgid "池空间 / ARC / 命中率 / Prune"
+msgstr "Pool space / ARC / hit rate / Prune"
+
+msgid "池空间 / ARC / 命中率 / Prune（颜色区分）"
+msgstr "Pool space / ARC / hit rate / Prune (color-coded)"
+
+msgid "没有任务可运行的时间；越低说明 CPU 越忙"
+msgstr "Time with no runnable tasks; lower means the CPU is busier"
+
+msgid "没有历史数据"
+msgstr "No history data"
+
+msgid "没有历史数据（守护进程运行后每 10 秒记录一次）"
+msgstr "No history data (recorded every 10 seconds while the daemon runs)"
+
+msgid "没有可显示的内容（进程可能已退出，或未安装相应工具）。"
+msgstr ""
+"Nothing to display (the process may have exited, or the required tool is not "
+"installed)."
+
+msgid "注意：CPU 使用率偏高"
+msgstr "Notice: CPU usage is high"
+
+msgid "注意：CPU 温度偏高"
+msgstr "Notice: CPU temperature is high"
+
+msgid "注意：系统负载偏高"
+msgstr "Notice: system load is high"
+
+msgid "活动连接"
+msgstr "Active connections"
+
+msgid "活跃"
+msgstr "Active"
+
+msgid "淘汰跳过"
+msgstr "Eviction skips"
+
+msgid "添加"
+msgstr "Add"
+
+msgid "添加资源限制"
+msgstr "Add resource limit"
+
+msgid "添加限制"
+msgstr "Add limit"
+
+msgid "清空"
+msgstr "Clear"
+
+msgid "清空全部告警历史？"
+msgstr "Clear all alert history?"
+
+msgid "清空历史"
+msgstr "Clear history"
+
+msgid "温度"
+msgstr "Temperature"
+
+msgid "温度 (°C)"
+msgstr "Temperature (°C)"
+
+msgid "温度与主机信息"
+msgstr "Temperature and host information"
+
+msgid "温度趋势（使用率见上方仪表）"
+msgstr "Temperature trend (usage gauge above)"
+
+msgid "滚轮切换 5分钟/15分钟/1小时/24小时"
+msgstr "Scroll wheel switches 5 min/15 min/1 hour/24 hours"
+
+msgid "滚轮缩放 · 左键框选 · 右键拖动平移 · 双击还原"
+msgstr ""
+"Scroll to zoom · drag left to select · drag right to pan · double-click to "
+"reset"
+
+msgid "物理内存与 Swap 使用率"
+msgstr "Physical memory and Swap usage"
+
+msgid "独显"
+msgstr "Discrete GPU"
+
+msgid "现在"
+msgstr "Now"
+
+msgid "用户态 CPU 时间：普通应用程序（浏览器、编辑器、编译器）占用"
+msgstr ""
+"User CPU time: used by ordinary applications (browsers, editors, compilers)"
+
+msgid "电池"
+msgstr "Battery"
+
+msgid "电池低于 (%)"
+msgstr "Battery below (%)"
+
+msgid "电源"
+msgstr "Power"
+
+msgid "电量"
+msgstr "Charge"
+
+msgid "电量、功率与电源"
+msgstr "Charge, power and AC"
+
+msgid "目标 c"
+msgstr "Target c"
+
+msgid "硬件/软件中断"
+msgstr "Hardware/software interrupts"
+
+msgid "确定"
+msgstr "OK"
+
+msgid "磁盘"
+msgstr "Disks"
+
+msgid "磁盘、ZFS 与挂载点"
+msgstr "Disks, ZFS and mount points"
+
+msgid "磁盘设备"
+msgstr "Disk devices"
+
+msgid "禁用"
+msgstr "Disable"
+
+msgid "禁用后，系统下次启动时不会再自动运行该服务。"
+msgstr ""
+"Once disabled, the service will no longer start automatically on the next "
+"boot."
+
+msgid "禁用自启"
+msgstr "Disable at boot"
+
+msgid "空闲"
+msgstr "Free"
+
+msgid "空闲内存"
+msgstr "Free memory"
+
+msgid "系统"
+msgstr "System"
+
+msgid "系统可用"
+msgstr "System available"
+
+msgid "系统平均负载（可运行任务数 · 每线程 %.2f / %.2f / %.2f）"
+msgstr "System load average (runnable tasks · per-thread %.2f / %.2f / %.2f)"
+
+msgid "系统平均负载（可运行任务数平均值）"
+msgstr "System load average (mean runnable tasks)"
+
+msgid "系统平均负载（每线程 %.2f/%.2f/%.2f）"
+msgstr "System load average (per-thread %.2f/%.2f/%.2f)"
+
+msgid "系统日志"
+msgstr "System logs"
+
+msgid "系统消息 /var/log/messages"
+msgstr "System messages /var/log/messages"
+
+msgid "系统版本"
+msgstr "System version"
+
+msgid "紧急"
+msgstr "Emergency"
+
+msgid "累计写"
+msgstr "Total write"
+
+msgid "累计写入"
+msgstr "Total write"
+
+msgid "累计写次数"
+msgstr "Total writes"
+
+msgid "累计回收"
+msgstr "Total evictions"
+
+msgid "累计回收次数（只增不减；无回收时保持 0）与幽灵缓存"
+msgstr ""
+"Cumulative evictions (monotonic; stays 0 when there are none) and ghost cache"
+
+msgid "累计字节 ÷ 累计操作数，反映平均 I/O 尺寸"
+msgstr "Cumulative bytes ÷ cumulative operations, reflecting average I/O size"
+
+msgid "累计读"
+msgstr "Total read"
+
+msgid "累计读取"
+msgstr "Total read"
+
+msgid "累计读次 %llu / 写次 %llu"
+msgstr "Total reads %llu / writes %llu"
+
+msgid "累计读次数"
+msgstr "Total reads"
+
+msgid "繁忙"
+msgstr "Busy"
+
+msgid "结束进程 (SIGTERM)"
+msgstr "Terminate process (SIGTERM)"
+
+msgid "继续"
+msgstr "Continue"
+
+msgid "缓冲"
+msgstr "Buffers"
+
+msgid "缓存大小"
+msgstr "Cache size"
+
+msgid "缺页"
+msgstr "Page faults"
+
+msgid "网卡硬件"
+msgstr "NIC hardware"
+
+msgid "网络"
+msgstr "Network"
+
+msgid "网络接口"
+msgstr "Network interfaces"
+
+msgid "网络概览"
+msgstr "Network overview"
+
+msgid "网络连接"
+msgstr "Network connections"
+
+msgid "网络连接 (sockstat)"
+msgstr "Network connections (sockstat)"
+
+msgid "脚本路径"
+msgstr "Script path"
+
+msgid "自启"
+msgstr "Startup"
+
+msgid "节流/秒"
+msgstr "throttles/s"
+
+msgid "虚拟"
+msgstr "Virtual"
+
+msgid "虚拟化"
+msgstr "Virtualization"
+
+msgid "警告"
+msgstr "Warning"
+
+msgid "警报"
+msgstr "Alert"
+
+msgid "认证 /var/log/auth.log"
+msgstr "Auth /var/log/auth.log"
+
+msgid "设备名（点击查看 24 小时历史）"
+msgstr "Device name (click for 24-hour history)"
+
+msgid "设备繁忙"
+msgstr "Device busy"
+
+msgid "设备繁忙百分比"
+msgstr "Device busy percentage"
+
+msgid "设备队列"
+msgstr "Device queue"
+
+msgid "设置失败：%s"
+msgstr "Setup failed: %s"
+
+msgid "该操作不可撤销。"
+msgstr "This action cannot be undone."
+
+msgid "该操作会立即终止服务，依赖它的程序可能会出错。"
+msgstr ""
+"This will stop the service immediately; programs that depend on it may fail."
+
+msgid "该显卡没有可用的负载传感器"
+msgstr "No load sensor is available for this GPU"
+
+msgid "该进程当前没有网络连接。\n"
+msgstr ""
+"This process has no network connections.\n"
+"\n"
+
+msgid "请先选中要删除的规则"
+msgstr "Select a rule to delete first"
+
+msgid "请求过长"
+msgstr "Request too long"
+
+msgid "请选择限制类型"
+msgstr "Select a limit type"
+
+msgid "读"
+msgstr "Read"
+
+msgid "读写带宽"
+msgstr "Read/write bandwidth"
+
+msgid "读写速率与 IOPS"
+msgstr "Read/write rate and IOPS"
+
+msgid "读取"
+msgstr "Read"
+
+msgid "读取 / 写入带宽（所有池合计；空闲时为 0）"
+msgstr "Read / write bandwidth (all pools combined; 0 when idle)"
+
+msgid "读取 / 写入（所有磁盘合计）/ 温度"
+msgstr "Read / write (all disks combined) / temperature"
+
+msgid "读取 rctl 失败"
+msgstr "Failed to read rctl"
+
+msgid "读取中 %llu · L1 已缓存 %llu"
+msgstr "Reading %llu · L1 cached %llu"
+
+msgid "读取中…"
+msgstr "Reading…"
+
+msgid "读取操作"
+msgstr "Read operations"
+
+msgid "读取系统日志"
+msgstr "Read system logs"
+
+msgid "读取累计"
+msgstr "Total read"
+
+msgid "读次"
+msgstr "Reads"
+
+msgid "读速率"
+msgstr "Read rate"
+
+msgid "读速率与累计"
+msgstr "Read rate and total"
+
+msgid "调试"
+msgstr "Debug"
+
+msgid "调试 /var/log/debug.log"
+msgstr "Debug /var/log/debug.log"
+
+msgid "负载、显存与温度"
+msgstr "Load, VRAM and temperature"
+
+msgid "资源限制"
+msgstr "Resource limits"
+
+msgid "起始主题：auto | light | dark"
+msgstr "Initial theme: auto | light | dark"
+
+msgid "跳转到父进程"
+msgstr "Go to parent process"
+
+msgid "跳过/秒"
+msgstr "skips/s"
+
+msgid "运行状态"
+msgstr "Run state"
+
+msgid "近 5 分钟平均 %.1f%%"
+msgstr "5-minute average %.1f%%"
+
+msgid "还没有告警记录。"
+msgstr "No alerts yet."
+
+msgid "还没有告警记录。超过阈值的事件会自动记录在这里。"
+msgstr ""
+"No alerts yet. Events that exceed a threshold are logged here automatically."
+
+msgid "进程 %u（%s）"
+msgstr "Process %u (%s)"
+
+msgid "进程、服务、日志与电池"
+msgstr "Processes, services, logs and battery"
+
+msgid "进程管理"
+msgstr "Process management"
+
+msgid "通知"
+msgstr "Notifications"
+
+msgid ""
+"速率/延迟/队列来自 devstat(3)；块大小为累计字节/次数；温度与寿命来自内核 "
+"SMART（NVMe ioctl / ATA / SCSI CAM，无传感器时显示 —）。"
+msgstr ""
+"Rates/latency/queue come from devstat(3); block size is cumulative bytes / "
+"operations; temperature and life used come from kernel SMART (NVMe ioctl / "
+"ATA / SCSI CAM; — when no sensor is available)."
+
+msgid "逻辑写入/秒"
+msgstr "logical writes/s"
+
+msgid "逻辑处理器"
+msgstr "Logical processors"
+
+msgid "逻辑核心"
+msgstr "Logical cores"
+
+msgid "配置 L2ARC 后开始采集"
+msgstr "Collection starts once L2ARC is configured"
+
+msgid "配置文件"
+msgstr "Configuration file"
+
+msgid "重建"
+msgstr "Rebuilds"
+
+msgid "重新激活"
+msgstr "Reactivated"
+
+msgid "错误 收/发"
+msgstr "Errors rx/tx"
+
+msgid "长历史模式显示 GPU 温度"
+msgstr "Long-history mode shows GPU temperature"
+
+msgid "长历史模式显示显存使用"
+msgstr "Long-history mode shows VRAM usage"
+
+msgid "降低优先级 (nice 10)"
+msgstr "Lower priority (nice 10)"
+
+msgid "限制类型"
+msgstr "Limit type"
+
+msgid "需要 root 权限才能读取 rctl 规则"
+msgstr "Root privileges are required to read rctl rules"
+
+msgid "需读盘"
+msgstr "Disk-read faults"
+
+msgid "静默 1 小时"
+msgstr "Mute for 1 hour"
+
+msgid "静默中（剩 %d 分钟）"
+msgstr "Muted (%d minutes left)"
+
+msgid "静默期间只记录历史，不弹桌面通知"
+msgstr ""
+"While muted, only history is recorded; no desktop notifications are shown"
+
+msgid "非活跃"
+msgstr "Inactive"
+
+msgid "页表"
+msgstr "Page tables"
+
+msgid "预取命中率"
+msgstr "Prefetch hit rate"
+
+msgid "风扇转速"
+msgstr "Fan speed"
+
+msgid "驱动版本"
+msgstr "Driver version"
+
+msgid "驱逐"
+msgstr "Evictions"
+
+msgid "（1 分钟金字塔）"
+msgstr "(1-minute pyramid)"
+
+msgid "（未找到 mask）"
+msgstr "(mask not found)"
+
+msgid "（未找到）"
+msgstr "(not found)"
+
+msgid "（该脚本没有头部说明）"
+msgstr "(this script has no header description)"
+
+msgid "（读取失败）"
+msgstr "(read failed)"

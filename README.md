@@ -2,15 +2,15 @@
 
 A native FreeBSD system monitor and resource manager written in C11 with GTK4.
 
-## What's new in 1.2.0
+## What's new in 1.3.0
 
-- **Strict provider contract**: kernel API first, FreeBSD base tools/optional dependencies only as fallback; unsupported values show `—`, never fake 0.
-- **Real disk SMART**: NVMe ioctl, CAM ATA SMART, CAM SCSI LOG SENSE; multi-NVMe controller mapping; no hard dependency on nvmecontrol/smartctl.
-- **Kernel disk metadata**: `DIOCG*`, NVMe controller data, CAM ATA/SCSI inquiry; speculative SSD/HDD guessing removed.
-- **ABI 23 validity bits**: swap/zpool/memory modules/mounts/processes/ZFS ARC/battery distinguish real 0 from probe failure.
-- **Installer and desktop integration**: auto-installs missing dmidecode/smartmontools/libdrm; custom SVG app icon and `.desktop` entry, no system icon theme required.
+- **Bilingual UI**: switch between 中文 and English at runtime; page/theme preserved.
+- **Window behavior**: remembers normal size, centers on X11, and closes without a 1-second collector wait.
+- **Truthful data**: missing zpool/metrics show `—`, not fake 0; NaN gaps remain gaps.
+- **UI cleanup**: top page tabs, direct quick actions, deeper dark background, fixed light-theme checkbox.
+- **Reliability**: process crash/right-click fixes, modular C11 code, 20/20 tests.
 
-Full details: [1.2.0 release notes](docs/RELEASE_NOTES_1.2.0.md).
+Full details: [1.3.0 release notes](docs/RELEASE_NOTES_1.3.0.md).
 
 ## Architecture
 
@@ -46,7 +46,7 @@ fmon-daemon (root)  --POSIX shared memory (seqlock)-->  fmon-gui (user)
 ## Install from the package
 
 ```sh
-sudo pkg install ./fmon-1.2.0.pkg
+sudo pkg install ./fmon-1.3.0.pkg
 sudo sysrc fmon_daemon_enable=YES
 sudo service fmon_daemon start
 fmon-gui
@@ -90,15 +90,15 @@ BSD-2-Clause. See [LICENSE](LICENSE).
 
 用 C11 + GTK4 编写的 FreeBSD 原生系统监控与资源管理工具。
 
-## 1.2.0 更新
+## 1.3.0 更新
 
-- **严格采集契约**：内核接口优先，FreeBSD base 工具/可选依赖只做回退；无接口显示 `—`，绝不伪造 0。
-- **磁盘 SMART 内核化**：NVMe ioctl、CAM ATA SMART、CAM SCSI LOG SENSE；多 NVMe 控制器反查；不硬依赖 nvmecontrol/smartctl。
-- **磁盘元数据内核化**：`DIOCG*`、NVMe controller data、CAM ATA/SCSI inquiry；删除按型号/容量猜盘型。
-- **ABI 23 有效位**：Swap、zpool、内存条、挂载点、进程、ZFS ARC、电池区分“真实 0”和“探测失败”。
-- **安装与桌面集成**：自动补齐 dmidecode/smartmontools/libdrm；自绘 SVG 应用图标与 `.desktop` 入口，不依赖系统图标主题。
+- **中英双语**：运行时切换中文 / English，保留当前页面与主题。
+- **窗口行为**：记住正常大小，X11 启动居中，关闭不再等待采集线程 1 秒。
+- **数据真实性**：缺失指标显示 `—`，无 zpool 不再伪造 0，NaN 保持断线。
+- **界面整理**：顶部页面标签、快捷操作直出、更深深色背景、浅色主题复选框修复。
+- **稳定性**：进程页崩溃/右键修复，C11 模块化，20/20 测试通过。
 
-完整说明：[1.2.0 发布说明](docs/RELEASE_NOTES_1.2.0.md)。
+完整说明：[1.3.0 发布说明](docs/RELEASE_NOTES_1.3.0.md)。
 
 ## 架构
 
@@ -128,7 +128,7 @@ BSD-2-Clause. See [LICENSE](LICENSE).
 ## 安装
 
 ```sh
-sudo pkg install ./fmon-1.2.0.pkg
+sudo pkg install ./fmon-1.3.0.pkg
 sudo sysrc fmon_daemon_enable=YES
 sudo service fmon_daemon start
 fmon-gui

@@ -1,7 +1,7 @@
 /*
  * gui_nav.c - 两级导航（分组 → 子页面）
  *
- * 分组列表固定在左侧，二级列表在首次点击分组时滑出。
+ * 分组固定在左侧；子页面是内容区顶部的标签条，点击立即切页。
  * 页面切换通过 gui_nav_set_switch() 注册的回调完成，
  * 这样导航模块不依赖 GtkStack 的具体实例。
  */
@@ -34,18 +34,19 @@ typedef struct {
 
 
 static GtkWidget *s_sidebar;
-static GtkWidget *s_sub_sidebar;
-static GtkWidget *s_sub_list;
-static GtkWidget *s_title;
-static GtkWidget *s_revealer;
+static GtkWidget *s_pagebar;
+static GtkWidget *s_tabs;
 static int        s_cur_group = -1;
 static gboolean   s_ready = FALSE;
+static gboolean   s_tabs_updating = FALSE;
+static gboolean   s_syncing = FALSE;
 static GuiNavSwitchFunc s_switch;
 
 static void group_clicked(int gi);
 static void on_nav_row_activated(GtkListBox *box, GtkListBoxRow *row,
                                  gpointer user_data);
 static void show_group(int gi);
+static gboolean select_tab(const char *page);
 
 static const FmonShmData *snap(void)
 {
@@ -75,7 +76,7 @@ static void on_nav_row_selected(GtkListBox *box, GtkListBoxRow *row,
 
 /* 启动收尾：先切到目标页，再接管用户点击。
  * 用低优先级 idle，确保 GtkListBox 启动时排队的 row-selected 已经处理完，
- * 不会把 --page 覆盖掉、也不会误滑出二级列表。 */
+ * 不会把 --page 覆盖掉，也不会误切到分组第一页。 */
 
 static void on_nav_row_activated(GtkListBox *box, GtkListBoxRow *row,
                                  gpointer user_data)
@@ -118,33 +119,68 @@ GtkWidget *gui_nav_row_new(const char *title, const char *icon_name,
     return row;
 }
 
-/* 二级列表：切换分组的子项并默认选中第一项 */
+static void on_tab_toggled(GtkToggleButton *tab, gpointer data)
+{
+    (void)data;
+
+    if (s_tabs_updating || !gtk_toggle_button_get_active(tab))
+        return;
+
+    const char *page = g_object_get_data(G_OBJECT(tab), "page-name");
+
+    if (page != NULL) {
+        select_tab(page);
+        nav_switch(page);
+    }
+}
+
+static GtkWidget *page_tab_new(const char *title, const char *icon_name,
+                               const char *page_name)
+{
+    GtkWidget *tab = gtk_toggle_button_new();
+    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+
+    gtk_widget_add_css_class(tab, "page-tab");
+
+    GtkWidget *icon = gtk_image_new_from_icon_name(icon_name);
+    gtk_image_set_pixel_size(GTK_IMAGE(icon), 16);
+
+    GtkWidget *label = gtk_label_new(title);
+
+    gtk_box_append(GTK_BOX(box), icon);
+    gtk_box_append(GTK_BOX(box), label);
+    gtk_button_set_child(GTK_BUTTON(tab), box);
+
+    g_object_set_data_full(G_OBJECT(tab), "page-name", g_strdup(page_name),
+                           g_free);
+    g_signal_connect(tab, "toggled", G_CALLBACK(on_tab_toggled), NULL);
+
+    return tab;
+}
+
+/* 只有当前分组真正存在且可见的页面才生成标签 */
 static void show_group(int gi)
 {
     const GuiNavGroup *grp = gui_nav_group(gi);
 
-    if (grp == NULL)
+    if (grp == NULL || s_tabs == NULL)
         return;
 
     s_cur_group = gi;
-
-    if (s_title != NULL)
-        gtk_label_set_text(GTK_LABEL(s_title), grp->title);
-
-    if (s_sub_list == NULL)
-        return;
+    s_tabs_updating = TRUE;
 
     GtkWidget *child;
 
-    while ((child = gtk_widget_get_first_child(s_sub_list)) != NULL)
-        gtk_list_box_remove(GTK_LIST_BOX(s_sub_list), child);
+    while ((child = gtk_widget_get_first_child(s_tabs)) != NULL)
+        gtk_box_remove(GTK_BOX(s_tabs), child);
 
     static char gpu_label[FMON_MAX_GPUS][16];
+    GtkToggleButton *group = NULL;
 
     for (int i = 0; i < grp->n_pages; i++) {
         const GuiNavPage *meta = gui_nav_page(grp->pages[i]);
+        const char *title = meta->title;
 
-        /* 显卡页：只显示实际存在的 GPU，命名 GPU 1 / GPU 2 ... */
         if (strncmp(meta->id, "gpu", 3) == 0 && meta->id[3] >= '0' &&
             meta->id[3] <= '9') {
             int slot = meta->id[3] - '0';
@@ -154,59 +190,75 @@ static void show_group(int gi)
 
             g_snprintf(gpu_label[slot], sizeof(gpu_label[slot]), "GPU %d",
                        slot + 1);
-
-            GtkWidget *row = gui_nav_row_new(gpu_label[slot], meta->icon,
-                                            meta->id);
-
-            gtk_list_box_append(GTK_LIST_BOX(s_sub_list), row);
-            continue;
+            title = gpu_label[slot];
         }
 
-        GtkWidget *row = gui_nav_row_new(meta->title, meta->icon, meta->id);
+        GtkWidget *tab = page_tab_new(title, meta->icon, meta->id);
 
-        gtk_list_box_append(GTK_LIST_BOX(s_sub_list), row);
+        if (group == NULL)
+            group = GTK_TOGGLE_BUTTON(tab);
+        else
+            gtk_toggle_button_set_group(GTK_TOGGLE_BUTTON(tab), group);
+
+        gtk_box_append(GTK_BOX(s_tabs), tab);
     }
 
-    GtkListBoxRow *first =
-        gtk_list_box_get_row_at_index(GTK_LIST_BOX(s_sub_list), 0);
-
-    if (first != NULL)
-        gtk_list_box_select_row(GTK_LIST_BOX(s_sub_list), first);
+    s_tabs_updating = FALSE;
 }
 
-/* 点主分组：首次点击滑出二级列表，并切换到该组第一个子页 */
+/* 选中顶部标签；page 不属于当前分组时返回 FALSE */
+static gboolean select_tab(const char *page)
+{
+    if (page == NULL || s_tabs == NULL)
+        return FALSE;
+
+    gboolean found = FALSE;
+
+    s_tabs_updating = TRUE;
+
+    for (GtkWidget *tab = gtk_widget_get_first_child(s_tabs);
+         tab != NULL; tab = gtk_widget_get_next_sibling(tab)) {
+        const char *id = g_object_get_data(G_OBJECT(tab), "page-name");
+        gboolean same = (id != NULL && strcmp(id, page) == 0);
+
+        gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(tab), same);
+
+        if (same)
+            found = TRUE;
+    }
+
+    s_tabs_updating = FALSE;
+    return found;
+}
+
+static const char *first_tab_page(void)
+{
+    if (s_tabs == NULL)
+        return NULL;
+
+    GtkWidget *first = gtk_widget_get_first_child(s_tabs);
+
+    return (first != NULL) ? g_object_get_data(G_OBJECT(first), "page-name")
+                           : NULL;
+}
+
+/* 点主分组：顶部标签条立即换成该组子页，并切到第一页。
+ * 不再滑出第二层侧边栏，内容区因此多出 176px。 */
 static void group_clicked(int gi)
 {
-    if (!s_ready)
+    if (!s_ready || s_syncing)
         return;
-
-    if (s_revealer != NULL)
-        gtk_revealer_set_reveal_child(GTK_REVEALER(s_revealer), TRUE);
 
     if (gi != s_cur_group) {
         show_group(gi);
-    } else if (s_sub_list != NULL) {
-        GtkListBoxRow *first =
-            gtk_list_box_get_row_at_index(GTK_LIST_BOX(s_sub_list), 0);
 
-        if (first != NULL)
-            gtk_list_box_select_row(GTK_LIST_BOX(s_sub_list), first);
+        const char *first = first_tab_page();
+
+        if (first != NULL) {
+            select_tab(first);
+            nav_switch(first);
+        }
     }
-}
-
-static void on_sub_row_selected(GtkListBox *box, GtkListBoxRow *row,
-                                gpointer user_data)
-{
-    (void)box;
-    (void)user_data;
-
-    if (row == NULL)
-        return;
-
-    const char *page = g_object_get_data(G_OBJECT(row), "page-name");
-
-    if (page != NULL)
-        nav_switch((const char *)page);
 }
 
 GtkWidget *gui_nav_sidebar_new(void)
@@ -218,49 +270,60 @@ GtkWidget *gui_nav_sidebar_new(void)
     return s_sidebar;
 }
 
-GtkWidget *gui_nav_revealer_new(void)
+GtkWidget *gui_nav_pagebar_new(void)
 {
-    s_sub_sidebar = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
-    gtk_widget_add_css_class(s_sub_sidebar, "sub-sidebar");
-    gtk_widget_set_size_request(s_sub_sidebar, 176, -1);
+    s_pagebar = gtk_scrolled_window_new();
+    gtk_widget_add_css_class(s_pagebar, "page-tabs");
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(s_pagebar),
+                                   GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
+    gtk_scrolled_window_set_has_frame(GTK_SCROLLED_WINDOW(s_pagebar), FALSE);
+    gtk_widget_set_hexpand(s_pagebar, TRUE);
+    gtk_widget_set_vexpand(s_pagebar, FALSE);
 
-    s_title = gtk_label_new("");
-    gtk_widget_add_css_class(s_title, "sub-title");
-    gtk_widget_set_halign(s_title, GTK_ALIGN_START);
-    gtk_widget_set_margin_start(s_title, 16);
-    gtk_widget_set_margin_top(s_title, 16);
-    gtk_widget_set_margin_bottom(s_title, 4);
-    gtk_box_append(GTK_BOX(s_sub_sidebar), s_title);
+    s_tabs = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_widget_add_css_class(s_tabs, "page-tab-row");
+    gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(s_pagebar), s_tabs);
 
-    s_sub_list = gtk_list_box_new();
-    gtk_widget_add_css_class(s_sub_list, "nav-list");
-    gtk_list_box_set_selection_mode(GTK_LIST_BOX(s_sub_list),
-                                    GTK_SELECTION_SINGLE);
-    g_signal_connect(s_sub_list, "row-selected",
-                     G_CALLBACK(on_sub_row_selected), NULL);
-
-    GtkWidget *sub_scroll = gtk_scrolled_window_new();
-
-    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sub_scroll),
-                                   GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-    gtk_scrolled_window_set_has_frame(GTK_SCROLLED_WINDOW(sub_scroll), FALSE);
-    gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(sub_scroll), s_sub_list);
-    gtk_widget_set_vexpand(sub_scroll, TRUE);
-    gtk_box_append(GTK_BOX(s_sub_sidebar), sub_scroll);
-
-    s_revealer = gtk_revealer_new();
-    gtk_revealer_set_transition_type(GTK_REVEALER(s_revealer),
-                                     GTK_REVEALER_TRANSITION_TYPE_SLIDE_RIGHT);
-    gtk_revealer_set_transition_duration(GTK_REVEALER(s_revealer), 260);
-    gtk_revealer_set_reveal_child(GTK_REVEALER(s_revealer), FALSE);
-    gtk_revealer_set_child(GTK_REVEALER(s_revealer), s_sub_sidebar);
-
-    return s_revealer;
+    return s_pagebar;
 }
 
 void gui_nav_set_switch(GuiNavSwitchFunc fn)
 {
     s_switch = fn;
+}
+
+void gui_nav_select_page(const char *page_id)
+{
+    int idx = gui_nav_find_page(page_id);
+
+    if (idx < 0)
+        return;
+
+    int gi = gui_nav_group_of_page(idx);
+
+    if (gi < 0)
+        return;
+
+    s_syncing = TRUE;
+
+    if (gi != s_cur_group) {
+        show_group(gi);
+
+        GtkListBoxRow *row =
+            gtk_list_box_get_row_at_index(GTK_LIST_BOX(s_sidebar), gi);
+
+        if (row != NULL)
+            gtk_list_box_select_row(GTK_LIST_BOX(s_sidebar), row);
+    }
+
+    if (!select_tab(page_id)) {
+        const char *first = first_tab_page();
+
+        if (first != NULL)
+            select_tab(first);
+    }
+
+    s_syncing = FALSE;
 }
 
 void gui_nav_build_groups(void)
@@ -312,26 +375,16 @@ void gui_nav_start(const char *page_id)
 
     show_group(start_group);
 
+    if (!select_tab(start_page)) {
+        const char *first = first_tab_page();
+
+        if (first != NULL)
+            start_page = first;
+    }
+
     gtk_list_box_select_row(
         GTK_LIST_BOX(s_sidebar),
         gtk_list_box_get_row_at_index(GTK_LIST_BOX(s_sidebar), start_group));
-
-    if (page_id != NULL && s_sub_list != NULL) {
-        for (int i = 0;; i++) {
-            GtkListBoxRow *row =
-                gtk_list_box_get_row_at_index(GTK_LIST_BOX(s_sub_list), i);
-
-            if (row == NULL)
-                break;
-
-            const char *page = g_object_get_data(G_OBJECT(row), "page-name");
-
-            if (page != NULL && strcmp(page, start_page) == 0) {
-                gtk_list_box_select_row(GTK_LIST_BOX(s_sub_list), row);
-                break;
-            }
-        }
-    }
 
     g_idle_add_full(G_PRIORITY_LOW, nav_finish_startup, g_strdup(start_page),
                     NULL);

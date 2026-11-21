@@ -54,4 +54,3 @@ int main(int argc, char **argv)
     g_test_add_func("/zfs_stats/reclaim_state", test_reclaim_state);
     return g_test_run();
 }
-

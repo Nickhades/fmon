@@ -6,6 +6,7 @@
  */
 
 #include "gui_page_batt.h"
+#include "ui_metrics.h"
 
 #include <glib/gi18n.h>
 
@@ -101,7 +102,7 @@ static void draw_batt_chart(GtkDrawingArea *area, cairo_t *cr, int w, int h,
 
     if (s_hist_count < 2) {
         cairo_set_source_rgba(cr, axis[0], axis[1], axis[2], 0.7);
-        cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL,
+        cairo_select_font_face(cr, "monospace", CAIRO_FONT_SLANT_NORMAL,
                                CAIRO_FONT_WEIGHT_NORMAL);
         cairo_set_font_size(cr, 11.0);
         cairo_move_to(cr, ml + 8.0, mt + ph / 2.0);
@@ -150,9 +151,9 @@ static void draw_batt_chart(GtkDrawingArea *area, cairo_t *cr, int w, int h,
         double hgt = (pwr / maxw) * (ph / 2.0);
 
         if (pwr >= 0)
-            cairo_set_source_rgba(cr, 0.20, 0.80, 0.40, 0.75);
+            cairo_set_source_rgb(cr, 0.00, 1.00, 0.00);
         else
-            cairo_set_source_rgba(cr, 0.90, 0.30, 0.30, 0.75);
+            cairo_set_source_rgb(cr, 1.00, 0.00, 0.00);
 
         if (pwr >= 0)
             cairo_rectangle(cr, x, zero - hgt, bwid * 0.8, hgt);
@@ -163,8 +164,10 @@ static void draw_batt_chart(GtkDrawingArea *area, cairo_t *cr, int w, int h,
     }
 
     /* 电量折线（0-100%） */
-    cairo_set_source_rgba(cr, 0.30, 0.70, 1.0, 1.0);
-    cairo_set_line_width(cr, 1.8);
+    cairo_set_source_rgb(cr, 0.00, 1.00, 1.00);
+    cairo_set_line_width(cr, 1.2);
+
+    double last_y = 0.0;
 
     for (int i = 0; i < s_hist_count; i++) {
         double pct, pwr;
@@ -174,15 +177,18 @@ static void draw_batt_chart(GtkDrawingArea *area, cairo_t *cr, int w, int h,
         double x = ml + pw * (double)i / (double)(s_hist_count - 1);
         double y = mt + ph - (pct / 100.0) * ph;
 
-        if (i == 0)
+        if (i == 0) {
             cairo_move_to(cr, x, y);
-        else
+        } else {
+            cairo_line_to(cr, x, last_y);
             cairo_line_to(cr, x, y);
+        }
+        last_y = y;
     }
 
     cairo_stroke(cr);
 
-    cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL,
+    cairo_select_font_face(cr, "monospace", CAIRO_FONT_SLANT_NORMAL,
                            CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 9.0);
     cairo_set_source_rgba(cr, axis[0], axis[1], axis[2], 0.8);
@@ -228,6 +234,8 @@ static void read_acpiconf(void)
     if (fmon_child_run(argv, 64 * 1024, 2000, &res) != 0 ||
         !fmon_child_ok(&res) || res.out == NULL) {
         fmon_child_result_free(&res);
+        memset(&g_bi, 0, sizeof(g_bi));
+        g_bi.last_read = (gint64)time(NULL);
         return;
     }
 
@@ -305,9 +313,9 @@ static GtkWidget *row_val(void)
 
 GtkWidget *gui_batt_detail_box(void)
 {
-    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
+    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, FMON_SPACE_1);
 
-    gtk_widget_set_margin_top(box, 10);
+    gtk_widget_set_margin_top(box, FMON_SPACE_3);
 
     GtkWidget *t = gtk_label_new(_("电池健康与供电"));
 
@@ -324,8 +332,8 @@ GtkWidget *gui_batt_detail_box(void)
 
     GtkWidget *grid = gtk_grid_new();
 
-    gtk_grid_set_row_spacing(GTK_GRID(grid), 3);
-    gtk_grid_set_column_spacing(GTK_GRID(grid), 14);
+    gtk_grid_set_row_spacing(GTK_GRID(grid), FMON_SPACE_1);
+    gtk_grid_set_column_spacing(GTK_GRID(grid), FMON_SPACE_4);
 
     int r = 0;
 

@@ -11,11 +11,16 @@
 typedef void (*GuiNavSwitchFunc)(const char *page_id);
 
 GtkWidget *gui_nav_sidebar_new(void);
-GtkWidget *gui_nav_revealer_new(void);
+
+/* 页面顶部的子分组标签条（CPU / 内存 / GPU / 历史...） */
+GtkWidget *gui_nav_pagebar_new(void);
 GtkWidget *gui_nav_row_new(const char *title, const char *icon_name,
                            const char *page_name);
 
 void gui_nav_set_switch(GuiNavSwitchFunc fn);
+
+/* 外部切页（日志/服务跳进程等）时同步顶部标签和主分组。 */
+void gui_nav_select_page(const char *page_id);
 void gui_nav_build_groups(void);
 void gui_nav_start(const char *page_id);
 

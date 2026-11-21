@@ -3,7 +3,7 @@
  *
  * 一次性读取 getifaddrs 的 struct if_data（所有接口的字节/错误/丢包），
  * 以及 net.inet.tcp.stats（重传、监听队列溢出）。不需要 root，1 Hz 采样，
- * 不占用共享内存 ABI。
+ * 不占用共享内存 ABI。Wi-Fi 详情来自 daemon 的 net80211 ioctl 快照。
  */
 
 #ifndef NET_STATS_H
@@ -49,8 +49,8 @@ void net_stats_publish(const NetStats *in);
 /* 纯函数：百分比（无分母返回 0），便于单测 */
 double net_stats_pct(guint64 part, guint64 total);
 
-/* 纯函数：解析 ifconfig 输出里的无线信息（ssid/channel/media）。
- * 只填充 wlan* 接口；返回解析到的条目数。 */
+/* 历史纯函数：解析 ifconfig 输出里的无线信息；保留用于兼容/单测。
+ * 生产路径已改为 daemon net80211 ioctl + 共享内存。 */
 int net_stats_parse_ifconfig(const char *text, NetStats *out);
 
 #endif /* NET_STATS_H */

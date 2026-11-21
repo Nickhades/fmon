@@ -7,7 +7,11 @@
 #include "gui_pages.h"
 
 #include "gui_state.h"
+#include "gui_page_state.h"
 #include "gui_chart.h"
+#include "alerts.h"
+#include "history/long_history.h"
+#include "palette.h"
 #include "gui_util.h"
 #include "zfs_stats.h"
 
@@ -341,8 +345,20 @@ void gui_upd_batt(MetricPage *p)
 
 static CurveData s_curves[METRIC_PAGE_COUNT];
 
+static const FmonColorSlot g_metric_slots[METRIC_PAGE_COUNT] = {
+    FMON_COLOR_CPU,       FMON_COLOR_MEM,       FMON_COLOR_SWAP,
+    FMON_COLOR_NET_RX,    FMON_COLOR_GPU,       FMON_COLOR_DISK_READ,
+    FMON_COLOR_POOL,      FMON_COLOR_ARC,       FMON_COLOR_HIT,
+    FMON_COLOR_DISK_READ, FMON_COLOR_DISK_WRITE, FMON_COLOR_ARC,
+    FMON_COLOR_TEMP,      FMON_COLOR_BATTERY,
+};
+
 void gui_metric_curves_sync(const FmonShmData *snap)
 {
+    /* 长历史模式使用 provider 的 count/index，不能被实时快照覆盖。 */
+    if (gui_long_history_active())
+        return;
+
     for (int i = 0; i < METRIC_PAGE_COUNT; i++) {
         s_curves[i].count        = snap->history_count;
         s_curves[i].index        = snap->history_index;
@@ -366,26 +382,23 @@ CurveData *gui_metric_curve(int idx)
 void gui_metric_curves_bind(const FmonShmData *snap)
 {
     static const struct {
-        double        r;
-        double        g;
-        double        b;
-        double        max;
-        const char   *unit;
+        double      max;
+        const char *unit;
     } defs[METRIC_PAGE_COUNT] = {
-        { 0.33, 0.85, 0.45, 100.0, "%" },     /* 0 CPU */
-        { 0.35, 0.65, 0.95, 100.0, "%" },     /* 1 内存 */
-        { 0.95, 0.75, 0.25, 100.0, "%" },     /* 2 Swap */
-        { 0.20, 0.80, 0.80, 0.0,   "KB/s" },  /* 3 网络 RX */
-        { 0.95, 0.35, 0.35, 100.0, "%" },     /* 4 GPU */
-        { 0.90, 0.55, 0.15, 0.0,   "KB/s" },  /* 5 磁盘读 */
-        { 0.85, 0.60, 0.20, 100.0, "%" },     /* 6 zpool 空间 */
-        { 0.85, 0.45, 0.85, 100.0, "%" },     /* 7 ARC */
-        { 0.90, 0.70, 0.20, 100.0, "%" },     /* 8 命中率 */
-        { 0.20, 0.70, 0.95, 0.0,   "KB/s" },  /* 9 zpool 读 */
-        { 0.95, 0.45, 0.35, 0.0,   "KB/s" },  /* 10 zpool 写 */
-        { 0.75, 0.35, 0.95, 0.0,   "次" },    /* 11 ARC Prune */
-        { 0.95, 0.30, 0.30, 100.0, "°C" },    /* 12 温度 */
-        { 0.30, 0.95, 0.30, 100.0, "%" },     /* 13 电池 */
+        { 100.0, "%" },     /* 0 CPU */
+        { 100.0, "%" },     /* 1 内存 */
+        { 100.0, "%" },     /* 2 Swap */
+        { 0.0,   "KB/s" },  /* 3 网络 RX */
+        { 100.0, "%" },     /* 4 GPU */
+        { 0.0,   "KB/s" },  /* 5 磁盘读 */
+        { 100.0, "%" },     /* 6 zpool 空间 */
+        { 100.0, "%" },     /* 7 ARC */
+        { 100.0, "%" },     /* 8 命中率 */
+        { 0.0,   "KB/s" },  /* 9 zpool 读 */
+        { 0.0,   "KB/s" },  /* 10 zpool 写 */
+        { 0.0,   "次" },    /* 11 ARC Prune */
+        { 100.0, "°C" },    /* 12 温度 */
+        { 100.0, "%" },     /* 13 电池 */
     };
 
     const double *hists[METRIC_PAGE_COUNT] = {
@@ -396,19 +409,60 @@ void gui_metric_curves_bind(const FmonShmData *snap)
         snap->zfs_arc_prune_history, snap->temp_history,   snap->battery_history,
     };
 
+    static const int alert_metrics[METRIC_PAGE_COUNT] = {
+        0, 1, 2, -1, -1, -1, 6, -1, -1, -1, -1, -1, 12, 13
+    };
+
     for (int i = 0; i < METRIC_PAGE_COUNT; i++) {
-        s_curves[i].history     = hists[i];
+        s_curves[i].history        = hists[i];
+        s_curves[i].history_min    = NULL;
+        s_curves[i].history_max    = NULL;
+        s_curves[i].view_start_us  = 0;
+        s_curves[i].view_end_us    = 0;
+        s_curves[i].fixed_range    = FALSE;
+        s_curves[i].frozen         = FALSE;
+        s_curves[i].alert_settings = alerts_current();
+        s_curves[i].alert_metric   = alert_metrics[i];
 
         /* ARC / 命中率：下限跟随数据，避免曲线贴顶看不出变化 */
         s_curves[i].min_val =
             (i == 7 || i == 8 || i == 13) ? -1.0 : 0.0;
-        s_curves[i].r           = defs[i].r;
-        s_curves[i].g           = defs[i].g;
-        s_curves[i].b           = defs[i].b;
+        double color[4];
+
+        fmon_palette_get(g_metric_slots[i], color);
+        s_curves[i].r           = color[0];
+        s_curves[i].g           = color[1];
+        s_curves[i].b           = color[2];
         s_curves[i].max_val     = defs[i].max;
         s_curves[i].unit        = defs[i].unit;
         s_curves[i].time_us     = snap->history_time_us;
         s_curves[i].interval_us = (uint64_t)FMON_SAMPLE_INTERVAL_MS * 1000ULL;
     }
+
+    gui_metric_curves_apply_theme();
 }
 
+void gui_metric_curves_apply_theme(void)
+{
+    for (int i = 0; i < METRIC_PAGE_COUNT; i++) {
+        double color[4];
+
+        fmon_palette_get(g_metric_slots[i], color);
+        s_curves[i].r = color[0];
+        s_curves[i].g = color[1];
+        s_curves[i].b = color[2];
+    }
+
+    double c[4];
+
+    fmon_palette_get(FMON_COLOR_NET_RX, c);
+    g_net_rx_cd.r = c[0]; g_net_rx_cd.g = c[1]; g_net_rx_cd.b = c[2];
+    fmon_palette_get(FMON_COLOR_NET_TX, c);
+    g_net_tx_cd.r = c[0]; g_net_tx_cd.g = c[1]; g_net_tx_cd.b = c[2];
+    fmon_palette_get(FMON_COLOR_DISK_READ, c);
+    g_disk_rd_cd.r = c[0]; g_disk_rd_cd.g = c[1]; g_disk_rd_cd.b = c[2];
+    fmon_palette_get(FMON_COLOR_DISK_WRITE, c);
+    g_disk_wr_cd.r = c[0]; g_disk_wr_cd.g = c[1]; g_disk_wr_cd.b = c[2];
+    fmon_palette_get(FMON_COLOR_POOL, c);
+    g_zpool_cd.r = c[0]; g_zpool_cd.g = c[1]; g_zpool_cd.b = c[2];
+}
