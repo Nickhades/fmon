@@ -7,6 +7,7 @@ ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 GUI="${FMON_GUI_BIN:-$ROOT/build/src/gui/fmon-gui}"
 CLICK="${FMON_XCLICK:-/tmp/fmon-test-xclick}"
 CLOSE="${FMON_XCLOSE:-/tmp/fmon-test-xclose}"
+ESC="${FMON_XESC:-/tmp/fmon-test-xesc}"
 CFG=/tmp/fmon-gui-dialog-config
 CACHE=/tmp/fmon-gui-dialog-cache
 
@@ -20,6 +21,10 @@ fi
 if [ ! -x "$CLOSE" ]; then
     cc -O2 -I/usr/local/include -L/usr/local/lib -o "$CLOSE" \
         "$ROOT/tests/integration/x11_close.c" -lX11
+fi
+if [ ! -x "$ESC" ]; then
+    cc -O2 -I/usr/local/include -L/usr/local/lib -o "$ESC" \
+        "$ROOT/tests/integration/x11_escape.c" -lXtst -lX11
 fi
 
 rm -rf "$CFG" "$CACHE"
@@ -62,8 +67,16 @@ check_dialog() {
             id=$(find_title "$needle" || true)
             if [ -n "$id" ]; then
                 echo "opened: $needle"
-                "$CLOSE" "$id"
-                sleep 0.5
+                "$ESC" 2>/dev/null || true
+                sleep 0.8
+                if [ -n "$(find_title "$needle" || true)" ]; then
+                    "$CLOSE" "$id"
+                    sleep 0.8
+                fi
+                if [ -n "$(find_title "$needle" || true)" ]; then
+                    echo "dialog did not close: $needle" >&2
+                    exit 1
+                fi
                 return 0
             fi
         done
