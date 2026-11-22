@@ -186,6 +186,35 @@ if (page == NULL || page->names == NULL)
 
 ---
 
+### 6.3 Daemon / 控制通道 / 历史落盘复审（2026-11-22）
+
+本轮继续审阅 daemon 采集器、控制通道和历史持久化，未发现新的内存越界或命令注入；发现以下阻塞式 I/O 和权限边界问题。
+
+| ID | 优先级 | 位置 | 发现 | 建议 |
+|---|---|---|---|---|
+| D-01 | 中 | `fmon_daemon.c` 发布线程 | `fmon_history_store_sample()` 在 `fmon_shm_wr_begin()`/`wr_end()` 之间执行，内部会写 raw/1m/5m/1h/GPU/ZFS 多个 TSV。慢磁盘会拖住写事务，其他采集线程等锁，GUI 快照出现空洞。 | 在锁内只复制所需快照，文件 I/O 移到锁外；或交给独立历史线程。 |
+| D-02 | 中 | `collector_zfs.c` | `sample_pool_capacity()` 在写锁内执行 `zpool list`，超时上限 4 秒；无响应的池会阻塞发布。 | 先在锁外填充临时 `FmonPoolInfo`，锁内只合并容量字段和 I/O。 |
+| D-03 | 中 | `collector_io.c` / `collector_io_meta.c` / `disk_smart.c` | `thread_io` 持写锁调用 `sample_disk()`，其中 `disk_io_fill_meta()` 回退到 `geom`/`diskinfo`，`fmon_disk_smart_probe()` 可能调用 `smartctl`/`nvmecontrol`，单次超时可达数秒。 | 元数据/SMART 探测移到锁外，使用每盘缓存，锁内只写结果。 |
+| D-04 | 低 | `collector_storage.c` | `thread_storage` 持锁调用 `sample_swap()`；KVM 失败时回退 `swapinfo`，超时 2 秒。 | KVM/回退探测在锁外完成，锁内只写 swap 字段。 |
+| C-01 | 低（安全加固） | `fmon_ctl.c` | `getpeereid()` 失败时没有拒绝连接，代码继续处理请求，等于认证失败时 fail-open。 | 失败即 reply ERR 并关闭连接；同时记录审计日志。 |
+| C-02 | 信息 | `fmon_ctl.c` | `fmon_ctl_start()` 中 `snprintf(g_sock_path, ...)` 重复执行一次。 | 删除重复行。 |
+| H-01 | 低 | `disk_history_store.c` | 磁盘拔出后的最后一个未完成分钟仍会以旧累计值写出一行；设备选择器已隐藏它，但数据库会保留一个过渡桶。 | 在 flush 时只写本分钟 `n > 0` 的设备，或在采样时标记移除设备。 |
+
+说明：这些是**延迟/可用性和数据边界**问题，不是内存安全回归。D-01～D-03 都可能让 GUI 在慢盘、SMART 超时或 ZFS 卡住时看到旧快照；应优先在后续版本处理。
+
+#### 控制通道补充结论
+
+- 服务名 `ctl_valid_token()`、动作白名单、pid 范围、信号白名单、CPU 列表和 rctl 字符集校验均存在。
+- `service`/`sysrc`/`cpuset`/`rctl` 均使用绝对路径 argv，不经过 shell。
+- 套接字 0660，属组 operator/wheel；这是可信管理员组边界，不是普通用户边界。
+- 仍需修复 C-01，避免 `getpeereid()` 异常时无认证继续处理。
+
+#### 历史落盘补充结论
+
+- 主 raw/1m/5m/1h 与 GPU/ZFS sidecar 都使用定长 `FILE*` 追加，未发现路径拼接注入或 SQL 拼接。
+- 磁盘历史使用 SQLite prepared statement，数据库目录 0700。
+- 没有发现历史数据格式解析越界；主要风险是 D-01 的锁内 I/O 和 H-01 的过渡桶。
+
 ## 7. 性能与资源
 
 - 采集周期 1 Hz；CPU/IO/网络/ZFS/进程/存储分线程或分阶段采集。
@@ -241,17 +270,18 @@ fmon_translations       fmon_log_filter
 
 ### 建议后续处理
 
-1. 为日志行点击上下文补一个 GUI 回归测试或 ASan 冒烟步骤。
-2. 统一 CSV 文本字段转义与公式前缀防护。
-3. 在文档中明确 `operator`/`wheel` 控制通道权限边界。
-4. 增加控制通道权限、并发连接和长时间 soak 的端到端测试。
+1. 处理 D-01～D-04：历史落盘、ZFS 容量、磁盘元数据/SMART、swap 回退移出写锁。
+2. 处理 C-01：`getpeereid()` 失败时 fail-closed；删除 C-02 重复行。
+3. 为日志行点击上下文补一个 GUI 回归测试或 ASan 冒烟步骤。
+4. 统一 CSV 文本字段转义与公式前缀防护。
+5. 在文档中明确 `operator`/`wheel` 控制通道权限边界，并增加控制通道并发/长时间 soak 测试。
 
 ### 总体评价
 
 - 架构分层正确，daemon/GUI 权限边界清晰。
 - 数据真实性设计是当前代码最扎实的部分。
 - 构建和测试基线良好：0 warning、20/20。
-- F-01 已修复，复审静态分析为 0 条告警；剩余问题以低风险加固和测试覆盖为主。
+- F-01 已修复，复审静态分析为 0 条告警。daemon/control/history 复审发现的主要问题是锁内阻塞 I/O（D-01～D-04）和控制通道 fail-open（C-01），属于后续性能/安全加固重点。
 
 ---
 
@@ -263,6 +293,7 @@ fmon_translations       fmon_log_filter
 4. 手工审阅共享内存、控制通道、子进程、日志、导出、磁盘历史等高风险路径。
 5. 检索 `system/popen//bin/sh`、`shm_open/0666`、`strcpy/sprintf`、pid/服务名校验等模式。
 6. 核对文档中的 ABI/版本号与当前代码一致。
+7. 复审 daemon 采集器、控制通道和历史落盘，重点检查锁内子进程/文件 I/O。
 
 ## 11. 审核限制
 
