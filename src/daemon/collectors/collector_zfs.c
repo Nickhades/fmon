@@ -72,8 +72,11 @@ struct pool_io_row {
 };
 
 /* 读取所有 zpool 的容量信息（一次 zpool list，不经过 shell） */
-static int sample_pool_capacity(FmonShmData *s)
+static int sample_pool_capacity(FmonPoolInfo *out, int max)
 {
+    if (out == NULL || max <= 0)
+        return -1;
+
     const char *const argv[] = { "zpool", "list", "-Hp",
                                  "-o", "name,size,alloc,free,health", NULL };
 
@@ -82,18 +85,14 @@ static int sample_pool_capacity(FmonShmData *s)
     if (fmon_child_run(argv, 32 * 1024, 4000, &res) != 0 ||
         !fmon_child_ok(&res) || res.out == NULL) {
         fmon_child_result_free(&res);
-        s->probe_valid &= ~FMON_PROBE_POOLS;
-        s->pool_count = 0;
         return -1;
     }
-
-    s->probe_valid |= FMON_PROBE_POOLS;
 
     int   n    = 0;
     char *save = NULL;
 
     for (char *line = strtok_r(res.out, "\n", &save);
-         line != NULL && n < FMON_MAX_POOLS;
+         line != NULL && n < max;
          line = strtok_r(NULL, "\n", &save)) {
 
         char      name[32] = {0}, health[32] = {0};
@@ -103,23 +102,7 @@ static int sample_pool_capacity(FmonShmData *s)
                    &freeb, health) < 4)
             continue;
 
-        /* 保留同名池已有的 I/O 累计值与速率 */
-        uint64_t rops = 0, wops = 0, rb = 0, wb = 0;
-        double   rk = 0.0, wk = 0.0;
-
-        for (int k = 0; k < (int)s->pool_count; k++) {
-            if (strcmp(s->pools[k].name, name) == 0) {
-                rops = s->pools[k].read_ops;
-                wops = s->pools[k].write_ops;
-                rb   = s->pools[k].read_bytes;
-                wb   = s->pools[k].write_bytes;
-                rk   = s->pools[k].read_kbps;
-                wk   = s->pools[k].write_kbps;
-                break;
-            }
-        }
-
-        FmonPoolInfo *p = &s->pools[n];
+        FmonPoolInfo *p = &out[n];
 
         memset(p, 0, sizeof(*p));
         strlcpy(p->name, name, sizeof(p->name));
@@ -132,12 +115,6 @@ static int sample_pool_capacity(FmonShmData *s)
                              ? (double)p->alloc_bytes * 100.0 /
                                    (double)p->total_bytes
                              : 0.0;
-        p->read_ops    = rops;
-        p->write_ops   = wops;
-        p->read_bytes  = rb;
-        p->write_bytes = wb;
-        p->read_kbps   = rk;
-        p->write_kbps  = wk;
         n++;
     }
 
@@ -225,9 +202,21 @@ void *thread_zfs(void *arg)
     while (g_running) {
         int64_t now = fmon_now_ms();
 
+        FmonPoolInfo cap[FMON_MAX_POOLS];
+        bool         need_cap = (now >= next_cap_ms);
+        int          cap_n    = -1;
+
+        /* zpool list 可能阻塞到超时；必须在写锁外完成。 */
+        if (need_cap) {
+            cap_n       = sample_pool_capacity(cap, FMON_MAX_POOLS);
+            next_cap_ms = fmon_now_ms() + 10000;
+        }
+
         /* 先在锁外跑子进程（约 1 秒），发布线程不会长时间卡在写锁上 */
         int  io_n    = 0;
-        bool need_io = (now >= next_io_ms && g_shm->pool_count > 0);
+        bool need_io = (now >= next_io_ms &&
+                        ((cap_n > 0) ||
+                         (cap_n < 0 && g_shm->pool_count > 0)));
 
         if (need_io) {
             io_n       = collect_pool_io(rows, FMON_MAX_POOLS);
@@ -237,11 +226,38 @@ void *thread_zfs(void *arg)
         fmon_shm_wr_begin();
         sample_arc(g_shm);
 
-        if (now >= next_cap_ms) {
-            int n = sample_pool_capacity(g_shm);
-            if (n >= 0)
-                g_shm->pool_count = (uint32_t)n;
-            next_cap_ms = now + 10000;
+        if (need_cap) {
+            if (cap_n < 0) {
+                g_shm->probe_valid &= ~FMON_PROBE_POOLS;
+                g_shm->pool_count = 0;
+            } else {
+                FmonPoolInfo old[FMON_MAX_POOLS];
+                uint32_t     old_n = g_shm->pool_count;
+
+                if (old_n > FMON_MAX_POOLS)
+                    old_n = FMON_MAX_POOLS;
+                memcpy(old, g_shm->pools, sizeof(old[0]) * old_n);
+
+                for (int i = 0; i < cap_n; i++) {
+                    FmonPoolInfo merged = cap[i];
+
+                    for (uint32_t k = 0; k < old_n; k++) {
+                        if (strcmp(old[k].name, merged.name) == 0) {
+                            merged.read_ops    = old[k].read_ops;
+                            merged.write_ops   = old[k].write_ops;
+                            merged.read_bytes  = old[k].read_bytes;
+                            merged.write_bytes = old[k].write_bytes;
+                            merged.read_kbps   = old[k].read_kbps;
+                            merged.write_kbps  = old[k].write_kbps;
+                            break;
+                        }
+                    }
+                    g_shm->pools[i] = merged;
+                }
+
+                g_shm->pool_count = (uint32_t)cap_n;
+                g_shm->probe_valid |= FMON_PROBE_POOLS;
+            }
         }
 
         if (need_io && io_n > 0)

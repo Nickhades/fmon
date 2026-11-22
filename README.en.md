@@ -2,18 +2,19 @@
 
 A native FreeBSD system monitor and resource manager written in C11 with GTK4.
 
-## What's new in 1.3.3
+## What's new in 1.3.4
 
 - **Bilingual UI**: switch between 中文 and English at runtime; page/theme preserved.
 - **Full NIC models**: 192-byte model names, shown as a full-width row; ABI 24 requires daemon/GUI upgrade together.
 - **Live disk history**: only currently attached disks appear; removed external disks disappear from the history selector.
 - **Log context crash fix**: removed a use-after-free when opening line context in the log viewer.
+- **Daemon I/O hardening**: history writes and zpool capacity probes moved out of the snapshot write lock; control channel fails closed when peer credentials are unavailable.
 - **Window behavior**: remembers normal size, centers on X11, and closes without a 1-second collector wait.
 - **Truthful data**: missing zpool/metrics show `—`, not fake 0; NaN gaps remain gaps.
 - **UI cleanup**: top page tabs, direct quick actions, deeper dark background, fixed light-theme checkbox.
 - **Reliability**: process crash/right-click fixes, modular C11 code, 20/20 tests.
 
-Full details: [1.3.3 release notes](docs/RELEASE_NOTES_1.3.3.md).
+Full details: [1.3.4 release notes](docs/RELEASE_NOTES_1.3.4.md).
 
 ## Architecture
 
@@ -52,7 +53,7 @@ fmon-daemon (root)  --POSIX shared memory (seqlock)-->  fmon-gui (user)
 ## Install from the package
 
 ```sh
-sudo pkg install ./fmon-1.3.3.pkg
+sudo pkg install ./fmon-1.3.4.pkg
 sudo sysrc fmon_daemon_enable=YES
 sudo service fmon_daemon start
 fmon-gui

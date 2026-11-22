@@ -280,17 +280,6 @@ void *thread_publisher(void *arg)
         s->last_update_us = fmon_now_us();
         s->status = (int32_t)FMON_STATUS_RUNNING;
 
-        /* 每 10 秒把关键指标落盘，供界面查看 1 小时 / 24 小时历史 */
-        {
-            static int64_t last_store_ms = 0;
-            int64_t        now_ms        = fmon_now_ms();
-
-            if (now_ms - last_store_ms >= 10000) {
-                fmon_history_store_sample(s);
-                last_store_ms = now_ms;
-            }
-        }
-
         fmon_shm_wr_end();
 
         int64_t wait_ms = next_ms - fmon_now_ms();
@@ -302,6 +291,39 @@ void *thread_publisher(void *arg)
         }
     }
 
+    return NULL;
+}
+
+/* 独立历史落盘线程：慢磁盘不能拖住 publisher，也不能持有写锁。 */
+static void *thread_history(void *arg)
+{
+    (void)arg;
+
+    FmonShmData *snap = calloc(1, sizeof(*snap));
+
+    if (snap == NULL)
+        return NULL;
+
+    int64_t next_ms = fmon_now_ms() + 10000;
+
+    while (g_running) {
+        int64_t wait_ms = next_ms - fmon_now_ms();
+
+        if (wait_ms > 0) {
+            int slice = (wait_ms > 500) ? 500 : (int)wait_ms;
+
+            if (!fmon_sleep_ms(slice) && !g_running)
+                break;
+            continue;
+        }
+
+        if (fmon_shm_snapshot(g_shm, snap) == 0)
+            fmon_history_store_sample(snap);
+
+        next_ms = fmon_now_ms() + 10000;
+    }
+
+    free(snap);
     return NULL;
 }
 
@@ -363,8 +385,9 @@ int main(int argc, char **argv)
     dlog("主机: %s | 系统: %s | CPU: %s (%u 逻辑核)", g_shm->hostname,
          g_shm->sys_version, g_shm->cpu_model, (unsigned)g_shm->cpu_count);
 
-    pthread_t t_cpu, t_io, t_net, t_storage, t_zfs, t_proc, t_pub, t_mem;
-    bool ok_cpu, ok_io, ok_net, ok_storage, ok_zfs, ok_proc, ok_pub, ok_mem;
+    pthread_t t_cpu, t_io, t_net, t_storage, t_zfs, t_proc, t_pub, t_mem, t_hist;
+    bool ok_cpu, ok_io, ok_net, ok_storage, ok_zfs, ok_proc, ok_pub, ok_mem,
+         ok_hist;
 
     ok_cpu     = start_thread("cpu", thread_cpu_mem, &t_cpu);
     ok_io      = start_thread("io", thread_io, &t_io);
@@ -377,6 +400,7 @@ int main(int argc, char **argv)
         dlog("内存条采集线程启动失败（dmidecode 需要 root）");
     ok_proc    = start_thread("proc", thread_procs, &t_proc);
     ok_pub     = start_thread("publisher", thread_publisher, &t_pub);
+    ok_hist    = start_thread("history", thread_history, &t_hist);
 
     if (!ok_pub) {
         dlog("发布线程启动失败，守护进程无法继续");
@@ -396,6 +420,7 @@ int main(int argc, char **argv)
     if (ok_zfs)     pthread_join(t_zfs, NULL);
     if (ok_proc)    pthread_join(t_proc, NULL);
     if (ok_pub)     pthread_join(t_pub, NULL);
+    if (ok_hist)    pthread_join(t_hist, NULL);
 
     /* 通知界面：数据已停止更新。不 unlink 共享内存对象，
      * 这样界面可以区分“守护进程已退出”和“从未启动过”。 */

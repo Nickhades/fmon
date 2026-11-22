@@ -223,35 +223,41 @@ static void handle_connection(int fd)
     /* 审计：记录是谁发起的 */
     uid_t peer_uid = (uid_t)-1;
     gid_t peer_gid = (gid_t)-1;
-    if (getpeereid(fd, &peer_uid, &peer_gid) == 0) {
-        /* 内核在 connect() 时已经按“补充组”检查过套接字文件权限，
-         * 这里再做一次显式校验：root、守护进程自身、或套接字属组的成员
-         * 才允许。注意 getpeereid 只给主组，必须用 getgrouplist() 查
-         * 补充组，否则会把普通桌面用户误拒。 */
-        if (peer_uid != 0 && peer_uid != getuid()) {
-            bool allowed = false;
 
-            struct passwd *pw = getpwuid(peer_uid);
-            if (pw != NULL && g_sock_gid != (gid_t)-1) {
-                gid_t groups[32];
-                int   ngroups = (int)(sizeof(groups) / sizeof(groups[0]));
+    /* 认证失败必须 fail-closed：拿不到对端凭据时不能继续处理 root 命令。 */
+    if (getpeereid(fd, &peer_uid, &peer_gid) != 0) {
+        fprintf(stderr, "[FMON-CTL] getpeereid 失败: %s\n", strerror(errno));
+        ctl_reply(fd, false, "无法获取对端凭据");
+        return;
+    }
 
-                if (getgrouplist(pw->pw_name, pw->pw_gid, groups, &ngroups) >= 0) {
-                    for (int i = 0; i < ngroups; i++) {
-                        if (groups[i] == g_sock_gid) {
-                            allowed = true;
-                            break;
-                        }
+    /* 内核在 connect() 时已经按“补充组”检查过套接字文件权限，
+     * 这里再做一次显式校验：root、守护进程自身、或套接字属组的成员
+     * 才允许。注意 getpeereid 只给主组，必须用 getgrouplist() 查
+     * 补充组，否则会把普通桌面用户误拒。 */
+    if (peer_uid != 0 && peer_uid != getuid()) {
+        bool allowed = false;
+
+        struct passwd *pw = getpwuid(peer_uid);
+        if (pw != NULL && g_sock_gid != (gid_t)-1) {
+            gid_t groups[32];
+            int   ngroups = (int)(sizeof(groups) / sizeof(groups[0]));
+
+            if (getgrouplist(pw->pw_name, pw->pw_gid, groups, &ngroups) >= 0) {
+                for (int i = 0; i < ngroups; i++) {
+                    if (groups[i] == g_sock_gid) {
+                        allowed = true;
+                        break;
                     }
                 }
             }
+        }
 
-            if (!allowed) {
-                fprintf(stderr, "[FMON-CTL] 拒绝来自 uid=%d 的请求\n",
-                        (int)peer_uid);
-                ctl_reply(fd, false, "权限不足（需要 root 或套接字属组成员）");
-                return;
-            }
+        if (!allowed) {
+            fprintf(stderr, "[FMON-CTL] 拒绝来自 uid=%d 的请求\n",
+                    (int)peer_uid);
+            ctl_reply(fd, false, "权限不足（需要 root 或套接字属组成员）");
+            return;
         }
     }
 
