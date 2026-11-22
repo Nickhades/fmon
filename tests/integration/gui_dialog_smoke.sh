@@ -6,6 +6,7 @@ set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 GUI="${FMON_GUI_BIN:-$ROOT/build/src/gui/fmon-gui}"
 CLICK="${FMON_XCLICK:-/tmp/fmon-test-xclick}"
+KILL="${FMON_XKILL:-/tmp/fmon-test-xkill}"
 CFG=/tmp/fmon-gui-dialog-config
 CACHE=/tmp/fmon-gui-dialog-cache
 
@@ -15,6 +16,10 @@ CACHE=/tmp/fmon-gui-dialog-cache
 if [ ! -x "$CLICK" ]; then
     cc -O2 -I/usr/local/include -L/usr/local/lib -o "$CLICK" \
         "$ROOT/tests/integration/x11_click.c" -lXtst -lX11
+fi
+if [ ! -x "$KILL" ]; then
+    cc -O2 -I/usr/local/include -L/usr/local/lib -o "$KILL" \
+        "$ROOT/tests/integration/x11_kill.c" -lX11
 fi
 
 rm -rf "$CFG" "$CACHE"
@@ -71,6 +76,8 @@ check_dialog() {
             id=$(find_title "$needle" || true)
             if [ -n "$id" ]; then
                 echo "opened: $needle"
+                "$KILL" "$id" 2>/dev/null || true
+                sleep 1
                 return 0
             fi
         done
