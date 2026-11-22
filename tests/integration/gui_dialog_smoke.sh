@@ -48,7 +48,7 @@ click_rel() {
 }
 
 find_title() {
-    xwininfo -root -tree | grep "$1" | tail -1 | awk '{print $1}'
+    xwininfo -root -tree | grep -E "$1" | tail -1 | awk '{print $1}'
 }
 
 check_dialog() {
@@ -67,9 +67,9 @@ check_dialog() {
 }
 
 # Approximate toolbar positions for the fixed 1500x920 test window.
-check_dialog '关于 FreeBSD 监控中心' 850 135
-check_dialog '告警设置' 880 135
-check_dialog '保存监控数据 CSV' 945 90
+check_dialog '关于 FreeBSD 监控中心|About FreeBSD Monitoring Center' 850 135
+check_dialog '告警设置|Alert Settings' 880 135
+check_dialog '保存监控数据 CSV|Save monitoring data CSV' 945 90
 
 "$CLOSE" "$main" 2>/dev/null || true
 sleep 2
