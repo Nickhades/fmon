@@ -7,6 +7,7 @@
 #include <glib/gi18n.h>
 #include <gtk/gtk.h>
 
+#include "csv_util.h"
 #include "gui_window.h"
 #include "process_internal.h"
 
@@ -71,21 +72,19 @@ static void on_export_done(GObject *source_object, GAsyncResult *result,
         g_ascii_formatd(cpu, sizeof(cpu), "%.2f", p->cpu);
         g_ascii_formatd(mem, sizeof(mem), "%.1f", p->mem);
 
-        fprintf(fp, "%u,%s,%s,%c,%s,%llu,%s,", p->pid,
-                (p->user != NULL) ? p->user : "",
-                p->is_system ? "system" : "user", p->state, cpu,
-                (unsigned long long)p->rss_kb, mem);
+        char state[2] = { p->state, '\0' };
+        char *user = fmon_csv_escape(p->user);
+        char *system = fmon_csv_escape(p->is_system ? "system" : "user");
+        char *state_s = fmon_csv_escape(state);
+        char *cmd = fmon_csv_escape(p->comm);
 
-        /* 命令行里可能包含逗号和双引号，按 CSV 规则转义 */
-        const gchar *cmd = (p->comm != NULL) ? p->comm : "";
-        fputc('"', fp);
-        for (const gchar *c = cmd; *c != '\0'; c++) {
-            if (*c == '"')
-                fputc('"', fp);
-            fputc(*c, fp);
-        }
-        fputs("\"\n", fp);
+        fprintf(fp, "%u,%s,%s,%s,%s,%llu,%s,%s\n", p->pid, user, system,
+                state_s, cpu, (unsigned long long)p->rss_kb, mem, cmd);
 
+        g_free(user);
+        g_free(system);
+        g_free(state_s);
+        g_free(cmd);
         g_object_unref(p);
     }
 

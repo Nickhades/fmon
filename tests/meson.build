@@ -35,6 +35,15 @@ test_history_provider = executable('test_history_provider', 'test_history_provid
 )
 test('fmon_history_provider', test_history_provider, timeout : 30)
 
+test_csv = executable('test_csv', 'test_csv.c',
+  files('../src/gui/support/csv_util.c'),
+  include_directories : [common_inc,
+                         include_directories('../src/gui/support')],
+  dependencies : [glib_dep],
+  install : false
+)
+test('fmon_csv', test_csv, timeout : 30)
+
 test_child = executable('test_child', 'test_child.c',
   common_srcs,
   include_directories : common_inc,

@@ -2,7 +2,7 @@
 
 用 C11 + GTK4 编写的 FreeBSD 原生系统监控与资源管理工具。
 
-## 1.3.5 更新
+## 1.3.6 更新
 
 - **中英双语**：运行时切换中文 / English，保留当前页面与主题。
 - **完整网卡型号**：型号字段扩到 192 字节并整行显示；ABI 24 需 daemon/GUI 同升。
@@ -13,15 +13,16 @@
 - **窗口行为**：记住正常大小，X11 启动居中，关闭不再等待采集线程 1 秒。
 - **数据真实性**：缺失指标显示 `—`，无 zpool 不再伪造 0，NaN 保持断线。
 - **界面整理**：顶部页面标签、快捷操作直出、更深深色背景、浅色主题复选框修复。
-- **稳定性**：进程页崩溃/右键修复，C11 模块化，20/20 测试通过。
+- **稳定性**：进程页崩溃/右键修复，C11 模块化，21/21 测试通过。
 
-完整说明：[1.3.5 发布说明](docs/RELEASE_NOTES_1.3.5.md)。
+完整说明：[1.3.6 发布说明](docs/RELEASE_NOTES_1.3.6.md)。
 
 ## 架构
 
 - **fmon-daemon（root）**：1 Hz 采集 CPU/内存/磁盘/网络/ZFS/进程，通过共享内存发布一致快照。
 - **fmon-gui（普通用户）**：只读映射共享内存，GTK4 + Cairo 渲染；界面崩溃不影响采集。
 - **控制通道**：结束进程、服务启停、sysrc、cpuset、rctl 等特权操作由 root daemon 校验后执行，不经过 shell。
+- **CSV 加固**：导出文本字段统一转义，并中和表格公式前缀。
 
 ![fmon 架构图](docs/project-structure.png)
 
@@ -48,7 +49,7 @@
 ## 安装
 
 ```sh
-sudo pkg install ./fmon-1.3.5.pkg
+sudo pkg install ./fmon-1.3.6.pkg
 sudo sysrc fmon_daemon_enable=YES
 sudo service fmon_daemon start
 fmon-gui
@@ -79,7 +80,7 @@ sudo ./install.sh
 - `src/daemon` — 采集与 root 控制守护进程；
 - `src/gui` — GTK4 界面、图表、页面；
 - `src/common` — 共享内存 ABI 与公共代码；
-- `tests` — 14 组单元测试；
+- `tests` — 21 组单元测试；
 - `dist/` — 预编译 FreeBSD pkg 与源码包；
 - `docs/` — 补充文档。
 
@@ -91,6 +92,7 @@ BSD-2-Clause，见 [LICENSE](LICENSE)。
 
 - [中文完整说明](README.zh-CN.md)
 - [English README](README.en.md)
+- [安全模型与控制通道权限](docs/SECURITY.md)
 - [折线图设计说明（线性/缺口/保峰值）](docs/CHARTS.md)
 - [硬件探测覆盖与边界](docs/HARDWARE.md)
 - [全功能探测契约与审计](docs/PROBE_POLICY.md)

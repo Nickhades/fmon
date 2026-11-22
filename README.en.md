@@ -2,7 +2,7 @@
 
 A native FreeBSD system monitor and resource manager written in C11 with GTK4.
 
-## What's new in 1.3.5
+## What's new in 1.3.6
 
 - **Bilingual UI**: switch between 中文 and English at runtime; page/theme preserved.
 - **Full NIC models**: 192-byte model names, shown as a full-width row; ABI 24 requires daemon/GUI upgrade together.
@@ -13,9 +13,9 @@ A native FreeBSD system monitor and resource manager written in C11 with GTK4.
 - **Window behavior**: remembers normal size, centers on X11, and closes without a 1-second collector wait.
 - **Truthful data**: missing zpool/metrics show `—`, not fake 0; NaN gaps remain gaps.
 - **UI cleanup**: top page tabs, direct quick actions, deeper dark background, fixed light-theme checkbox.
-- **Reliability**: process crash/right-click fixes, modular C11 code, 20/20 tests.
+- **Reliability**: process crash/right-click fixes, modular C11 code, 21/21 tests.
 
-Full details: [1.3.5 release notes](docs/RELEASE_NOTES_1.3.5.md).
+Full details: [1.3.6 release notes](docs/RELEASE_NOTES_1.3.6.md).
 
 ## Architecture
 
@@ -28,6 +28,7 @@ fmon-daemon (root)  --POSIX shared memory (seqlock)-->  fmon-gui (user)
 - **Daemon**: samples at 1 Hz and publishes immutable snapshots through shared memory.
 - **GUI**: maps shared memory read-only; a crash of the GUI never affects collection.
 - **Control channel**: privileged operations (signals, services, sysrc, cpuset, rctl) are validated and executed by the root daemon over a local Unix socket. No shell interpolation.
+- **CSV hardening**: all text fields are escaped and formula prefixes are neutralized on export.
 
 ![fmon architecture](docs/project-structure.png)
 
@@ -54,7 +55,7 @@ fmon-daemon (root)  --POSIX shared memory (seqlock)-->  fmon-gui (user)
 ## Install from the package
 
 ```sh
-sudo pkg install ./fmon-1.3.5.pkg
+sudo pkg install ./fmon-1.3.6.pkg
 sudo sysrc fmon_daemon_enable=YES
 sudo service fmon_daemon start
 fmon-gui
@@ -85,10 +86,11 @@ The installer auto-detects and installs `dmidecode`, `smartmontools`, and `libdr
 - `src/daemon` — collector and root control daemon.
 - `src/gui` — GTK4 interface, charts, views.
 - `src/common` — shared-memory ABI and helpers.
-- `tests` — unit tests (14 test suites).
+- `tests` — unit tests (21 test suites).
 - `dist/` — prebuilt FreeBSD package and source archive.
 - `docs/` — additional documentation.
 - [`docs/CHARTS.md`](docs/CHARTS.md) — why the charts are linear, gap-aware and peak-preserving.
+- [`docs/SECURITY.md`](docs/SECURITY.md) — control-socket group boundary and local security model.
 
 ## License
 

@@ -1,7 +1,7 @@
-# fmon 1.3.5 代码审核报告（1.3.2/1.3.4 复审加固）
+# fmon 1.3.6 代码审核报告（1.3.2/1.3.5 复审加固）
 
 > **审核对象**：fmon 1.3.2
-> **复审修复**：fmon 1.3.5
+> **复审修复**：fmon 1.3.6
 > **代码基线**：`main` 提交 `b8e7558`（`v1.3.2` 标签提交为 `15c2955`，代码相同）
 > **审核日期**：2026-11-22
 > **审核环境**：FreeBSD 15.1-RELEASE-p7 amd64，clang 19.1.7，GTK 4 / Cairo，Meson + Ninja
@@ -15,7 +15,7 @@
 
 | 项目 | 结果 |
 |---|---|
-| 版本 | `fmon-gui 1.3.5 (共享内存 ABI 24)` |
+| 版本 | `fmon-gui 1.3.6 (共享内存 ABI 24)` |
 | 源文件规模 | 46,565 行 C/H（不含生成物） |
 | 最大业务文件 | `gui_window.c` 684 行；最大文件 `i18n_phrases.c` 739 行为生成数据 |
 | 编译告警 | 0 warning |
@@ -122,7 +122,7 @@ gchar *ctx = log_render_raw_context(page, line);
 - 每个 return 前释放 `line`；
 - 复审 scan-build 不再报告该路径。
 
-修复后逻辑经构建、20 项测试和静态分析复核；本报告不再把该问题列为未解决。
+修复后逻辑经构建、21 项测试和静态分析复核；本报告不再把该问题列为未解决。
 
 ---
 
@@ -182,7 +182,7 @@ if (page == NULL || page->names == NULL)
 1. **控制通道权限较宽**：加入 `operator` 或 `wheel` 的本地用户可以请求结束任意 pid、启停服务、改 nice/cpuset。这是“可信本地管理员组”的边界，不是普通用户边界；生产环境不要随意把用户加入该组。
 2. **共享内存可读**：0644 使本机任意用户可读取进程/网络等监控数据；这是 GUI 无特权读取的取舍。若机器是多用户高敏感环境，应改为按组授权或更严格的 ACL。
 3. **日志页仍有两个常量 shell 入口**：日志源的 `dmesg`/固定命令通过 `/bin/sh -c` 执行，日志上下文用固定脚本并把行内容作为位置参数传入。当前输入不拼进脚本，风险可控；后续维护不要把这些入口改成字符串拼接。
-4. **CSV 导出**：进程导出对 command 做了 CSV 引号转义，但未对所有文本字段统一做公式前缀处理；本地进程名可被构造为以 `=`、`+`、`-`、`@` 开头的内容。属于低风险加固项。
+4. **CSV 导出**：1.3.6 已统一转义 User/System/State/Command，并对 `=`、`+`、`-`、`@` 等公式前缀加 apostrophe。
 
 ---
 
@@ -231,7 +231,7 @@ if (page == NULL || page->names == NULL)
 
 ## 8. 测试覆盖
 
-当前 20 项测试：
+当前 21 项测试：
 
 ```text
 fmon_chart              fmon_fidelity          fmon_history_provider
@@ -240,7 +240,7 @@ fmon_cpu_health         fmon_service_rc        fmon_mem_summary
 fmon_vm_stats           fmon_zfs_stats         fmon_cpu_stats
 fmon_kmem_stats         fmon_net_stats         fmon_disk_perf
 fmon_disk_queue         fmon_zpool_health      fmon_no_bezier
-fmon_translations       fmon_log_filter
+fmon_translations       fmon_log_filter         fmon_csv
 ```
 
 覆盖较好的部分：
@@ -269,9 +269,9 @@ fmon_translations       fmon_log_filter
 | D-01 慢历史 I/O | `HOME` 指向 FIFO `history.tsv`，history 线程 `fopen` 阻塞；`shmwatch` 每 100 ms 读 `last_update_us`，超过 1.5 s 记为缺口 | 15 s / 150 样本：**0 gaps** |
 | D-02 ZFS 命令卡住 | `PATH` 指向 fake `zpool`：`list` sleep 3 s、`iostat` sleep 2 s，并记录调用 | fake 调用已发生；15 s / 150 样本：**0 gaps** |
 | C-01 认证失败 | `LD_PRELOAD` 覆盖 `getpeereid()` 返回 `EACCES` | 控制客户端收到 `ERR 无法获取对端凭据`；无 preload 时 `OK pong` |
-| ASAN 单元测试 | `-Db_sanitize=address` 全量构建 + meson test | **20/20** |
+| ASAN 单元测试 | `-Db_sanitize=address` 全量构建 + meson test | **21/21** |
 | ASAN GUI soak | 120 s，CPU/存储/网络等页面切换 | 无 AddressSanitizer 报错；仅有主循环 19–21 ms 慢刷新警告 |
-| D-03/D-04/H-01 | 锁外临时缓冲 / SwapSample / seen 标记 | 构建、20 项测试、scan-build 0 条；未做 root 级故障注入 |
+| D-03/D-04/H-01 | 锁外临时缓冲 / SwapSample / seen 标记 | 构建、21 项测试、scan-build 0 条；未做 root 级故障注入 |
 
 限制：当前会话没有 root，无法执行真实的 `mdconfig`/`zpool suspend`/非 operator 用户测试；FIFO 和 fake `zpool` 是可重复的用户态替代，覆盖同一个阻塞 I/O 路径，但不是完整系统级 soak。
 
@@ -288,22 +288,22 @@ fmon_translations       fmon_log_filter
 1. 在 root 环境补真实 `mdconfig` 慢盘、`zpool suspend` 和非 operator 用户测试。
 2. 延长 ASAN GUI soak，并补 D-03/D-04 的系统级故障注入。
 3. 为日志行点击上下文补一个 GUI 回归测试或 ASan 冒烟步骤。
-4. 统一 CSV 文本字段转义与公式前缀防护。
+4. 保持 CSV 转义 helper 作为所有新导出字段的唯一入口。
 5. 在文档中明确 `operator`/`wheel` 控制通道权限边界，并增加控制通道并发测试。
 
 ### 总体评价
 
 - 架构分层正确，daemon/GUI 权限边界清晰。
 - 数据真实性设计是当前代码最扎实的部分。
-- 构建和测试基线良好：0 warning、20/20。
-- F-01 已修复，复审静态分析为 0 条告警。D-01～D-04、C-01/C-02、H-01 均已修复；当前版本 1.3.5。
+- 构建和测试基线良好：0 warning、21/21。
+- F-01 已修复，复审静态分析为 0 条告警。D-01～D-04、C-01/C-02、H-01 均已修复；CSV 已在 1.3.6 统一加固；当前版本 1.3.6。
 
 ---
 
 ## 10. 审核方法
 
 1. 检查当前 `main` 的 `meson.build`、`fmon_shm.h`、版本/ABI 字符串。
-2. 全量 release 构建 + 20 项单元测试。
+2. 全量 release 构建 + 21 项单元测试。
 3. `scan-build` 静态分析，并在修复后复审。
 4. 手工审阅共享内存、控制通道、子进程、日志、导出、磁盘历史等高风险路径。
 5. 检索 `system/popen//bin/sh`、`shm_open/0666`、`strcpy/sprintf`、pid/服务名校验等模式。

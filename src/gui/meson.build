@@ -70,6 +70,7 @@ gui_srcs = files(
   'pages/gui_page_batt.c',
   'support/gui_widgets.c',
   'support/gui_util.c',
+  'support/csv_util.c',
   'support/about.c',
   'support/font_setup.c',
   'support/language.c',
