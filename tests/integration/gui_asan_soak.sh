@@ -18,7 +18,7 @@ ASAN_OPTIONS=detect_leaks=0:abort_on_error=1:allocator_may_return_null=1 \
     "$binary" --page cpu --theme dark >/tmp/fmon-asan-soak.log 2>&1 &
 pid=$!
 sleep 5
-id=$(xwininfo -root -tree | grep -E 'FreeBSD 监控中心|FreeBSD Monitoring Center' | tail -1 | awk '{print $1}')
+id=$(xwininfo -root -tree | grep -E 'FreeBSD 监控中心|FreeBSD Monitoring Center' | grep -v ' 1x1+' | tail -1 | awk '{print $1}')
 if [ -z "$id" ]; then
     echo "window not found" >&2
     kill "$pid" 2>/dev/null || true

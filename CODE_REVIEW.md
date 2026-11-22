@@ -256,7 +256,7 @@ fmon_translations       fmon_log_filter         fmon_csv
 
 - About/告警/导出对话框已有 smoke 测试；日志点击和更多详情窗口仍没有自动化；
 - 控制通道已有 `tests/integration/control_permission.sh`，但并发连接/超时还没有 CI 化；
-- `tests/integration/gui_asan_soak.sh` 已提供；CI workflow 在本地 `ci-workflows` 分支，尚未上传/执行。
+- `tests/integration/gui_asan_soak.sh` 已提供；GitHub CI 已上传并成功跑完构建/测试，ASAN job 待完整复跑。
 
 ---
 
@@ -275,7 +275,7 @@ fmon_translations       fmon_log_filter         fmon_csv
 | H-01 | root `mdconfig` 创建 md0；GUI 采样后 detach；SQLite 查询 | 拔出后无新 md0 行；**通过** |
 | GUI 对话框 | About / 告警设置 / CSV 保存窗口打开并关闭 | **通过**（`gui_dialog_smoke.sh`） |
 
-限制：已用 root 创建 md0、安装 1.3.6、执行 non-operator 与 H-01 热插拔测试；FreeBSD 15.1 的 `zpool` 不支持 `suspend/resume`，D-02 仍以 fake `zpool` 覆盖阻塞路径。1 小时 ASAN GUI soak 已完成并通过；CI workflow 已在本地分支 `ci-workflows` 准备，但因当前 token 缺少 Workflows 权限，尚未上传到 main。
+限制：已用 root 创建 md0、安装 1.3.6、执行 non-operator 与 H-01 热插拔测试；FreeBSD 15.1 的 `zpool` 不支持 `suspend/resume`，D-02 仍以 fake `zpool` 覆盖阻塞路径。1 小时 ASAN GUI soak 已完成并通过；CI workflow 已上传到 main；FreeBSD CI 构建/测试已成功，ASAN 工作流已验证 21/21 单测和 600s soak，但完整 job 仍受 GUI 构建路径问题影响，已修正待复跑。
 
 ## 9. 结论与建议
 
@@ -288,7 +288,7 @@ fmon_translations       fmon_log_filter         fmon_csv
 ### 建议后续处理
 
 1. 在 root 环境补真实 `mdconfig` 慢盘、`zpool suspend` 和非 operator 用户测试。
-2. 用带 Workflows 权限的 token 上传 `ci-workflows` 分支的 GitHub Actions 配置，并在 FreeBSD runner 上启用。
+2. 复跑 ASAN job，确认 GUI/H-01 步骤也全绿。
 3. 为日志行点击上下文补一个 GUI 回归测试或 ASan 冒烟步骤。
 4. 保持 CSV 转义 helper 作为所有新导出字段的唯一入口。
 5. 在文档中明确 `operator`/`wheel` 控制通道权限边界，并增加控制通道并发测试。

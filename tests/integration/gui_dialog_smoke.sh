@@ -34,7 +34,7 @@ pid=$!
 trap 'kill -TERM "$pid" 2>/dev/null || true' EXIT INT TERM
 sleep 4
 
-main=$(xwininfo -root -tree | grep 'FreeBSD 监控中心' | tail -1 | awk '{print $1}')
+main=$(xwininfo -root -tree | grep -E 'FreeBSD 监控中心|FreeBSD Monitoring Center' | grep -v ' 1x1+' | tail -1 | awk '{print $1}')
 [ -n "$main" ] || { echo "main window not found" >&2; exit 1; }
 left=$(xwininfo -id "$main" | awk '/Absolute upper-left X/{print $4}')
 top=$(xwininfo -id "$main" | awk '/Absolute upper-left Y/{print $4}')
@@ -67,9 +67,9 @@ check_dialog() {
 }
 
 # Approximate toolbar positions for the fixed 1500x920 test window.
-check_dialog '关于 FreeBSD 监控中心|About FreeBSD Monitoring Center' 850 135
-check_dialog '告警设置|Alert Settings' 880 135
-check_dialog '保存监控数据 CSV|Save monitoring data CSV' 945 90
+check_dialog '关于 FreeBSD 监控中心|About FreeBSD Monitoring Center' 863 120
+check_dialog '告警设置|Alert Settings' 895 120
+check_dialog '保存监控数据 CSV|Save monitoring data CSV' 945 75
 
 "$CLOSE" "$main" 2>/dev/null || true
 sleep 2
