@@ -50,3 +50,13 @@ CI workflow drafts are kept on the local `ci-workflows` branch:
 
 They are not on `main` yet because the upload token lacks GitHub Workflows
 permission. They also have not been executed on a GitHub FreeBSD runner.
+
+## GUI dialog smoke
+
+```sh
+DISPLAY=:0 ./tests/integration/gui_dialog_smoke.sh
+```
+
+Opens/closes About, alert settings and the CSV save dialog; requires XTest
+headers (`libXtst`) and a running daemon. It is intentionally a smoke test, not
+a full accessibility-driven dialog suite.
