@@ -1,0 +1,23 @@
+name: FreeBSD CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: FreeBSD build and unit tests
+        uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+          prepare: |
+            pkg install -y meson ninja pkgconf gtk4 cairo sqlite3 libdrm gettext-tools
+          run: |
+            meson setup build --buildtype=release --prefix=/usr/local
+            ninja -C build
+            meson test -C build --print-errorlogs

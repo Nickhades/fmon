@@ -1,0 +1,35 @@
+name: FreeBSD ASAN soak (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: ASAN GUI soak duration
+        required: false
+        default: "600"
+
+jobs:
+  asan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: ASAN unit tests and GUI soak
+        uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+          prepare: |
+            pkg install -y meson ninja pkgconf gtk4 cairo sqlite3 libdrm gettext-tools xorg-vfbserver xorg-utils libXtst
+          run: |
+            SOAK_SECONDS="${{ inputs.seconds }}"
+            meson setup build-asan --buildtype=debugoptimized -Db_sanitize=address -Db_lundef=false
+            ninja -C build-asan
+            ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 meson test -C build-asan --print-errorlogs
+            ./build-asan/src/daemon/fmon-daemon --force >/tmp/fmon-asan-daemon.log 2>&1 &
+            sleep 2
+            Xvfb :99 -screen 0 1600x900x24 >/tmp/fmon-xvfb.log 2>&1 &
+            sleep 2
+            DISPLAY=:99 ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 \
+              ./tests/integration/gui_asan_soak.sh "$SOAK_SECONDS" \
+              ./build-asan/src/gui/fmon-gui
+            DISPLAY=:99 ./tests/integration/gui_dialog_smoke.sh
+            DISPLAY=:99 ./tests/integration/h01_disk_hotplug.sh
