@@ -53,17 +53,25 @@ find_title() {
 
 check_dialog() {
     needle="$1"
-    shift
-    click_rel "$@"
-    sleep 1
-    id=$(find_title "$needle" || true)
-    if [ -z "$id" ]; then
-        echo "dialog not found: $needle" >&2
-        exit 1
-    fi
-    echo "opened: $needle"
-    "$CLOSE" "$id"
-    sleep 1
+    base_x="$2"
+    base_y="$3"
+    for dx in 0 -20 20 -40 40 -60 60 -80 80; do
+        for dy in 0 -15 15 -30 30; do
+            click_rel $((base_x + dx)) $((base_y + dy))
+            sleep 0.35
+            id=$(find_title "$needle" || true)
+            if [ -n "$id" ]; then
+                echo "opened: $needle"
+                "$CLOSE" "$id"
+                sleep 0.5
+                return 0
+            fi
+        done
+    done
+    echo "dialog not found: $needle" >&2
+    echo "main geometry: left=$left top=$top w=$w h=$h" >&2
+    xwininfo -root -tree >&2 || true
+    exit 1
 }
 
 # Approximate toolbar positions for the fixed 1500x920 test window.
