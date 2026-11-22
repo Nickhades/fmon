@@ -45,7 +45,7 @@
 
 ## 2. 数据完整性风险（需要继续修）
 
-ABI 23 用 `probe_valid` 位图区分“真实 0”和“探测失败”：
+ABI 24 用 `probe_valid` 位图区分“真实 0”和“探测失败”：
 
 - `FMON_PROBE_SWAP`：Swap 成功才置位；失败显示 `—`。
 - `FMON_PROBE_POOLS`：zpool 命令成功才置位；无池与执行失败可区分。

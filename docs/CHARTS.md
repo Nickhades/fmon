@@ -68,7 +68,7 @@
 
 ## 3. 真实时间轴与缺口
 
-共享内存 ABI 21/22 新增逐点时间戳（ABI 23 增加探测有效位/磁盘元数据，不改变历史布局）：
+共享内存 ABI 21/22 新增逐点时间戳；ABI 23 增加探测有效位/磁盘元数据；ABI 24 扩大网卡型号字段。历史布局保持一致：
 
 ```c
 uint64_t history_time_us[FMON_HISTORY_POINTS];  /* CLOCK_MONOTONIC */
@@ -83,7 +83,7 @@ uint64_t history_time_us[FMON_HISTORY_POINTS];  /* CLOCK_MONOTONIC */
 实现：`fmon_chart_time_range()`、`fmon_chart_retime()`、
 `fmon_chart_polyline_at()`。
 
-> ABI 23：升级后必须同时重启 `fmon-daemon` 与 `fmon-gui`，旧 GUI 会被拒绝。
+> ABI 24：升级后必须同时重启 `fmon-daemon` 与 `fmon-gui`，旧 GUI 会被拒绝。
 
 ## 4. 缺口：NaN 是“没有采样”，不是 0
 

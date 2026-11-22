@@ -6,7 +6,7 @@ Release date: 2026-11-22
 
 1.3.2 修复存储页“设备历史”仍然显示已拔出外置磁盘的问题。
 
-共享内存 ABI 保持 **24**，1.3.1 的 daemon 可以与 1.3.2 GUI 配合使用；仍建议同时升级。
+共享内存 ABI 保持 **24**；daemon 与 GUI 仍应同时升级。
 
 ## 修复
 
@@ -42,12 +42,7 @@ sudo service fmon_daemon start
 fmon-gui
 ```
 
-旧包保留：
-
-- `fmon-1.3.1.pkg` / `fmon-1.3.1-src.tar.gz`
-- `fmon-1.3.0.pkg` / `fmon-1.3.0-src.tar.gz`
-- `fmon-1.2.0.pkg` / `fmon-1.2.0-src.tar.gz`
-- `fmon-1.1.1.pkg` / `fmon-1.1.1-src.tar.gz`
+历史版本（1.3.1 及更早）只通过 GitHub Releases 访问，不再保留在 main 分支的 dist/ 中。
 
 ## 包
 

@@ -47,7 +47,7 @@ static const char *const L2_KEYS[L2_ROW_COUNT] = {
 static GtkWidget *s_vals[L2_ROW_COUNT];
 static GtkWidget *s_hint = NULL;
 
-/* 历史曲线来自 daemon：zfs_l2_size_history / zfs_l2_hit_history（ABI 23）。
+/* 历史曲线来自 daemon：zfs_l2_size_history / zfs_l2_hit_history（ABI 24）。
  * 下面两片数组只在首帧、daemon 还没给指针之前兜底。 */
 static double s_size_hist[FMON_HISTORY_POINTS];
 static double s_hit_hist[FMON_HISTORY_POINTS];
@@ -210,7 +210,7 @@ void gui_l2arc_update(void)
         return;
     }
 
-    /* 历史曲线由 daemon 发布（ABI 23）：大小 GB 与命中率 % */
+    /* 历史曲线由 daemon 发布（ABI 24）：大小 GB 与命中率 % */
     sync_curve(&s_size_cd, snap, snap->zfs_l2_size_history);
     sync_curve(&s_hit_cd, snap, snap->zfs_l2_hit_history);
 

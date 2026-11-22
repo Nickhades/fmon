@@ -22,7 +22,7 @@ digraph fmon {
     collectors -> publisher;
   }
 
-  common [label="common/\nfmon_shm ABI 23\nseqlock snapshot + fmon_child", fillcolor="#fff7ed", color="#f59e0b"];
+  common [label="common/\nfmon_shm ABI 24\nseqlock snapshot + fmon_child", fillcolor="#fff7ed", color="#f59e0b"];
   os [label="FreeBSD kernel interfaces\nsysctl / kvm / devstat / geom /\nlibprocstat / ifaddrs / cam / ZFS kstat", fillcolor="#eef2f7"];
   sqlite [label="~/.cache/fmon/disk_history.db\n24h disk history", fillcolor="#f5f3ff", color="#8b5cf6"];
   notify [label="notify-send\ndesktop alerts", fillcolor="#fdf2f8", color="#ec4899"];

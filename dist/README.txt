@@ -1,23 +1,12 @@
-fmon 1.3.2 - FreeBSD 安装包（保留 1.1.1 / 1.2.0 / 1.3.0 / 1.3.1）
+fmon 1.3.2 - FreeBSD 安装包
 
-新版本：
+当前版本：
   fmon-1.3.2.pkg           FreeBSD 15 amd64 原生 pkg
   fmon-1.3.2-src.tar.gz    完整源代码
   RELEASE_NOTES_1.3.2.md   1.3.2 变更说明
 
-历史版本（保留，不覆盖）：
-  fmon-1.3.1.pkg / fmon-1.3.1-src.tar.gz
-  fmon-1.3.0.pkg / fmon-1.3.0-src.tar.gz
-  fmon-1.2.0.pkg / fmon-1.2.0-src.tar.gz
-  fmon-1.1.1.pkg / fmon-1.1.1-src.tar.gz
-
-1.3.2 主要变化：
-  - 设备历史下拉框只列出 daemon 当前快照中的磁盘；
-  - 外置盘拔掉后 2 秒内从下拉框消失，不再读取 SQLite 旧设备名；
-  - 当前选中的盘被拔掉时自动切换到仍在线的磁盘；
-  - 不按 ada/da/nda 白名单筛选，支持内核 devstat 枚举到的各类块设备；
-  - 历史数据只对当前在线磁盘持续记录；
-  - 共享内存 ABI 保持 24。
+历史版本（1.3.1 及更早）只通过 GitHub Releases 历史页访问：
+  https://github.com/Nickhades/fmon/releases
 
 安装：
   sudo service fmon_daemon stop

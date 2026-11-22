@@ -397,15 +397,15 @@ daemon/ core/{fmon_daemon,fmon_ctl,history_store,collectors.h}
 1. 先跑 `ninja -C build && meson test -C build` 记录基线；
 2. 小步修改，每次只动一个模块；改完立即重编 + 跑相关页面冒烟；
 3. 任何共享内存/协议改动：ABI+1、重装两端、验证旧 GUI 会被拒绝；
-4. 更新 `docs/MODULES.md`（模块）与 `docs/CODE_AUDIT.md`（规范/规模）；
-5. 提交前执行第 8 节清单 + `docs/CODE_REVIEW.md` 记录本次改动。
+4. 更新 `docs/MODULES.md`（模块）；
+5. 提交前执行第 8 节清单，并在提交说明中记录验证结果。
 
 ## 10. 新会话开场提示词（可直接粘贴）
 
 ```
 继续维护 FreeBSD监控中心(fmon4)。
-项目：/home/zxy/dsh2监控资源管理器/FreeBSD图形化系统资源管理器/fmon4
-先读 docs/HANDOFF_NEXT_SESSION.md、docs/MODULES.md、docs/CODE_AUDIT.md。
+项目：/home/zxy/项目/FreeBSD图形化系统资源管理器/fmon4
+先读 docs/HANDOFF_NEXT_SESSION.md、docs/MODULES.md、docs/PROJECT_STRUCTURE.md。
 已落地（阶段 1）：GUI 常驻采集线程
 - src/gui/pages/collector_thread.c：单线程 1 Hz 采集 zfs/cpu/net/disk，
   经 g_idle_add 整帧发布；主循环繁忙时最多挂 2 帧、旧帧丢弃；

@@ -66,7 +66,7 @@ daN  ─────────> libcam CAM SCSI LOG SENSE page 0x0D
 
 ## 5. 下游分发建议
 
-1. 按 FreeBSD 版本/架构在目标环境构建（ABI 23）。
+1. 按 FreeBSD 版本/架构在目标环境构建（ABI 24）。
 2. 不把 `smartctl`/`nvmecontrol` 作为编译硬依赖；安装脚本自动补齐运行时工具，内核 provider 优先，工具仅在失败时回退。
 3. 在目标机上跑 `meson test -C build` 和页面冒烟。
 4. 对没有传感器的机器，确认界面显示 “—” 而不是 0。
