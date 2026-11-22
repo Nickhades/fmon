@@ -1,7 +1,7 @@
-# fmon 1.3.4 代码审核报告（1.3.2/1.3.3 复审加固）
+# fmon 1.3.5 代码审核报告（1.3.2/1.3.4 复审加固）
 
 > **审核对象**：fmon 1.3.2
-> **复审修复**：fmon 1.3.4
+> **复审修复**：fmon 1.3.5
 > **代码基线**：`main` 提交 `b8e7558`（`v1.3.2` 标签提交为 `15c2955`，代码相同）
 > **审核日期**：2026-11-22
 > **审核环境**：FreeBSD 15.1-RELEASE-p7 amd64，clang 19.1.7，GTK 4 / Cairo，Meson + Ninja
@@ -15,7 +15,7 @@
 
 | 项目 | 结果 |
 |---|---|
-| 版本 | `fmon-gui 1.3.4 (共享内存 ABI 24)` |
+| 版本 | `fmon-gui 1.3.5 (共享内存 ABI 24)` |
 | 源文件规模 | 46,565 行 C/H（不含生成物） |
 | 最大业务文件 | `gui_window.c` 684 行；最大文件 `i18n_phrases.c` 739 行为生成数据 |
 | 编译告警 | 0 warning |
@@ -194,13 +194,13 @@ if (page == NULL || page->names == NULL)
 |---|---|---|---|---|
 | D-01 | 中 | `fmon_daemon.c` 历史线程 | 原实现把 `fmon_history_store_sample()` 放在写事务内。现改为独立 `thread_history`：锁内不落盘，慢磁盘不阻塞 publisher。 | **已修复**；FIFO 阻塞测试通过。 |
 | D-02 | 中 | `collector_zfs.c` | 原 `sample_pool_capacity()` 在写锁内执行 `zpool list`，超时上限 4 秒。现改为锁外探测，锁内只合并容量与 I/O。 | **已修复**；fake `zpool list` 睡眠 3 秒测试通过。 |
-| D-03 | 中 | `collector_io.c` / `collector_io_meta.c` / `disk_smart.c` | `thread_io` 仍持写锁调用 `sample_disk()`，元数据/SMART 探测可能调用 `geom`/`diskinfo`/`smartctl`/`nvmecontrol`。 | **待修复**：探测移出锁，使用每盘缓存。 |
-| D-04 | 低 | `collector_storage.c` | `thread_storage` 仍持锁调用 `sample_swap()`；KVM 失败时回退 `swapinfo`。 | **待修复**：探测移出锁。 |
+| D-03 | 中 | `collector_io.c` / `collector_io_meta.c` / `disk_smart.c` | `thread_io` 改为锁外采样到临时缓冲，锁内只复制磁盘字段；元数据/SMART 探测不再阻塞其他采集线程。 | **已修复**；静态分析 0 条。 |
+| D-04 | 低 | `collector_storage.c` | `SwapSample` 改为锁外完成 KVM/swapinfo 探测，锁内只写 swap 字段。 | **已修复**；静态分析 0 条。 |
 | C-01 | 低（安全加固） | `fmon_ctl.c` | 原 `getpeereid()` 失败时继续处理请求。现改为 fail-closed：失败即回 ERR 并返回。 | **已修复**；LD_PRELOAD 模拟失败返回 ERR，正常路径 PING OK。 |
 | C-02 | 信息 | `fmon_ctl.c` | `fmon_ctl_start()` 中 `snprintf(g_sock_path, ...)` 重复执行一次。 | **已删除重复行**。 |
-| H-01 | 低 | `disk_history_store.c` | 磁盘拔出后的最后一个未完成分钟仍会以旧累计值写出一行；设备选择器已隐藏它，但数据库会保留一个过渡桶。 | 在 flush 时只写本分钟 `n > 0` 的设备，或在采样时标记移除设备。 |
+| H-01 | 低 | `disk_history_store.c` | 采样时标记当前设备并移除已拔出设备；flush 只写本分钟实际采样过的设备。 | **已修复**。 |
 
-说明：D-01/D-02/C-01/C-02 已处理；D-03（磁盘元数据/SMART）、D-04（swap 回退）和 H-01（过渡历史桶）仍是后续加固项。
+说明：D-01～D-04、C-01/C-02、H-01 均已处理；剩余重点是 root 级故障注入和更长时间 soak。
 
 #### 控制通道补充结论
 
@@ -271,6 +271,7 @@ fmon_translations       fmon_log_filter
 | C-01 认证失败 | `LD_PRELOAD` 覆盖 `getpeereid()` 返回 `EACCES` | 控制客户端收到 `ERR 无法获取对端凭据`；无 preload 时 `OK pong` |
 | ASAN 单元测试 | `-Db_sanitize=address` 全量构建 + meson test | **20/20** |
 | ASAN GUI soak | 120 s，CPU/存储/网络等页面切换 | 无 AddressSanitizer 报错；仅有主循环 19–21 ms 慢刷新警告 |
+| D-03/D-04/H-01 | 锁外临时缓冲 / SwapSample / seen 标记 | 构建、20 项测试、scan-build 0 条；未做 root 级故障注入 |
 
 限制：当前会话没有 root，无法执行真实的 `mdconfig`/`zpool suspend`/非 operator 用户测试；FIFO 和 fake `zpool` 是可重复的用户态替代，覆盖同一个阻塞 I/O 路径，但不是完整系统级 soak。
 
@@ -284,18 +285,18 @@ fmon_translations       fmon_log_filter
 
 ### 建议后续处理
 
-1. 处理 D-03/D-04：磁盘元数据/SMART、swap 回退移出写锁。
-2. 处理 H-01：避免磁盘拔出后的过渡历史桶。
+1. 在 root 环境补真实 `mdconfig` 慢盘、`zpool suspend` 和非 operator 用户测试。
+2. 延长 ASAN GUI soak，并补 D-03/D-04 的系统级故障注入。
 3. 为日志行点击上下文补一个 GUI 回归测试或 ASan 冒烟步骤。
 4. 统一 CSV 文本字段转义与公式前缀防护。
-5. 在文档中明确 `operator`/`wheel` 控制通道权限边界，并增加控制通道并发/长时间 soak 测试。
+5. 在文档中明确 `operator`/`wheel` 控制通道权限边界，并增加控制通道并发测试。
 
 ### 总体评价
 
 - 架构分层正确，daemon/GUI 权限边界清晰。
 - 数据真实性设计是当前代码最扎实的部分。
 - 构建和测试基线良好：0 warning、20/20。
-- F-01 已修复，复审静态分析为 0 条告警。D-01/D-02/C-01/C-02 已修复并通过针对性测试；D-03/D-04/H-01 仍是后续加固项。当前版本 1.3.4。
+- F-01 已修复，复审静态分析为 0 条告警。D-01～D-04、C-01/C-02、H-01 均已修复；当前版本 1.3.5。
 
 ---
 

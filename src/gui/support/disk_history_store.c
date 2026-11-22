@@ -19,9 +19,10 @@
 #include <time.h>
 
 typedef struct {
-    char   dev[16];
-    double r, w, lat, q, busy, temp;
-    int    n, nlat, ntemp;
+    char     dev[16];
+    double   r, w, lat, q, busy, temp;
+    int      n, nlat, ntemp;
+    gboolean seen;
 } Acc;
 
 typedef struct {
@@ -64,6 +65,9 @@ static gboolean on_sample(gpointer data)
     const DiskPerf *p = disk_perf_get();
     uint32_t        n = MIN(s->disk_count, (uint32_t)FMON_MAX_DISKS);
 
+    for (int k = 0; k < g_acc_n; k++)
+        g_acc[k].seen = FALSE;
+
     for (uint32_t i = 0; i < n; i++) {
         const FmonDiskInfo *d = &s->disks[i];
         Acc                *a = NULL;
@@ -83,6 +87,7 @@ static gboolean on_sample(gpointer data)
             g_strlcpy(a->dev, d->name, sizeof(a->dev));
         }
 
+        a->seen = TRUE;
         a->r += d->read_kbps;
         a->w += d->write_kbps;
         a->busy += d->busy_pct;
@@ -100,6 +105,15 @@ static gboolean on_sample(gpointer data)
         }
     }
 
+    /* 设备拔出后立即丢弃其未完成分钟，避免写出过渡旧值。 */
+    int keep = 0;
+
+    for (int k = 0; k < g_acc_n; k++) {
+        if (g_acc[k].seen)
+            g_acc[keep++] = g_acc[k];
+    }
+
+    g_acc_n = keep;
     g_samples++;
     return G_SOURCE_CONTINUE;
 }
@@ -223,10 +237,18 @@ static gboolean on_flush(gpointer data)
 
     gint64 ts = ((gint64)time(NULL) / 60) * 60;
 
+    int out = 0;
+
     for (int i = 0; i < g_acc_n; i++) {
         Acc *a = &g_acc[i];
-        HistRow *r = &b->rows[i];
-        int n = (a->n > 0) ? a->n : 1;
+        HistRow *r;
+        int n;
+
+        if (a->n <= 0)
+            continue;
+
+        r = &b->rows[out++];
+        n = a->n;
 
         r->ts  = ts;
         g_strlcpy(r->dev, a->dev, sizeof(r->dev));
@@ -246,9 +268,16 @@ static gboolean on_flush(gpointer data)
         }
     }
 
+    b->n = out;
+
     memset(g_acc, 0, sizeof(g_acc));
     g_acc_n   = 0;
     g_samples = 0;
+
+    if (b->n == 0) {
+        batch_free(b);
+        return G_SOURCE_CONTINUE;
+    }
 
     GTask *task = g_task_new(NULL, NULL, NULL, NULL);
 

@@ -42,7 +42,7 @@ extern "C" {
 
 /* 头部校验值："FMON" 的大端 ASCII。 */
 /* 版本号：安装脚本与 --version 使用 */
-#define FMON_VERSION_STRING  "1.3.4"
+#define FMON_VERSION_STRING  "1.3.5"
 
 #define FMON_SHM_MAGIC       0x464D4F4DU
 #define FMON_ABI_VERSION     24U  /* 24: NIC model 扩大，完整保留长型号 */

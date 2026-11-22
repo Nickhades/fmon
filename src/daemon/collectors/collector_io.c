@@ -228,12 +228,24 @@ void *thread_io(void *arg)
     (void)arg;
 
     int tick = 0;
+    FmonShmData *tmp = calloc(1, sizeof(*tmp));
 
     while (g_running) {
-        /* devstat 是纯 sysctl 读取，微秒级，放在写事务里没有问题 */
-        fmon_shm_wr_begin();
-        sample_disk(g_shm);
-        fmon_shm_wr_end();
+        /* devstat/元数据/SMART 都可能在子进程或 ioctl 上阻塞，必须在写锁外完成。 */
+        if (tmp != NULL) {
+            tmp->cpu_count      = g_shm->cpu_count;
+            tmp->mem_total_bytes = g_shm->mem_total_bytes;
+            sample_disk(tmp);
+
+            fmon_shm_wr_begin();
+            g_shm->disk_count      = tmp->disk_count;
+            g_shm->disk_read_kbps  = tmp->disk_read_kbps;
+            g_shm->disk_write_kbps = tmp->disk_write_kbps;
+            g_shm->disk_read_ops   = tmp->disk_read_ops;
+            g_shm->disk_write_ops  = tmp->disk_write_ops;
+            memcpy(g_shm->disks, tmp->disks, sizeof(tmp->disks));
+            fmon_shm_wr_end();
+        }
 
         /* GPU 探测较重（可能要 fork nvidia-smi，数百毫秒），
          * 由 fmon_gpu_collect() 自己管理写锁，避免阻塞发布线程的心跳。 */
@@ -246,6 +258,7 @@ void *thread_io(void *arg)
             break;
     }
 
+    free(tmp);
     devstat_release();
     return NULL;
 }

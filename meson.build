@@ -1,5 +1,5 @@
 project('fmon', 'c',
-  version : '1.3.4',
+  version : '1.3.5',
   license : 'BSD-2-Clause',
   meson_version : '>= 0.60',
   default_options : [

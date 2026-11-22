@@ -2,19 +2,20 @@
 
 用 C11 + GTK4 编写的 FreeBSD 原生系统监控与资源管理工具。
 
-## 1.3.4 更新
+## 1.3.5 更新
 
 - **中英双语**：运行时切换中文 / English，保留当前页面与主题。
 - **完整网卡型号**：型号字段扩到 192 字节并整行显示；ABI 24 需 daemon/GUI 同升。
 - **磁盘历史跟随设备**：只列出当前已连接磁盘，拔掉的外置盘立即从历史选择器消失。
 - **日志上下文崩溃修复**：修复日志行上下文弹窗中的 use-after-free。
 - **daemon I/O 加固**：历史落盘和 zpool 容量探测移出快照写锁；控制通道无法取得对端凭据时改为 fail-closed。
+- **磁盘/Swap 加固**：磁盘元数据/SMART 与 swap 回退移出写锁；删除磁盘历史的过渡残留行。
 - **窗口行为**：记住正常大小，X11 启动居中，关闭不再等待采集线程 1 秒。
 - **数据真实性**：缺失指标显示 `—`，无 zpool 不再伪造 0，NaN 保持断线。
 - **界面整理**：顶部页面标签、快捷操作直出、更深深色背景、浅色主题复选框修复。
 - **稳定性**：进程页崩溃/右键修复，C11 模块化，20/20 测试通过。
 
-完整说明：[1.3.4 发布说明](docs/RELEASE_NOTES_1.3.4.md)。
+完整说明：[1.3.5 发布说明](docs/RELEASE_NOTES_1.3.5.md)。
 
 ## 架构
 
@@ -47,7 +48,7 @@
 ## 安装
 
 ```sh
-sudo pkg install ./fmon-1.3.4.pkg
+sudo pkg install ./fmon-1.3.5.pkg
 sudo sysrc fmon_daemon_enable=YES
 sudo service fmon_daemon start
 fmon-gui
