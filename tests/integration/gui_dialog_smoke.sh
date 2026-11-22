@@ -23,8 +23,9 @@ printf '[window]\nwidth=1500\nheight=920\n' >"$CFG/fmon/window.ini"
 
 pid=""
 start_gui() {
-    pkill -x fmon-gui 2>/dev/null || true
-    sleep 1
+    pkill -9 -x fmon-gui 2>/dev/null || true
+    pkill -9 -f "$GUI" 2>/dev/null || true
+    sleep 2
     XDG_CONFIG_HOME="$CFG" XDG_CACHE_HOME="$CACHE" "$GUI" --page cpu --theme light \
         >/tmp/fmon-gui-dialog.log 2>&1 &
     pid=$!
@@ -39,11 +40,13 @@ start_gui() {
 
 stop_gui() {
     if [ -n "$pid" ]; then
-        kill -TERM "$pid" 2>/dev/null || true
-        sleep 1
         kill -KILL "$pid" 2>/dev/null || true
-        pid=""
+        sleep 1
     fi
+    pkill -9 -x fmon-gui 2>/dev/null || true
+    pkill -9 -f "$GUI" 2>/dev/null || true
+    pid=""
+    sleep 1
 }
 trap stop_gui EXIT INT TERM
 
