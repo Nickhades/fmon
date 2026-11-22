@@ -200,7 +200,7 @@ if (page == NULL || page->names == NULL)
 | C-02 | 信息 | `fmon_ctl.c` | `fmon_ctl_start()` 中 `snprintf(g_sock_path, ...)` 重复执行一次。 | **已删除重复行**。 |
 | H-01 | 低 | `disk_history_store.c` | 采样时标记当前设备并移除已拔出设备；flush 只写本分钟实际采样过的设备。 | **已修复**。 |
 
-说明：D-01～D-04、C-01/C-02、H-01 均已处理；root 级故障注入、H-01 真实拔盘、GUI 对话框 smoke 和 1 小时 ASAN soak 已完成。剩余重点是 CI workflow 实跑验证和更完整的 GUI 详情自动化。
+说明：D-01～D-04、C-01/C-02、H-01 均已处理；root 级故障注入、H-01 真实拔盘、GUI 对话框 smoke 和 1 小时 ASAN soak 已完成。CI workflow 已实跑成功；剩余重点是更完整的 GUI 详情/对话框 CI 化和夜间稳定性观察。
 
 #### 控制通道补充结论
 
@@ -256,7 +256,7 @@ fmon_translations       fmon_log_filter         fmon_csv
 
 - About/告警/导出对话框已有 smoke 测试；日志点击和更多详情窗口仍没有自动化；
 - 控制通道已有 `tests/integration/control_permission.sh`，但并发连接/超时还没有 CI 化；
-- `tests/integration/gui_asan_soak.sh` 已提供；GitHub CI 已上传并成功跑完构建/测试，ASAN job 待完整复跑。
+- GitHub CI 构建/测试成功；ASAN job（600 s + H-01）已全绿。GUI 对话框 smoke 在本地通过，未加入 ASAN job，原因是无 WM 的 Xvfb 模态窗口清理不稳定。
 
 ---
 
@@ -273,9 +273,10 @@ fmon_translations       fmon_log_filter         fmon_csv
 | ASAN GUI soak | 3600 s，CPU/存储/网络等页面切换 | **通过**：无 AddressSanitizer 报错；主循环慢刷新约 20–28 ms |
 | D-03/D-04 | root 创建 md0 测试盘；fake `nvmecontrol`/`swapinfo` 睡眠 3 秒；KVM 失败 shim | 20 s / 199 样本：**0 gaps**；fake 调用已发生 |
 | H-01 | root `mdconfig` 创建 md0；GUI 采样后 detach；SQLite 查询 | 拔出后无新 md0 行；**通过** |
+| GitHub ASAN job | FreeBSD runner，600 s + H-01 | **成功**（21/21 + soak + H-01） |
 | GUI 对话框 | About / 告警设置 / CSV 保存窗口打开并关闭 | **通过**（`gui_dialog_smoke.sh`） |
 
-限制：已用 root 创建 md0、安装 1.3.6、执行 non-operator 与 H-01 热插拔测试；FreeBSD 15.1 的 `zpool` 不支持 `suspend/resume`，D-02 仍以 fake `zpool` 覆盖阻塞路径。1 小时 ASAN GUI soak 已完成并通过；CI workflow 已上传到 main；FreeBSD CI 构建/测试已成功，ASAN 工作流已验证 21/21 单测和 600s soak，但完整 job 仍受 GUI 构建路径问题影响，已修正待复跑。
+限制：已用 root 创建 md0、安装 1.3.6、执行 non-operator 与 H-01 热插拔测试；FreeBSD 15.1 的 `zpool` 不支持 `suspend/resume`，D-02 仍以 fake `zpool` 覆盖阻塞路径。1 小时 ASAN GUI soak 已完成并通过；CI workflow 已上传到 main；FreeBSD CI 构建/测试已成功，ASAN 工作流已验证 21/21 单测和 600s soak，完整 job 已复跑成功（21/21、600 s soak、H-01）。GUI 对话框 smoke 未放进 ASAN job，改为本地/独立运行。
 
 ## 9. 结论与建议
 
@@ -288,7 +289,7 @@ fmon_translations       fmon_log_filter         fmon_csv
 ### 建议后续处理
 
 1. 在 root 环境补真实 `mdconfig` 慢盘、`zpool suspend` 和非 operator 用户测试。
-2. 复跑 ASAN job，确认 GUI/H-01 步骤也全绿。
+2. 把 GUI 对话框 smoke 拆成独立的 Xvfb+WM 测试任务，避免影响 ASAN/H-01 job。
 3. 为日志行点击上下文补一个 GUI 回归测试或 ASan 冒烟步骤。
 4. 保持 CSV 转义 helper 作为所有新导出字段的唯一入口。
 5. 在文档中明确 `operator`/`wheel` 控制通道权限边界，并增加控制通道并发测试。

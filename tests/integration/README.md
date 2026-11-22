@@ -48,9 +48,10 @@ GitHub CI is on `main`:
 - `.github/workflows/ci.yml` — FreeBSD build and tests.
 - `.github/workflows/asan-soak.yml` — manual/nightly ASAN unit tests, GUI soak and H-01.
 
-The build/test workflow has passed on the GitHub FreeBSD runner. The ASAN
-workflow has passed unit tests and the 600 s soak; its post-soak GUI step is
-being fixed.
+The build/test workflow and the ASAN/H-01 workflow have passed on the GitHub
+FreeBSD runner. The GUI dialog smoke is kept out of the ASAN job because modal
+window cleanup under a window-manager-less Xvfb is not reliable; run it locally
+or in a dedicated WM-backed job.
 
 ## GUI dialog smoke
 
