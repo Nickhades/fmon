@@ -7,6 +7,8 @@ on:
         description: ASAN GUI soak duration
         required: false
         default: "600"
+  schedule:
+    - cron: "0 3 * * *"
 
 jobs:
   asan:
@@ -21,6 +23,7 @@ jobs:
             pkg install -y meson ninja pkgconf gtk4 cairo sqlite3 libdrm gettext-tools python3 xorg-vfbserver xwininfo libXtst
           run: |
             SOAK_SECONDS="${{ inputs.seconds }}"
+            SOAK_SECONDS="${SOAK_SECONDS:-600}"
             meson setup build-asan --buildtype=debugoptimized -Db_sanitize=address -Db_lundef=false
             ninja -C build-asan
             ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 meson test -C build-asan --print-errorlogs
