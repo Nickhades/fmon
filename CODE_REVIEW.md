@@ -268,12 +268,13 @@ fmon_translations       fmon_log_filter         fmon_csv
 |---|---|---|
 | D-01 慢历史 I/O | `HOME` 指向 FIFO `history.tsv`，history 线程 `fopen` 阻塞；`shmwatch` 每 100 ms 读 `last_update_us`，超过 1.5 s 记为缺口 | 15 s / 150 样本：**0 gaps** |
 | D-02 ZFS 命令卡住 | `PATH` 指向 fake `zpool`：`list` sleep 3 s、`iostat` sleep 2 s，并记录调用 | fake 调用已发生；15 s / 150 样本：**0 gaps** |
-| C-01 认证失败 | `LD_PRELOAD` 覆盖 `getpeereid()` 返回 `EACCES` | 控制客户端收到 `ERR 无法获取对端凭据`；无 preload 时 `OK pong` |
+| C-01 认证失败 | `LD_PRELOAD` 覆盖 `getpeereid()` 返回 `EACCES`；另用 root 以 `nobody` 连接真实 socket | `ERR 无法获取对端凭据`；`nobody` 得到 `connect: Permission denied`；operator 用户 `OK pong` |
 | ASAN 单元测试 | `-Db_sanitize=address` 全量构建 + meson test | **21/21** |
 | ASAN GUI soak | 120 s，CPU/存储/网络等页面切换 | 无 AddressSanitizer 报错；仅有主循环 19–21 ms 慢刷新警告 |
-| D-03/D-04/H-01 | 锁外临时缓冲 / SwapSample / seen 标记 | 构建、21 项测试、scan-build 0 条；未做 root 级故障注入 |
+| D-03/D-04 | root 创建 md0 测试盘；fake `nvmecontrol`/`swapinfo` 睡眠 3 秒；KVM 失败 shim | 20 s / 199 样本：**0 gaps**；fake 调用已发生 |
+| H-01 | 代码复审 + 21 项测试 | `seen` 标记与拔出清理逻辑已合入 |
 
-限制：当前会话没有 root，无法执行真实的 `mdconfig`/`zpool suspend`/非 operator 用户测试；FIFO 和 fake `zpool` 是可重复的用户态替代，覆盖同一个阻塞 I/O 路径，但不是完整系统级 soak。
+限制：已用 root 创建 md0、安装 1.3.6、执行 non-operator 测试；FreeBSD 15.1 的 `zpool` 不支持 `suspend/resume`，D-02 仍以 fake `zpool` 覆盖阻塞路径。H-01 没有做真实拔盘自动化；1 小时 ASAN GUI soak 正在进行（结果见后续更新）。
 
 ## 9. 结论与建议
 
