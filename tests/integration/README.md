@@ -43,8 +43,10 @@ the SQLite history has no rows for the removed device after the detach time.
 
 ## CI
 
+CI workflow drafts are kept on the local `ci-workflows` branch:
+
 - `.github/workflows/ci.yml` — FreeBSD build, tests and static checks.
 - `.github/workflows/asan-soak.yml` — manual ASAN unit tests, GUI soak and H-01.
 
-The workflows use the external `vmactions/freebsd-vm` action and have not
-been executed from this session.
+They are not on `main` yet because the upload token lacks GitHub Workflows
+permission. They also have not been executed on a GitHub FreeBSD runner.
