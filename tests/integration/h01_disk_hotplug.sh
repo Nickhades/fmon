@@ -13,7 +13,7 @@ else
 fi
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
-GUI="$ROOT/build/src/gui/fmon-gui"
+GUI="${FMON_GUI_BIN:-$ROOT/build/src/gui/fmon-gui}"
 CACHE="${FMON_H01_CACHE:-/tmp/fmon-h01-cache}"
 WAIT="${FMON_H01_WAIT:-75}"
 

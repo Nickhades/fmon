@@ -34,5 +34,5 @@ jobs:
             DISPLAY=:99 ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 \
               ./tests/integration/gui_asan_soak.sh "$SOAK_SECONDS" \
               ./build-asan/src/gui/fmon-gui
-            DISPLAY=:99 ./tests/integration/gui_dialog_smoke.sh
-            DISPLAY=:99 ./tests/integration/h01_disk_hotplug.sh
+            DISPLAY=:99 FMON_GUI_BIN="$PWD/build-asan/src/gui/fmon-gui" ./tests/integration/gui_dialog_smoke.sh
+            DISPLAY=:99 FMON_GUI_BIN="$PWD/build-asan/src/gui/fmon-gui" ./tests/integration/h01_disk_hotplug.sh
