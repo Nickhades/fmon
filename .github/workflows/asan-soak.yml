@@ -18,7 +18,7 @@ jobs:
         with:
           usesh: true
           prepare: |
-            pkg install -y meson ninja pkgconf gtk4 cairo sqlite3 libdrm gettext-tools xorg-vfbserver xorg-utils libXtst
+            pkg install -y meson ninja pkgconf gtk4 cairo sqlite3 libdrm gettext-tools xorg-vfbserver xwininfo libXtst
           run: |
             SOAK_SECONDS="${{ inputs.seconds }}"
             meson setup build-asan --buildtype=debugoptimized -Db_sanitize=address -Db_lundef=false
