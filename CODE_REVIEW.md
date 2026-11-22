@@ -200,7 +200,7 @@ if (page == NULL || page->names == NULL)
 | C-02 | 信息 | `fmon_ctl.c` | `fmon_ctl_start()` 中 `snprintf(g_sock_path, ...)` 重复执行一次。 | **已删除重复行**。 |
 | H-01 | 低 | `disk_history_store.c` | 采样时标记当前设备并移除已拔出设备；flush 只写本分钟实际采样过的设备。 | **已修复**。 |
 
-说明：D-01～D-04、C-01/C-02、H-01 均已处理；root 级 D-03/D-04/C-01 测试和 1 小时 ASAN soak 已完成。剩余重点是 GUI 自动化、H-01 真实拔盘和 CI 化。
+说明：D-01～D-04、C-01/C-02、H-01 均已处理；root 级故障注入、H-01 真实拔盘和 1 小时 ASAN soak 已完成。剩余重点是 GUI 对话框自动化与 CI workflow 实跑验证。
 
 #### 控制通道补充结论
 
@@ -256,7 +256,7 @@ fmon_translations       fmon_log_filter         fmon_csv
 
 - GUI 对话框交互（包括 F-01 的日志点击路径）仍没有自动化测试；
 - 控制通道已有 `tests/integration/control_permission.sh`，但并发连接/超时还没有 CI 化；
-- `tests/integration/gui_asan_soak.sh` 已提供，长 soak 尚未纳入常规 CI。
+- `tests/integration/gui_asan_soak.sh` 和 `.github/workflows/asan-soak.yml` 已提供，工作流尚未在真实 GitHub FreeBSD runner 上执行。
 
 ---
 
@@ -272,9 +272,9 @@ fmon_translations       fmon_log_filter         fmon_csv
 | ASAN 单元测试 | `-Db_sanitize=address` 全量构建 + meson test | **21/21** |
 | ASAN GUI soak | 3600 s，CPU/存储/网络等页面切换 | **通过**：无 AddressSanitizer 报错；主循环慢刷新约 20–28 ms |
 | D-03/D-04 | root 创建 md0 测试盘；fake `nvmecontrol`/`swapinfo` 睡眠 3 秒；KVM 失败 shim | 20 s / 199 样本：**0 gaps**；fake 调用已发生 |
-| H-01 | 代码复审 + 21 项测试 | `seen` 标记与拔出清理逻辑已合入 |
+| H-01 | root `mdconfig` 创建 md0；GUI 采样后 detach；SQLite 查询 | 拔出后无新 md0 行；**通过** |
 
-限制：已用 root 创建 md0、安装 1.3.6、执行 non-operator 测试；FreeBSD 15.1 的 `zpool` 不支持 `suspend/resume`，D-02 仍以 fake `zpool` 覆盖阻塞路径。H-01 没有做真实拔盘自动化；1 小时 ASAN GUI soak 已完成并通过。
+限制：已用 root 创建 md0、安装 1.3.6、执行 non-operator 与 H-01 热插拔测试；FreeBSD 15.1 的 `zpool` 不支持 `suspend/resume`，D-02 仍以 fake `zpool` 覆盖阻塞路径。1 小时 ASAN GUI soak 已完成并通过；`.github/workflows/` 已加入 CI 配置，但未在本会话实际触发。
 
 ## 9. 结论与建议
 
@@ -287,7 +287,7 @@ fmon_translations       fmon_log_filter         fmon_csv
 ### 建议后续处理
 
 1. 在 root 环境补真实 `mdconfig` 慢盘、`zpool suspend` 和非 operator 用户测试。
-2. 将 1 小时 ASAN soak 和 D-03/D-04 故障注入纳入 CI。
+2. 在 GitHub FreeBSD runner 上验证并启用 ASAN/H-01 工作流。
 3. 为日志行点击上下文补一个 GUI 回归测试或 ASan 冒烟步骤。
 4. 保持 CSV 转义 helper 作为所有新导出字段的唯一入口。
 5. 在文档中明确 `operator`/`wheel` 控制通道权限边界，并增加控制通道并发测试。

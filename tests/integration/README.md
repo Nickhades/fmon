@@ -31,3 +31,20 @@ Real `mdconfig`/ZFS fault injection is environment-specific. On FreeBSD 15.1,
 `zpool suspend/resume` is not a supported command; use an isolated test pool
 and the fake-command tests described in `CODE_REVIEW.md` for reproducible
 blocking-I/O coverage.
+
+## H-01 disk hotplug
+
+```sh
+sudo DISPLAY=:0 ./tests/integration/h01_disk_hotplug.sh
+```
+
+Attaches an isolated md disk, waits for disk history, detaches it, and verifies
+the SQLite history has no rows for the removed device after the detach time.
+
+## CI
+
+- `.github/workflows/ci.yml` — FreeBSD build, tests and static checks.
+- `.github/workflows/asan-soak.yml` — manual ASAN unit tests, GUI soak and H-01.
+
+The workflows use the external `vmactions/freebsd-vm` action and have not
+been executed from this session.
