@@ -41,7 +41,7 @@ static void draw_band_hint(cairo_t *cr, const ComboGeom *g,
 typedef struct {
     const CurveData *cd;
     const double    *history;
-    const uint64_t  *time_us;
+    const uint64_t  *time_us;   /* 缓存 key：指针身份，不是逐点值 */
     uint32_t count;
     uint32_t index;
     uint64_t t0;

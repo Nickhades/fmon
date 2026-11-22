@@ -271,9 +271,19 @@ min 0 B/s · avg 1.8 KB/s · max 1.22 MB/s
 
 ## 8.1 降采样缓存
 
-单曲线图（gui_chart）增加了按绘图区持有的降采样缓存：key 包含历史数组指针、count/index、时间范围、画布宽高、margin、量程、抽列数、gap 阈值和 last timestamp。命中时复用 FmonChartPoint 数组和 min/max 包络；数据推进、窗口/缩放/平移、尺寸变化、长历史切换时自动失效。缓存只保存几何，不缓存 Cairo path/颜色/主题。
+单曲线、组合图和 CPU 自定义平均曲线都使用按绘图区持有的降采样缓存。
 
-组合图和 CPU 自定义平均曲线仍在 draw 时计算；当前 1200 点 x 3~4 series 可接受，后续可复用同一缓存层。
+缓存 key 必须包含 **`time_us` 指针本身**，不能只比较时间范围或 last timestamp：
+
+- `history` 指针；
+- `time_us` 指针；
+- `history_min` / `history_max` 指针（如有包络）；
+- `count` / `index` / `end_time_us`；
+- 视口时间范围、画布尺寸、margin、量程、抽列数、gap 阈值。
+
+`time_us` 指针变化意味着时间轴数组被替换或切换，缓存必须失效；指针相同但内容推进时，由 `count`/`index`/`end_time_us` 触发失效。缓存只保存几何，不缓存 Cairo path/颜色/主题。
+
+实现在 `src/gui/charts/gui_chart.c`、`src/gui/charts/combo_chart.c` 和 `src/gui/pages/gui_page_cpu.c`；对应 match 函数都显式比较 `c->time_us == cd->time_us`。
 
 ## 8.2 性能结论
 

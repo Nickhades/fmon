@@ -37,7 +37,7 @@ static GtkWidget *s_temp_area;
 typedef struct {
     const CurveData *cd;
     const double    *history;
-    const uint64_t  *time_us;
+    const uint64_t  *time_us;   /* 缓存 key：指针身份，不是逐点值 */
     uint32_t count;
     uint32_t index;
     uint64_t end_time;

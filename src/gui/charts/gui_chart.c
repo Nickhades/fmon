@@ -32,7 +32,7 @@
 
 typedef struct {
     const double   *history;
-    const uint64_t *time_us;
+    const uint64_t *time_us;   /* 缓存 key：指针身份，不是逐点值 */
     const double   *history_min;
     const double   *history_max;
     uint32_t        count;
