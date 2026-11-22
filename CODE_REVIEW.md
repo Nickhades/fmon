@@ -213,7 +213,7 @@ if (page == NULL || page->names == NULL)
 
 - 主 raw/1m/5m/1h 与 GPU/ZFS sidecar 都使用定长 `FILE*` 追加，未发现路径拼接注入或 SQL 拼接。
 - 磁盘历史使用 SQLite prepared statement，数据库目录 0700。
-- D-01 已改为独立历史线程，锁内不再落盘；H-01 的过渡桶仍待处理。
+- D-01 已改为独立历史线程，锁内不再落盘；H-01 的过渡桶已修复。
 
 ## 7. 性能与资源
 
