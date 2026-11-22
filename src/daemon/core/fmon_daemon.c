@@ -111,6 +111,9 @@ static void install_signal_handlers(void)
 
 static void fill_static_info(FmonShmData *shm)
 {
+    if (shm == NULL)
+        return;
+
     uint64_t ncpu = 0;
     struct timeval tv;
     size_t len;

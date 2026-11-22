@@ -31,6 +31,8 @@
 #include "fmon_sysctl.h"
 #include "fmon_child.h"
 
+#include <errno.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -286,9 +288,10 @@ static void detect_amd_driver_version(char *out, size_t out_len)
     };
 
     for (size_t i = 0; i < sizeof(paths) / sizeof(paths[0]); i++) {
-        FILE *fp = fopen(paths[i], "rb");
+        /* 直接 read(2)，避免 stdio 在 EOF/错误后的流状态问题。 */
+        int fd = open(paths[i], O_RDONLY | O_CLOEXEC);
 
-        if (fp == NULL)
+        if (fd < 0)
             continue;
 
         char   buf[262144];
@@ -296,12 +299,14 @@ static void detect_amd_driver_version(char *out, size_t out_len)
         bool   found = false;
 
         while (!found) {
-            size_t n = fread(buf + keep, 1, sizeof(buf) - 1 - keep, fp);
+            ssize_t n = read(fd, buf + keep, sizeof(buf) - 1 - keep);
 
-            if (n == 0)
+            if (n < 0 && errno == EINTR)
+                continue;
+            if (n <= 0)
                 break;
 
-            size_t total = keep + n;
+            size_t total = keep + (size_t)n;
 
             const char *p = memmem(buf, total, "drm_v", 5);
 
@@ -329,7 +334,7 @@ static void detect_amd_driver_version(char *out, size_t out_len)
             memmove(buf, buf + total - keep, keep);
         }
 
-        fclose(fp);
+        close(fd);
 
         if (found)
             return;

@@ -231,6 +231,9 @@ static guint count_visible(GtkWidget *list, ServicePage *page)
 
 void svc_list_rebuild(ServicePage *page)
 {
+    if (page == NULL || page->names == NULL)
+        return;
+
     /* 清理已经不存在的服务勾选，避免批量操作命中旧名字 */
     if (page->selected != NULL && page->names != NULL) {
         GHashTableIter it;

@@ -1,5 +1,5 @@
 name: fmon
-version: "1.3.2"
+version: "1.3.3"
 origin: "sysutils/fmon"
 comment: "FreeBSD system monitor GUI and daemon"
 www: "https://github.com/Nickhades/fmon"

@@ -170,9 +170,9 @@ void log_context_pid_click(GtkGestureClick *gesture, int n_press, double x,
         }
     }
 
-    g_free(line);
-
-    /* 没点中 PID：弹出该行前后 5 行上下文 */
+    /* 没点中 PID：弹出该行前后 5 行上下文。
+     * line 仍在下面被 log_render_raw_context()/g_strdup() 使用，
+     * 不能在这里提前释放。 */
     GtkTextIter a = iter, b = iter;
 
     for (int i = 0; i < 5; i++) {
@@ -232,15 +232,18 @@ void log_context_pid_click(GtkGestureClick *gesture, int n_press, double x,
             show_context_window(cached);
             g_free(key);
             g_free(ctx);
+            g_free(line);
             return;
         }
 
         g_free(key);
         fetch_file_context(page, line, occ, ctx);
         g_free(ctx);
+        g_free(line);
         return;
     }
 
     show_context_window(ctx);
     g_free(ctx);
+    g_free(line);
 }
