@@ -46,7 +46,7 @@ sudo service fmon_daemon restart
 **ABI 铁律**：只要改动 `src/common/fmon_shm.h` 中任何结构体/字段/顺序/大小：
 
 1. `FMON_ABI_VERSION` +1；
-2. `FMON_SHM_NAME` 同步改（`v22` → `v23`）；
+2. `FMON_SHM_NAME` 同步改（`v23` → `v24`）；
 3. 重装后 **GUI 与 daemon 必须同时更新**，否则 GUI 会以“ABI 不匹配”拒绝连接（这是预期保护）。
 
 本地调试时，若系统服务也在运行，两者可能争用同一 shm：

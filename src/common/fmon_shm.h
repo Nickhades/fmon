@@ -1,7 +1,7 @@
 /*
  * fmon_shm.h - fmon 守护进程 / 图形界面之间的共享内存契约
  *
- * 设计要点（v23）：
+ * 设计要点（v24）：
  *   1. 头部带 magic / abi_version / struct_size，任何一端结构体不一致时
  *      可以立即拒绝，而不是越界读到垃圾数据（旧版会直接 SIGBUS/SIGSEGV）。
  *   2. 使用 seqlock：写者把 seq 加一（奇数）后写数据，写完再加一（偶数）。
