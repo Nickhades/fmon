@@ -136,7 +136,7 @@ void fmon_about_show(GtkWindow *parent)
     gtk_widget_set_halign(title, GTK_ALIGN_START);
     gtk_box_append(GTK_BOX(vbox), title);
 
-    gchar *ver = g_strdup_printf(_("版本 %s · 共享内存 ABI %u"),
+    gchar *ver = g_strdup_printf(_("软件版本 %s · 共享内存 ABI %u"),
                                  FMON_VERSION_STRING, FMON_ABI_VERSION);
     GtkWidget *ver_label = gtk_label_new(ver);
     gtk_widget_add_css_class(ver_label, "small-text");

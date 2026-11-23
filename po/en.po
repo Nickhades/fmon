@@ -900,8 +900,8 @@ msgstr "About FreeBSD Monitoring Center"
 
 #: src/gui/support/about.c:139
 #, c-format
-msgid "版本 %s · 共享内存 ABI %u"
-msgstr "Version %s · shared memory ABI %u"
+msgid "软件版本 %s · 共享内存 ABI %u"
+msgstr "Software version %s · shared memory ABI %u"
 
 #: src/gui/support/about.c:157
 msgid "本软件（BSD 2-Clause）"

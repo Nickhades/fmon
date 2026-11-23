@@ -863,7 +863,7 @@ msgstr ""
 
 #: src/gui/support/about.c:139
 #, c-format
-msgid "版本 %s · 共享内存 ABI %u"
+msgid "软件版本 %s · 共享内存 ABI %u"
 msgstr ""
 
 #: src/gui/support/about.c:157

@@ -2,7 +2,7 @@
 
 用 C11 + GTK4 编写的 FreeBSD 原生系统监控与资源管理工具。
 
-## 1.3.6 更新
+## 1.3.7 更新
 
 - **中英双语**：运行时切换中文 / English，保留当前页面与主题。
 - **完整网卡型号**：型号字段扩到 192 字节并整行显示；ABI 24 需 daemon/GUI 同升。
@@ -15,7 +15,7 @@
 - **界面整理**：顶部页面标签、快捷操作直出、更深深色背景、浅色主题复选框修复。
 - **稳定性**：进程页崩溃/右键修复，C11 模块化，21/21 测试通过。
 
-完整说明：[1.3.6 发布说明](docs/RELEASE_NOTES_1.3.6.md)。
+完整说明：[1.3.7 发布说明](docs/RELEASE_NOTES_1.3.7.md)。
 
 ## 架构
 
@@ -23,6 +23,7 @@
 - **fmon-gui（普通用户）**：只读映射共享内存，GTK4 + Cairo 渲染；界面崩溃不影响采集。
 - **控制通道**：结束进程、服务启停、sysrc、cpuset、rctl 等特权操作由 root daemon 校验后执行，不经过 shell。
 - **CSV 加固**：导出文本字段统一转义，并中和表格公式前缀。
+- **关于对话框**：明确显示软件版本号与共享内存 ABI。
 
 ![fmon 架构图](docs/project-structure.png)
 
@@ -49,7 +50,7 @@
 ## 安装
 
 ```sh
-sudo pkg install ./fmon-1.3.6.pkg
+sudo pkg install ./fmon-1.3.7.pkg
 sudo sysrc fmon_daemon_enable=YES
 sudo service fmon_daemon start
 fmon-gui

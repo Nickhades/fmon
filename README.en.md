@@ -2,7 +2,7 @@
 
 A native FreeBSD system monitor and resource manager written in C11 with GTK4.
 
-## What's new in 1.3.6
+## What's new in 1.3.7
 
 - **Bilingual UI**: switch between 中文 and English at runtime; page/theme preserved.
 - **Full NIC models**: 192-byte model names, shown as a full-width row; ABI 24 requires daemon/GUI upgrade together.
@@ -15,7 +15,7 @@ A native FreeBSD system monitor and resource manager written in C11 with GTK4.
 - **UI cleanup**: top page tabs, direct quick actions, deeper dark background, fixed light-theme checkbox.
 - **Reliability**: process crash/right-click fixes, modular C11 code, 21/21 tests.
 
-Full details: [1.3.6 release notes](docs/RELEASE_NOTES_1.3.6.md).
+Full details: [1.3.7 release notes](docs/RELEASE_NOTES_1.3.7.md).
 
 ## Architecture
 
@@ -29,6 +29,7 @@ fmon-daemon (root)  --POSIX shared memory (seqlock)-->  fmon-gui (user)
 - **GUI**: maps shared memory read-only; a crash of the GUI never affects collection.
 - **Control channel**: privileged operations (signals, services, sysrc, cpuset, rctl) are validated and executed by the root daemon over a local Unix socket. No shell interpolation.
 - **CSV hardening**: all text fields are escaped and formula prefixes are neutralized on export.
+- **About dialog**: explicit software version line alongside the shared-memory ABI.
 
 ![fmon architecture](docs/project-structure.png)
 
@@ -55,7 +56,7 @@ fmon-daemon (root)  --POSIX shared memory (seqlock)-->  fmon-gui (user)
 ## Install from the package
 
 ```sh
-sudo pkg install ./fmon-1.3.6.pkg
+sudo pkg install ./fmon-1.3.7.pkg
 sudo sysrc fmon_daemon_enable=YES
 sudo service fmon_daemon start
 fmon-gui
